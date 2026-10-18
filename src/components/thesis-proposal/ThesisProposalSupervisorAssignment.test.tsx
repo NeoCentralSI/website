@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import * as assignments from '@/services/thesis-proposal/supervisor-assignment.service';
+import { expectColumnFits } from '@/test/columnFit';
 import type { AssignmentBatch, AssignmentOverview, StudentProposalOverview } from '@/types/thesis-proposal.types';
 import { getDownloadBlockReason, getIssueBlockReason, KadepSupervisorAssignmentPanel } from './KadepSupervisorAssignmentPanel';
 import { StudentSupervisorAssignmentSection } from './StudentSupervisorAssignmentSection';
@@ -85,7 +86,12 @@ describe('Penetapan Pembimbing (Kadep)', () => {
     expect(screen.getByText('Belum Ditetapkan')).toBeInTheDocument();
     expect(screen.getByText('Berlaku')).toBeInTheDocument();
     expect(screen.queryByText('current')).not.toBeInTheDocument();
-    expect(screen.getAllByText('Aina Hubby Aziira, M.Eng')).toHaveLength(2);
+    expect(screen.getAllByText('Aina Hubby Aziira, M.Eng · Pembimbing 1')).toHaveLength(2);
+    // Paket P8: the cohort is a table, the students not yet in the current version first.
+    const cohort = screen.getAllByRole('table')[0];
+    const firstRow = within(cohort).getAllByRole('row')[1];
+    expect(within(firstRow).getByText('Uji Proposal Diterima')).toBeInTheDocument();
+    expectColumnFits(within(cohort).getByRole('columnheader', { name: /Status/ }), within(within(cohort).getAllByRole('row')[2]).getAllByRole('cell')[4], 'Sudah Ditetapkan');
 
     fireEvent.click(screen.getByRole('button', { name: 'Terbitkan Penetapan' }));
     expect(screen.getByText(/Versi 1 digantikan oleh versi 2/)).toBeInTheDocument();

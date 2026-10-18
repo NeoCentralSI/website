@@ -33,10 +33,13 @@ export function KadepSupervisorRequestDecisionDialog({
   request,
   action,
   onClose,
+  onDone,
 }: {
   request: SupervisorRequest;
   action: KadepAction;
   onClose: () => void;
+  /** After a successful decision (e.g. close the detail modal behind this one). */
+  onDone?: () => void;
 }) {
   const decide = useKadepSupervisorDecision();
   const needsTarget = action === 'redirect' || (action === 'approve' && request.route === 'department');
@@ -62,7 +65,7 @@ export function KadepSupervisorRequestDecisionDialog({
   const submit = () => {
     decide.mutate(
       { id: request.id, dto: { action, targetLecturerId: needsTarget ? target : null, notes: notes.trim() || null } },
-      { onSuccess: onClose },
+      { onSuccess: () => { onDone?.(); onClose(); } },
     );
   };
 
@@ -109,9 +112,10 @@ export function KadepSupervisorRequestDecisionDialog({
           <Label htmlFor="kadep-decision-notes">{action === 'request_revision' ? 'Catatan revisi (minimal 10 karakter)' : 'Catatan (opsional)'}</Label>
           <Textarea id="kadep-decision-notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
+        {disabledReason && <p className="text-xs text-muted-foreground">{disabledReason}</p>}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Batal</Button>
-          <span title={disabledReason ?? undefined}>
+          <span title={disabledReason ?? undefined} className="inline-flex">
             <Button variant={action === 'reject' ? 'destructive' : 'default'} disabled={Boolean(disabledReason) || decide.isPending} onClick={submit}>
               {decide.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{TITLES[action]}
             </Button>

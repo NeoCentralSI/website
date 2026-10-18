@@ -495,6 +495,7 @@ export default function StudentMilestonePage() {
                 isBulkStarting={isBulkStarting}
                 readOnlyMilestones={otherPhaseData?.milestones ?? []}
                 readOnlyPhase={otherPhase}
+                currentPhase={currentPhase}
               />
 
               {/* Create/Edit Dialog */}

@@ -1,7 +1,9 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
+import { TableIconAction } from "@/components/shared/TableIconAction";
+import { TruncatedText } from "@/lib/guidanceCells";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +55,8 @@ interface ResearchMethodCpmkCatalogProps {
   isCreating: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
+  /** Paket P8: the period select and "Salin Template", before "Tambah". */
+  extraActions?: ReactNode;
 }
 
 export function ResearchMethodCpmkCatalog({
@@ -66,6 +70,7 @@ export function ResearchMethodCpmkCatalog({
   isCreating,
   isUpdating,
   isDeleting,
+  extraActions,
 }: ResearchMethodCpmkCatalogProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<ResearchMethodCpmk | null>(null);
@@ -164,8 +169,8 @@ export function ResearchMethodCpmkCatalog({
       {
         key: "description",
         header: "Deskripsi",
-        className: "max-w-md whitespace-normal",
-        render: (item) => <span className="text-sm">{item.description}</span>,
+        className: "overflow-hidden",
+        render: (item) => <TruncatedText text={item.description} className="max-w-full" />,
       },
       {
         key: "usage",
@@ -184,27 +189,8 @@ export function ResearchMethodCpmkCatalog({
         className: "text-right",
         render: (item) => (
           <div className="flex items-center justify-end gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-primary"
-              onClick={() => openEdit(item)}
-              title="Edit"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={() => setDeleteId(item.id)}
-              disabled={isDeleting}
-              title="Hapus"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <TableIconAction icon={Pencil} label="Ubah" onClick={() => openEdit(item)} />
+            <TableIconAction icon={Trash2} label="Hapus" disabled={isDeleting} onClick={() => setDeleteId(item.id)} />
           </div>
         ),
       },
@@ -229,9 +215,11 @@ export function ResearchMethodCpmkCatalog({
           setSearch(value);
           setPage(1);
         }}
+        tableClassName="table-fixed"
         emptyText="Belum ada data CPMK Metode Penelitian"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {extraActions}
             <Button type="button" variant="outline" size="sm" onClick={openCreate}>
               <Plus className="mr-2 h-4 w-4" /> Tambah
             </Button>

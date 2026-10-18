@@ -91,6 +91,10 @@ export function TemplateSelectorDialog({
   };
 
   const topicLabel = thesisTopicName || "topik tugas akhir Anda";
+  // Paket P8 (5): the phase is written out in the dialog.
+  const phaseLabel = generalOnly
+    ? "Template fase Proposal"
+    : `Template fase Penelitian · topik ${thesisTopicName || "belum diisi"}`;
 
   return (
     <>
@@ -101,10 +105,11 @@ export function TemplateSelectorDialog({
               <FileText className="h-5 w-5" />
               Pilih Template Milestone
             </DialogTitle>
+            <p className="text-sm font-medium" data-testid="template-phase">{phaseLabel}</p>
             <DialogDescription>
               {generalOnly
-                ? 'Template milestone fase proposal yang berlaku umum. Milestone yang dibuat dapat Anda ubah atau hapus setelahnya.'
-                : `Template untuk topik "${topicLabel}". Milestone yang dibuat dapat Anda ubah atau hapus setelahnya.`}
+                ? 'Template berlaku umum untuk semua mahasiswa fase proposal. Milestone yang dibuat dapat Anda ubah atau hapus setelahnya.'
+                : `Template sesuai topik "${topicLabel}". Milestone fase proposal yang sudah ada tidak menghalangi. Milestone yang dibuat dapat Anda ubah atau hapus setelahnya.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -201,9 +206,10 @@ export function TemplateSelectorDialog({
               Konfirmasi Pembuatan Milestone
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Anda akan membuat <strong>{selectedIds.length} milestone</strong> dari template topik{" "}
-              <strong>"{topicLabel}"</strong>. Template hanya dapat dipasang sekali, saat milestone masih kosong;
-              setelah itu milestone ditambahkan satu per satu.
+              Anda akan membuat <strong>{selectedIds.length} milestone</strong> dari{" "}
+              <strong>{generalOnly ? "template fase Proposal" : `template fase Penelitian (topik "${topicLabel}")`}</strong>. Template hanya
+              dapat dipasang sekali per fase, saat milestone fase {generalOnly ? "proposal" : "penelitian"} masih kosong; setelah itu
+              milestone ditambahkan satu per satu.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

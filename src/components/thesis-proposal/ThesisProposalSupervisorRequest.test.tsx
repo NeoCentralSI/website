@@ -132,6 +132,35 @@ describe('Pengajuan Pembimbing (mahasiswa)', () => {
     expect(requests.getCatalog).not.toHaveBeenCalled();
   });
 
+  it('Paket P8 (1.2): earlier requests are a table below the card, with the detail in a modal', async () => {
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue({
+      submission: {
+        academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' },
+        eligibleResearchMethod: true,
+        eligibilitySource: 'sia',
+        eligibilityCapturedAt: null,
+        canSubmit: false,
+        blockedReason: 'Masih ada pengajuan aktif.',
+        revisionRequested: false,
+        activeRequestId: 'req-1',
+      },
+      requests: [request(), request({ id: 'req-old', status: 'rejected_by_lecturer', proposedTitle: 'Judul Lama yang Ditolak', rejectionReason: 'Topik di luar keahlian.' })],
+      activeRequest: request(),
+      draft: null,
+    } satisfies StudentSupervisorRequests);
+
+    wrap(<StudentSupervisorRequestSection />);
+
+    expect(await screen.findByRole('heading', { name: 'Riwayat Pengajuan Pembimbing' })).toBeInTheDocument();
+    const row = screen.getByText('Judul Lama yang Ditolak').closest('tr')!;
+    expect(within(row).getByText('Ditolak Dosen')).toBeInTheDocument();
+    expect(within(row).getByText('Pilih Dosen Sendiri')).toBeInTheDocument();
+    fireEvent.click(within(row).getByRole('button', { name: 'Lihat Detail' }));
+    const detail = await screen.findByRole('dialog', { name: 'Detail Pengajuan Pembimbing' });
+    expect(within(detail).getByText('Topik di luar keahlian.')).toBeInTheDocument();
+    expectFooter(detail, ['Tutup']);
+  });
+
   it('shows the active request with its label (never the raw status) and a disabled pull-back button', async () => {
     vi.mocked(requests.getMySupervisorRequests).mockResolvedValue({
       submission: {
@@ -384,23 +413,52 @@ describe('Penetapan Pembimbing (Kadep)', () => {
     history: [],
   };
 
+  // Paket P8: one table per route (waiting and decided together), icons in the row, the rest in the modal.
   it('over-quota requests can be approved or redirected, never rejected', async () => {
     vi.mocked(requests.getKadepQueue).mockResolvedValue(queue);
     wrap(<KadepSupervisorRequestQueue route="over_quota" />);
 
-    expect(await screen.findByRole('button', { name: 'Setujui' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Alihkan' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Tolak' })).not.toBeInTheDocument();
-    expect(screen.getByText(/bila disetujui 32\/10 \(lebih 22\)/)).toBeInTheDocument();
+    const row = (await screen.findByText('Budi Santoso')).closest('tr')!;
+    expect(within(row).getByRole('button', { name: 'Setujui' }).className).toContain('text-emerald-600');
+    expect(within(row).getByRole('button', { name: 'Alihkan ke Dosen Lain' })).toBeInTheDocument();
+    expect(within(row).queryByRole('button', { name: 'Tolak' })).not.toBeInTheDocument();
+    expect(within(row).getByText('31/10 · Penuh')).toBeInTheDocument();
+
+    fireEvent.click(within(row).getByRole('button', { name: 'Lihat Detail' }));
+    const detail = await screen.findByRole('dialog', { name: 'Detail Pengajuan Pembimbing' });
+    expectFooter(detail, ['Batal', 'Alihkan', 'Setujui'], 'bila disetujui 32/10 (lebih 22)');
   });
 
   it('department requests can be assigned, sent back for revision, or rejected', async () => {
-    vi.mocked(requests.getKadepQueue).mockResolvedValue(queue);
+    vi.mocked(requests.getKadepQueue).mockResolvedValue({
+      ...queue,
+      history: [request({ id: 'dep-old', route: 'department', status: 'rejected_by_kadep', student: { id: 's2', fullName: 'SITI AMINAH', identityNumber: '2211528002' } })],
+    });
     wrap(<KadepSupervisorRequestQueue route="department" />);
 
-    expect(await screen.findByRole('button', { name: 'Tetapkan Pembimbing' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Minta Revisi' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Tolak' })).toBeInTheDocument();
-    expect(screen.getByText('Ditetapkan departemen')).toBeInTheDocument();
+    await screen.findByText('Siti Aminah');
+    const rows = screen.getAllByRole('row').slice(1);
+    // "Menunggu Keputusan Anda" first, then the decided one.
+    expect(within(rows[0]).getByText('Menunggu Keputusan Anda')).toBeInTheDocument();
+    expect(within(rows[1]).getByText('Ditolak Kadep')).toBeInTheDocument();
+    expect(within(rows[1]).queryByRole('button', { name: 'Tolak' })).not.toBeInTheDocument();
+    expect(within(rows[0]).getByRole('button', { name: 'Tetapkan Pembimbing' })).toBeInTheDocument();
+    expect(within(rows[0]).getByText('Belum dipilih')).toBeInTheDocument();
+
+    fireEvent.click(within(rows[0]).getByRole('button', { name: 'Lihat Detail' }));
+    const detail = await screen.findByRole('dialog', { name: 'Detail Pengajuan Pembimbing' });
+    expectFooter(detail, ['Batal', 'Tolak', 'Minta Revisi', 'Tetapkan Pembimbing']);
+    expect(within(detail).getByText('Ditetapkan departemen')).toBeInTheDocument();
+  });
+
+  it('Paket P8 (1.3): the longest status stays inside its cell; Status is filtered in its header', async () => {
+    vi.mocked(requests.getKadepQueue).mockResolvedValue(queue);
+    wrap(<KadepSupervisorRequestQueue route="department" />);
+    await screen.findByText('Budi Santoso');
+    const table = screen.getByRole('table');
+    const header = within(table).getByRole('columnheader', { name: /Status/ });
+    const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
+    expectColumnFits(header, cells[3], 'Menunggu Keputusan Anda');
+    expect(within(header).getByRole('button')).toBeInTheDocument();
   });
 });

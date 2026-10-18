@@ -3,6 +3,7 @@ import { useOutletContext, useSearchParams } from 'react-router-dom';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Supervisor2KadepSection } from '@/components/bimbingan/Supervisor2KadepSection';
+import { PageHeading } from '@/components/shared/PageHeading';
 import { KadepSupervisorAssignmentPanel } from '@/components/thesis-proposal/KadepSupervisorAssignmentPanel';
 import { KadepSupervisorRequestQueue } from '@/components/thesis-proposal/KadepSupervisorRequestQueue';
 import { SupervisionQuotaPanel } from '@/components/thesis-proposal/SupervisionQuotaPanel';
@@ -22,8 +23,10 @@ type TabValue = (typeof TABS)[number]['value'];
 const DEFAULT_TAB: TabValue = 'penetapan';
 
 /**
- * Tugas Akhir > Penetapan Pembimbing (rencana bagian 6). Ketua Departemen memutus pengajuan dan
- * menerbitkan penetapan per periode; Sekretaris Departemen hanya melihat penetapan dan beban dosen.
+ * Tugas Akhir > Penetapan (rencana bagian 6; Paket P8: judul halaman "Penetapan Pembimbing" di
+ * luar kartu, tab di tingkat halaman, isi tiap tab berupa tabel). Ketua Departemen memutus
+ * pengajuan dan menerbitkan penetapan per periode; Sekretaris Departemen hanya melihat penetapan
+ * dan beban dosen.
  */
 export default function KadepThesisSupervisorAssignment() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -48,7 +51,13 @@ export default function KadepThesisSupervisorAssignment() {
   };
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div className="space-y-6 p-6">
+      <PageHeading
+        title="Penetapan Pembimbing"
+        subtitle={kadep
+          ? 'Keputusan pengajuan pembimbing lewat departemen dan di atas kuota, serta penerbitan Penetapan Pembimbing per semester'
+          : 'Penetapan Pembimbing semester berjalan dan beban bimbingan dosen'}
+      />
       <LocalTabsNav
         tabs={visible.map((t) => ({ value: t.value, label: t.label, badge: badges[t.value] }))}
         activeTab={tab}

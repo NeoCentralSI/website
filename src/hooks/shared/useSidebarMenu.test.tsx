@@ -125,14 +125,15 @@ describe("useSidebarMenu", () => {
     expect(menuOf("Metode Penelitian")?.items).toEqual(COORDINATOR_ITEMS);
   });
 
-  it("gives Kadep Tugas Akhir > Monitoring first, Penetapan Pembimbing, then Perubahan and Evaluasi last; Kelola > Batas Bimbingan; Monitoring Kelas", () => {
+  it("gives Kadep Tugas Akhir > Monitoring first, Penetapan, then Perubahan and Evaluasi last; Kelola > Batas Bimbingan; Monitoring Kelas", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true });
 
     expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual([
-      "Monitoring", "Penetapan Pembimbing", "Bimbingan", "Seminar Hasil", "Sidang TA", "Perubahan", "Evaluasi",
+      "Monitoring", "Penetapan", "Bimbingan", "Seminar Hasil", "Sidang TA", "Perubahan", "Evaluasi",
     ]);
-    expect(menuOf("Tugas Akhir")?.items?.[1]).toEqual({ title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" });
+    // Paket P8 (2): the submenu is "Penetapan"; its page keeps the title "Penetapan Pembimbing".
+    expect(menuOf("Tugas Akhir")?.items?.[1]).toEqual({ title: "Penetapan", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" });
     const kelolaMenu = menuOf("Kelola");
     // 4.4: "Persetujuan Tugas Akhir" is gone, replaced by Perubahan and Evaluasi.
     expect(kelolaMenu?.items.map((item) => item.title)).not.toContain("Persetujuan Tugas Akhir");
@@ -141,12 +142,12 @@ describe("useSidebarMenu", () => {
     expect(menuOf("Metode Penelitian")?.items).toEqual([{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }]);
   });
 
-  it("gives a Kadep who is also a supervisor Monitoring, Penetapan Pembimbing, the supervisor's order, then the decisions", () => {
+  it("gives a Kadep who is also a supervisor Monitoring, Penetapan, the supervisor's order, then the decisions", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true, isPembimbing: true });
 
-    // Paket E5 (3.5): Monitoring, Penetapan Pembimbing, Permohonan, Proposal, Bimbingan, Seminar Hasil, Sidang TA, Perubahan, Evaluasi.
-    expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Monitoring", "Penetapan Pembimbing", ...SUPERVISOR_TA, ...KADEP_DECISIONS]);
+    // Paket E5 (3.5): Monitoring, Penetapan, Permohonan, Proposal, Bimbingan, Seminar Hasil, Sidang TA, Perubahan, Evaluasi.
+    expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Monitoring", "Penetapan", ...SUPERVISOR_TA, ...KADEP_DECISIONS]);
   });
 
   // BR-24: Sekdep-only gets no operational queues; master data stays in Kelola > Metode
@@ -168,7 +169,7 @@ describe("useSidebarMenu", () => {
     mockRole({ isDosen: true, isSekdep: true });
 
     const itemTitles = menuOf("Tugas Akhir")?.items.map((item) => item.title) ?? [];
-    expect(itemTitles).toEqual(["Monitoring", "Penetapan Pembimbing"]);
+    expect(itemTitles).toEqual(["Monitoring", "Penetapan"]);
   });
 
   it("restores Tugas Akhir operational items when Sekdep is also a supervisor", () => {
@@ -176,7 +177,7 @@ describe("useSidebarMenu", () => {
     mockRole({ isDosen: true, isSekdep: true, isPembimbing: true });
 
     const itemTitles = menuOf("Tugas Akhir")?.items.map((item) => item.title) ?? [];
-    expect(itemTitles).toEqual(["Monitoring", "Penetapan Pembimbing", ...SUPERVISOR_TA]);
+    expect(itemTitles).toEqual(["Monitoring", "Penetapan", ...SUPERVISOR_TA]);
   });
 
   it("gives a Sekdep who is also the coordinator the coordinator's items", () => {
@@ -258,6 +259,9 @@ describe("useSidebarMenu", () => {
         { title: "Data Hari Libur", url: "/master-data/hari-libur" },
       ]),
     );
+    // Paket P8 (2): Admin has no "Batas Bimbingan" (K30: Kadep and Sekdep set it).
+    expect(masterItems?.map((item) => item.title)).not.toContain("Batas Bimbingan");
+    expect(admin.result.current.navMain.flatMap((item) => item.items ?? []).map((item) => item.url)).not.toContain("/master-data/kuota-bimbingan");
     admin.unmount();
   });
 

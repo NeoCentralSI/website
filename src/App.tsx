@@ -372,9 +372,11 @@ function App() {
                   <Route path="/kelola/tugas-akhir/batas-bimbingan" element={<SupervisionQuotaPage />} />
                   <Route path="/kelola/metopen/kuota-dosen" element={<Navigate to="/kelola/tugas-akhir/batas-bimbingan" replace />} />
                 </Route>
-                {/* Kelola > Metode Penelitian: Template Milestone, CPMK, Rubrik Penilaian (K18). */}
+                {/* Kelola > Metode Penelitian: Template Milestone, CPMK, Rubrik Penilaian (K18). Paket P8 (3): one
+                    address per tab, as Kelola Tugas Akhir; the coordinator has the Template Milestone tab only. */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KOORDINATOR_METODE_PENELITIAN]} />}>
-                  <Route path="/kelola/metode-penelitian" element={<ResearchMethodPage />} />
+                  <Route path="/kelola/metode-penelitian" element={<Navigate to="/kelola/metode-penelitian/milestone" replace />} />
+                  <Route path="/kelola/metode-penelitian/:tab" element={<ResearchMethodPage />} />
                 </Route>
 
                 {/* Kelola - Sekretaris */}
@@ -454,7 +456,7 @@ function App() {
                   <Route path="/master-data/user" element={<UserManagementPage />} />
                   <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
                   <Route path="/master-data/ruangan" element={<RoomPage />} />
-                  <Route path="/master-data/kuota-bimbingan" element={<SupervisionQuotaPage />} />
+                  {/* Paket P8 (2): Batas Bimbingan belongs to Kadep and Sekdep (K30); Admin has no page for it. */}
                   {/* DevTools simulator: only registered when explicitly enabled outside production. */}
                   {ENV.ENABLE_DEV_TOOLS && (
                     <>

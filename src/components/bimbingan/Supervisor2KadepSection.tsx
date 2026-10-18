@@ -1,10 +1,14 @@
 import { useState } from "react";
+import { Check, Eye, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSupervisionLoadOverview } from "@/hooks/thesis-proposal/useSupervisionQuota";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Spinner, Loading } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+
+import CustomTable, { type Column } from "@/components/layout/CustomTable";
+import { DetailDialogActions } from "@/components/shared/DetailDialogActions";
+import { RecordDetailDialog } from "@/components/shared/RecordDetailDialog";
+import { SupervisionLoadBadge } from "@/components/shared/SupervisionLoadBadge";
+import { TableIconAction } from "@/components/shared/TableIconAction";
+import { ThesisStudentInfoCell } from "@/components/shared/ThesisTableCells";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,287 +19,215 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { RefreshButton } from "@/components/ui/refresh-button";
+import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
+import { haystack, useLocalTable } from "@/hooks/shared/useLocalTable";
+import { useSupervisionLoadOverview } from "@/hooks/thesis-proposal/useSupervisionQuota";
+import { DateTimeCell, TruncatedText } from "@/lib/guidanceCells";
+import { ACTIONS_3_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from "@/lib/tableColumnWidths";
+import { formatLecturerName, toTitleCaseName } from "@/lib/text";
+import type { SupervisionLoadLevel } from "@/lib/thesisLabels";
 import {
-  getSupervisor2KadepRequests,
   approveSupervisor2KadepRequest,
+  getSupervisor2KadepRequests,
   rejectSupervisor2KadepRequest,
   type Supervisor2KadepRequestItem,
 } from "@/services/lecturerGuidance.service";
-import { toTitleCaseName, formatDateId, formatLecturerName } from "@/lib/text";
-import { UserPlus, CheckCircle2, XCircle } from "lucide-react";
+
+const CLOSED_INTAKE = "Dosen sedang menutup penerimaan permintaan pembimbing.";
+const FULL_NOTE = "Calon Pembimbing 2 sudah mencapai batas bimbingan. Persetujuan tetap dapat diberikan.";
+
+type Decision = { mode: "approve" | "reject"; request: Supervisor2KadepRequestItem } | null;
 
 /**
- * Antrean persetujuan akhir Pembimbing 2 oleh KaDep (audit pass 2 F2-5 / OQ-2.2).
- * Dosen target sudah menyatakan bersedia; KaDep memutuskan penetapan resmi.
- * Approve → relasi Pembimbing 2 dibuat; Penetapan Pembimbing periode itu perlu diterbitkan ulang.
+ * Tab "Permintaan Pembimbing 2" di Penetapan Pembimbing (Paket P8: tabel). Dosen tujuan sudah
+ * menyatakan bersedia; Ketua Departemen menetapkan secara resmi. Dosen yang penuh tidak
+ * memblokir (Kadep yang memutuskan); hanya dosen yang menutup penerimaan. Beban yang gagal dibaca
+ * tidak memblokir. Bila Penetapan Pembimbing periode itu sudah terbit, terbitkan versi barunya.
  */
 export function Supervisor2KadepSection() {
   const queryClient = useQueryClient();
-  const [decisionDialog, setDecisionDialog] = useState<{
-    open: boolean;
-    mode: "approve" | "reject";
-    request: Supervisor2KadepRequestItem | null;
-  }>({ open: false, mode: "approve", request: null });
+  const [detail, setDetail] = useState<Supervisor2KadepRequestItem | null>(null);
+  const [decision, setDecision] = useState<Decision>(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  const { data: requests = [], isLoading } = useQuery({
-    queryKey: ["kadep-supervisor2-requests"],
-    queryFn: getSupervisor2KadepRequests,
-  });
+  const requests = useQuery({ queryKey: ["kadep-supervisor2-requests"], queryFn: getSupervisor2KadepRequests });
   const { data: loadOverview, isLoading: loadLoading, isError: loadError } = useSupervisionLoadOverview();
+  const table = useLocalTable(requests.data ?? [], (row, term) => haystack(row.studentName, row.studentNim, row.thesisTitle, row.lecturerName).includes(term));
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["kadep-supervisor2-requests"] });
     queryClient.invalidateQueries({ queryKey: ["supervision-quotas"] });
   };
+  const finish = () => { setDecision(null); setDetail(null); setRejectReason(""); invalidate(); };
 
   const approveMutation = useMutation({
     mutationFn: (requestId: string) => approveSupervisor2KadepRequest(requestId),
-    onSuccess: (data) => {
-      toast.success(data.message || "Pembimbing 2 disetujui.");
-      invalidate();
-      setDecisionDialog({ open: false, mode: "approve", request: null });
-    },
-    onError: (error: Error) => {
-      toast.error("Gagal menyetujui", { description: error.message });
-    },
+    onSuccess: (data) => { toast.success(data.message || "Pembimbing 2 disetujui."); finish(); },
+    onError: (error: Error) => toast.error("Gagal menyetujui", { description: error.message }),
   });
-
   const rejectMutation = useMutation({
-    mutationFn: ({ requestId, reason }: { requestId: string; reason?: string }) =>
-      rejectSupervisor2KadepRequest(requestId, reason),
-    onSuccess: (data) => {
-      toast.success(data.message || "Permintaan tidak disetujui.");
-      invalidate();
-      setDecisionDialog({ open: false, mode: "reject", request: null });
-      setRejectReason("");
-    },
-    onError: (error: Error) => {
-      toast.error("Gagal menolak", { description: error.message });
-    },
+    mutationFn: ({ requestId, reason }: { requestId: string; reason?: string }) => rejectSupervisor2KadepRequest(requestId, reason),
+    onSuccess: (data) => { toast.success(data.message || "Permintaan tidak disetujui."); finish(); },
+    onError: (error: Error) => toast.error("Gagal menolak", { description: error.message }),
   });
+  const isPending = approveMutation.isPending || rejectMutation.isPending;
 
-  if (isLoading) {
-    return (
-      <div className="flex h-40 items-center justify-center">
-        <Loading size="lg" text="Memuat antrean Pembimbing 2..." />
-      </div>
-    );
-  }
-
-  if (requests.length === 0) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <UserPlus className="h-12 w-12 mx-auto mb-3 opacity-30" />
-        <p>Tidak ada permintaan Pembimbing 2 yang menunggu persetujuan.</p>
-        <p className="text-xs mt-1">
-          Permintaan muncul setelah dosen target menyatakan bersedia menjadi Pembimbing 2.
-        </p>
-      </div>
-    );
-  }
-
-  // As before, a full lecturer is not blocked (the Head of Department decides); only a
-  // lecturer who closed intake is. A failed load read does not block (fail open).
-  const quotaGate = (lecturerId: string) => {
+  /** The candidate's load against the limit in force, and whether intake is closed (fail open). */
+  const gateOf = (lecturerId: string) => {
     const row = loadOverview?.lecturers.find((lecturer) => lecturer.lecturerId === lecturerId);
-    if (loadError || !row) {
-      return { blocked: false, checking: loadLoading, figures: null, reason: null as string | null, quotaFull: false };
-    }
+    if (loadError || !row) return { blocked: false, checking: loadLoading, load: null, quotaFull: false };
     const hardLimit = loadOverview?.applicable.hardLimit ?? 0;
     return {
       blocked: !row.acceptingRequests,
       checking: false,
-      figures: { currentCount: row.activeCount, quotaMax: hardLimit, remaining: Math.max(0, hardLimit - row.activeCount) },
-      reason: row.acceptingRequests ? null : "Dosen sedang menutup penerimaan permintaan pembimbing.",
+      load: { activeCount: row.activeCount, hardLimit, level: row.level as SupervisionLoadLevel },
       quotaFull: row.level === "full" && row.acceptingRequests,
     };
   };
 
-  const activeRequest = decisionDialog.request;
-  const isPending = approveMutation.isPending || rejectMutation.isPending;
-  const activeGate = activeRequest ? quotaGate(activeRequest.lecturerId) : null;
+  const columns: Column<Supervisor2KadepRequestItem>[] = [
+    { key: "student", header: "Mahasiswa", width: 190, className: CLIP_CELL, render: (row) => <ThesisStudentInfoCell name={row.studentName} nim={row.studentNim ?? ""} /> },
+    { key: "title", header: "Judul", className: CLIP_CELL, render: (row) => <TruncatedText text={row.thesisTitle} className="max-w-full" /> },
+    {
+      key: "lecturer",
+      header: "Calon Pembimbing 2",
+      width: 220,
+      className: CLIP_CELL,
+      render: (row) => {
+        const gate = gateOf(row.lecturerId);
+        return (
+          <div className="min-w-0 space-y-1">
+            <p className="truncate text-sm" title={formatLecturerName(row.lecturerName)}>{formatLecturerName(row.lecturerName)}</p>
+            {gate.load ? (
+              <SupervisionLoadBadge {...gate.load} className="whitespace-nowrap" />
+            ) : gate.checking ? (
+              <p className="text-xs text-muted-foreground">Memeriksa beban…</p>
+            ) : null}
+            {gate.blocked && <p className="truncate text-xs text-destructive" title={CLOSED_INTAKE}>Penerimaan ditutup dosen</p>}
+          </div>
+        );
+      },
+    },
+    { key: "requestedAt", header: "Dosen Bersedia", width: DATE_COLUMN_WIDTH, className: CLIP_CELL, render: (row) => <DateTimeCell date={row.requestedAt} /> },
+    {
+      key: "actions",
+      header: "Aksi",
+      width: ACTIONS_3_WIDTH,
+      className: "text-center",
+      render: (row) => {
+        const gate = gateOf(row.lecturerId);
+        return (
+          <div className="flex items-center justify-center gap-1">
+            <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setDetail(row)} />
+            <TableIconAction
+              icon={Check}
+              label="Setujui"
+              tone="approve"
+              disabled={isPending || gate.blocked}
+              disabledReason={gate.blocked ? CLOSED_INTAKE : null}
+              onClick={() => setDecision({ mode: "approve", request: row })}
+            />
+            <TableIconAction icon={X} label="Tolak" disabled={isPending} onClick={() => setDecision({ mode: "reject", request: row })} />
+          </div>
+        );
+      },
+    },
+  ];
+
+  const detailGate = detail ? gateOf(detail.lecturerId) : null;
+  const decisionGate = decision ? gateOf(decision.request.lecturerId) : null;
 
   return (
     <div className="space-y-3">
-      <Card className="border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-900">
-        Dosen target telah menyatakan bersedia. Persetujuan Anda menetapkan Pembimbing 2
-        secara resmi (sesuai ketentuan Panduan TA: perubahan komposisi pembimbing disetujui
-        Ketua Departemen). Bila Penetapan Pembimbing periode itu sudah diterbitkan,
-        terbitkan versi barunya agar memuat susunan pembimbing terbaru.
-      </Card>
+      <p className="text-sm text-muted-foreground">
+        Dosen tujuan telah menyatakan bersedia. Persetujuan Anda menetapkan Pembimbing 2 secara resmi. Bila Penetapan Pembimbing
+        periode itu sudah diterbitkan, terbitkan versi barunya agar memuat susunan pembimbing terbaru.
+      </p>
+      <CustomTable
+        columns={columns}
+        {...table.tableProps}
+        loading={requests.isLoading}
+        isRefreshing={requests.isFetching && !requests.isLoading}
+        subtleRefresh
+        tableClassName="table-fixed min-w-[1000px]"
+        searchPlaceholder="Cari nama, NIM, judul, atau dosen..."
+        emptyText={table.search ? "Tidak ditemukan" : "Tidak ada permintaan Pembimbing 2 yang menunggu persetujuan."}
+        rowKey={(row) => row.requestId}
+        actions={<RefreshButton onClick={() => void requests.refetch()} isRefreshing={requests.isFetching && !requests.isLoading} />}
+      />
 
-      <div className="grid gap-3 md:grid-cols-2">
-        {requests.map((req) => {
-          const gate = quotaGate(req.lecturerId);
-          const figures = gate.figures;
-          return (
-          <Card key={req.requestId} className="p-4">
-            <div className="space-y-3">
-              <div className="space-y-1">
-                <p className="text-sm font-semibold">{toTitleCaseName(req.studentName)}</p>
-                <p className="text-xs text-muted-foreground">{req.studentNim || ""}</p>
-              </div>
-
-              <div className="text-xs text-muted-foreground space-y-1">
-                <p className="line-clamp-2" title={req.thesisTitle}>
-                  Judul: {req.thesisTitle}
-                </p>
-                <p>
-                  Calon Pembimbing 2:{" "}
-                  <span className="font-medium text-foreground">
-                    {formatLecturerName(req.lecturerName)}
-                  </span>
-                </p>
-                <p>Dosen bersedia sejak: {formatDateId(req.requestedAt)}</p>
-                {figures && typeof figures.currentCount === "number" ? (
-                  <p className="text-foreground">
-                    Beban calon P2: {figures.currentCount}/{figures.quotaMax}
-                    {typeof figures.remaining === "number" ? ` (sisa ${figures.remaining})` : ""}
-                  </p>
-                ) : gate.checking ? (
-                  <p>Memeriksa beban calon Pembimbing 2…</p>
-                ) : null}
-                {gate.quotaFull ? (
-                  <p className="text-muted-foreground">
-                    Calon Pembimbing 2 sudah mencapai batas bimbingan. Persetujuan tetap dapat diberikan.
-                  </p>
-                ) : null}
-                {gate.blocked && gate.reason ? (
-                  <p className="text-destructive">{gate.reason}</p>
-                ) : null}
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                <Button
-                  size="sm"
-                  className="flex-1 gap-1"
-                  disabled={isPending || gate.blocked}
-                  title={gate.blocked ? (gate.reason ?? "Kuota calon Pembimbing 2 tidak mencukupi") : undefined}
-                  onClick={() => setDecisionDialog({ open: true, mode: "approve", request: req })}
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Setujui
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 gap-1 text-destructive hover:text-destructive hover:bg-destructive/10"
-                  disabled={isPending}
-                  onClick={() => setDecisionDialog({ open: true, mode: "reject", request: req })}
-                >
-                  <XCircle className="h-3.5 w-3.5" />
-                  Tolak
-                </Button>
-              </div>
-            </div>
-          </Card>
-          );
-        })}
-      </div>
-
-      <AlertDialog
-        open={decisionDialog.open}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDecisionDialog({ open: false, mode: "approve", request: null });
-            setRejectReason("");
-          }
-        }}
+      <RecordDetailDialog
+        open={!!detail}
+        onOpenChange={(open) => { if (!open) setDetail(null); }}
+        title="Detail Permintaan Pembimbing 2"
+        description={detail ? `${toTitleCaseName(detail.studentName)} · ${detail.studentNim ?? "-"}` : undefined}
+        footer={detail ? (
+          <DetailDialogActions
+            onClose={() => setDetail(null)}
+            note={detailGate?.blocked ? CLOSED_INTAKE : detailGate?.quotaFull ? FULL_NOTE : undefined}
+            noteClassName={detailGate?.blocked ? "text-destructive" : undefined}
+          >
+            <Button size="sm" variant="destructive" disabled={isPending} onClick={() => setDecision({ mode: "reject", request: detail })}>Tolak</Button>
+            <Button size="sm" disabled={isPending || Boolean(detailGate?.blocked)} onClick={() => setDecision({ mode: "approve", request: detail })}>Setujui</Button>
+          </DetailDialogActions>
+        ) : undefined}
       >
+        {detail && (
+          <dl className="space-y-2 text-sm">
+            <div className="grid gap-1 sm:grid-cols-[10rem_1fr]"><dt className="text-xs text-muted-foreground">Judul</dt><dd className="[overflow-wrap:anywhere]">{detail.thesisTitle}</dd></div>
+            <div className="grid gap-1 sm:grid-cols-[10rem_1fr]"><dt className="text-xs text-muted-foreground">Calon Pembimbing 2</dt><dd>{formatLecturerName(detail.lecturerName)}</dd></div>
+            <div className="grid gap-1 sm:grid-cols-[10rem_1fr]">
+              <dt className="text-xs text-muted-foreground">Beban calon</dt>
+              <dd>{detailGate?.load ? <SupervisionLoadBadge {...detailGate.load} /> : <span className="text-muted-foreground">Tidak terbaca</span>}</dd>
+            </div>
+            <div className="grid gap-1 sm:grid-cols-[10rem_1fr]"><dt className="text-xs text-muted-foreground">Dosen bersedia</dt><dd><DateTimeCell date={detail.requestedAt} /></dd></div>
+          </dl>
+        )}
+      </RecordDetailDialog>
+
+      <AlertDialog open={!!decision} onOpenChange={(open) => { if (!open) { setDecision(null); setRejectReason(""); } }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {decisionDialog.mode === "approve"
-                ? "Setujui Pembimbing 2?"
-                : "Tolak Permintaan Pembimbing 2?"}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{decision?.mode === "approve" ? "Setujui Pembimbing 2?" : "Tolak Permintaan Pembimbing 2?"}</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>
-                  {decisionDialog.mode === "approve" ? (
-                    <>
-                      <span className="font-medium text-foreground">
-                        {activeRequest ? formatLecturerName(activeRequest.lecturerName) : ""}
-                      </span>{" "}
-                      akan ditetapkan sebagai Pembimbing 2 untuk{" "}
-                      <span className="font-medium text-foreground">
-                        {activeRequest ? toTitleCaseName(activeRequest.studentName) : ""}
-                      </span>
-                      . Bila Penetapan Pembimbing periode itu sudah terbit, terbitkan versi barunya agar memuat Pembimbing 2.
-                    </>
-                  ) : (
-                    <>
-                      Permintaan Pembimbing 2 dari{" "}
-                      <span className="font-medium text-foreground">
-                        {activeRequest ? toTitleCaseName(activeRequest.studentName) : ""}
-                      </span>{" "}
-                      (dosen: {activeRequest ? formatLecturerName(activeRequest.lecturerName) : ""})
-                      akan ditutup. Mahasiswa dan dosen akan dinotifikasi.
-                    </>
-                  )}
-                </p>
-                {decisionDialog.mode === "approve" && activeGate?.figures ? (
+                {decision?.mode === "approve" ? (
                   <p>
-                    {typeof activeGate.figures.currentCount === "number"
-                      ? `Kuota calon P2: ${activeGate.figures.currentCount}/${activeGate.figures.quotaMax}`
-                      : activeGate.quotaFull
-                        ? "Kuota calon Pembimbing 2 penuh. Persetujuan tetap dapat menetapkan overquota sah."
-                        : null}
-                    {activeGate.blocked
-                      ? `. ${activeGate.reason ?? "Dosen menutup penerimaan."}`
-                      : ""}
+                    <span className="font-medium text-foreground">{formatLecturerName(decision.request.lecturerName)}</span> ditetapkan sebagai Pembimbing 2 untuk{" "}
+                    <span className="font-medium text-foreground">{toTitleCaseName(decision.request.studentName)}</span>. Bila Penetapan Pembimbing periode itu sudah
+                    terbit, terbitkan versi barunya agar memuat Pembimbing 2.
+                    {decisionGate?.quotaFull ? ` ${FULL_NOTE}` : ""}
                   </p>
+                ) : decision ? (
+                  <>
+                    <p>
+                      Permintaan Pembimbing 2 dari <span className="font-medium text-foreground">{toTitleCaseName(decision.request.studentName)}</span> (dosen:{" "}
+                      {formatLecturerName(decision.request.lecturerName)}) ditutup. Mahasiswa dan dosen mendapat notifikasi.
+                    </p>
+                    <div>
+                      <label htmlFor="supervisor2-reject-reason" className="text-sm font-medium text-foreground">Alasan (opsional)</label>
+                      <Textarea id="supervisor2-reject-reason" className="mt-1.5" rows={3} value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} />
+                    </div>
+                  </>
                 ) : null}
-                {decisionDialog.mode === "reject" && (
-                  <div>
-                    <label className="text-sm font-medium text-foreground">
-                      Alasan (opsional)
-                    </label>
-                    <Textarea
-                      className="mt-1.5"
-                      placeholder="Berikan alasan keputusan..."
-                      value={rejectReason}
-                      onChange={(e) => setRejectReason(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isPending}>Batal</AlertDialogCancel>
             <AlertDialogAction
-              disabled={isPending || (decisionDialog.mode === "approve" && Boolean(activeGate?.blocked))}
-              className={
-                decisionDialog.mode === "reject"
-                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  : undefined
-              }
+              disabled={isPending || (decision?.mode === "approve" && Boolean(decisionGate?.blocked))}
+              className={decision?.mode === "reject" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : undefined}
               onClick={() => {
-                if (!activeRequest) return;
-                if (decisionDialog.mode === "approve") {
-                  approveMutation.mutate(activeRequest.requestId);
-                } else {
-                  rejectMutation.mutate({
-                    requestId: activeRequest.requestId,
-                    reason: rejectReason.trim() || undefined,
-                  });
-                }
+                if (!decision) return;
+                if (decision.mode === "approve") approveMutation.mutate(decision.request.requestId);
+                else rejectMutation.mutate({ requestId: decision.request.requestId, reason: rejectReason.trim() || undefined });
               }}
             >
-              {isPending ? (
-                <>
-                  <Spinner className="mr-2 h-4 w-4" />
-                  Memproses...
-                </>
-              ) : decisionDialog.mode === "approve" ? (
-                "Ya, Setujui"
-              ) : (
-                "Ya, Tolak"
-              )}
+              {isPending ? <><Spinner className="mr-2 h-4 w-4" />Memproses...</> : decision?.mode === "approve" ? "Ya, Setujui" : "Ya, Tolak"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

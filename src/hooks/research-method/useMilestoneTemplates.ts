@@ -27,6 +27,18 @@ export function useProposalMilestoneTemplateMutations() {
       onError: fail,
     }),
     remove: useMutation({ mutationFn: (id: string) => service.deleteTemplate(id), onSuccess: (r) => done(r.message), onError: fail }),
+    /** Paket P8: "Hapus (n)" of the shared template panel, one after another, one message. */
+    removeMany: useMutation({
+      mutationFn: async (ids: string[]) => {
+        for (const id of ids) await service.deleteTemplate(id);
+        return ids.length;
+      },
+      onSuccess: (count) => done(`${count} template milestone berhasil dihapus`),
+      onError: (error: Error) => {
+        fail(error);
+        done();
+      },
+    }),
     reorder: useMutation({ mutationFn: (ids: string[]) => service.reorderTemplates(ids), onSuccess: () => done(), onError: fail }),
   };
 }

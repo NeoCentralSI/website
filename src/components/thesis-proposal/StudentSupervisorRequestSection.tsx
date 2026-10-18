@@ -1,7 +1,12 @@
 import { useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Eye, Loader2 } from 'lucide-react';
 
-import { SupervisorRequestStatusBadge } from '@/components/shared/SupervisorRequestStatusBadge';
+import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
+import { SectionHeading } from '@/components/shared/PageHeading';
+import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
+import { TableIconAction } from '@/components/shared/TableIconAction';
+import { Badge } from '@/components/ui/badge';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,10 +20,18 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Spinner } from '@/components/ui/spinner';
+import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { useMySupervisorRequests, useWithdrawSupervisorRequest } from '@/hooks/thesis-proposal/useSupervisorRequests';
-import { formatDateTimeWib } from '@/lib/text';
+import { DateTimeCell, TruncatedText } from '@/lib/guidanceCells';
+import { BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
+import { formatDateTimeWib, formatLecturerName } from '@/lib/text';
+import {
+  getSupervisorRequestRouteLabel,
+  getSupervisorRequestStatusLabel,
+  getSupervisorRequestStatusVariant,
+  SUPERVISOR_REQUEST_STATUS_SHORT_LABELS,
+} from '@/lib/thesisLabels';
 import type { SupervisorRequest } from '@/types/thesis-proposal.types';
 import { StudentSupervisorRequestForm } from './StudentSupervisorRequestForm';
 import { SupervisorRequestDetails } from './SupervisorRequestDetails';
@@ -76,7 +89,7 @@ function ActiveRequest({ request }: { request: SupervisorRequest }) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Kembali</AlertDialogCancel>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={() => withdraw.mutate(request.id)}>{label}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -85,10 +98,67 @@ function ActiveRequest({ request }: { request: SupervisorRequest }) {
   );
 }
 
+/** Paket P8 (1.2): the student's earlier requests as a table below the card, detail in a modal. */
+function SupervisorRequestHistoryTable({ history }: { history: SupervisorRequest[] }) {
+  const [detail, setDetail] = useState<SupervisorRequest | null>(null);
+  const table = useLocalTable(history, (r, term) => haystack(r.proposedTitle, r.supervisor?.fullName, r.lecturer?.fullName).includes(term), 5);
+  const columns: Column<SupervisorRequest>[] = [
+    { key: 'createdAt', header: 'Dikirim', width: DATE_COLUMN_WIDTH, className: CLIP_CELL, render: (r) => <DateTimeCell date={r.createdAt} /> },
+    { key: 'title', header: 'Judul', className: CLIP_CELL, render: (r) => <TruncatedText text={r.proposedTitle} className="max-w-full" /> },
+    {
+      key: 'lecturer',
+      header: 'Dosen dan Jalur',
+      width: 220,
+      className: CLIP_CELL,
+      render: (r) => {
+        const name = r.supervisor?.fullName ?? r.lecturer?.fullName;
+        return (
+          <div className="min-w-0">
+            <p className="truncate text-sm">{name ? formatLecturerName(name) : 'Ditetapkan departemen'}</p>
+            <p className="truncate text-xs text-muted-foreground">{getSupervisorRequestRouteLabel(r.route)}</p>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      width: BADGE_COLUMN_WIDTH.supervisorRequestShortStatus,
+      className: CLIP_CELL,
+      render: (r) => (
+        <Badge variant={getSupervisorRequestStatusVariant(r.status)} className="whitespace-nowrap" title={getSupervisorRequestStatusLabel(r.status)}>
+          {SUPERVISOR_REQUEST_STATUS_SHORT_LABELS[r.status] ?? r.status}
+        </Badge>
+      ),
+    },
+    {
+      key: 'actions',
+      header: 'Aksi',
+      width: 80,
+      className: 'text-center',
+      render: (r) => <div className="flex justify-center"><TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setDetail(r)} /></div>,
+    },
+  ];
+  return (
+    <div className="space-y-3">
+      <SectionHeading title="Riwayat Pengajuan Pembimbing" description="Pengajuan sebelumnya yang sudah ditutup, ditolak, ditarik, atau dibatalkan" />
+      <CustomTable columns={columns} {...table.tableProps} tableClassName="table-fixed" emptyText="Tidak ditemukan" rowKey={(r) => r.id} searchPlaceholder="Cari judul atau dosen..." />
+      <RecordDetailDialog
+        open={!!detail}
+        onOpenChange={(open) => { if (!open) setDetail(null); }}
+        title="Detail Pengajuan Pembimbing"
+        description={detail ? `Dikirim ${formatDateTimeWib(detail.createdAt)}` : undefined}
+        footer={detail ? <DetailDialogActions onClose={() => setDetail(null)} /> : undefined}
+      >
+        {detail && <SupervisorRequestDetails request={detail} />}
+      </RecordDetailDialog>
+    </div>
+  );
+}
+
 /** Bagian 1 halaman Proposal: Pengajuan Pembimbing (bisa dibuka sebelum TA ada, K14). */
 export function StudentSupervisorRequestSection() {
   const { data, isLoading, error } = useMySupervisorRequests();
-  const [historyOpen, setHistoryOpen] = useState(false);
 
   if (isLoading) return <Card><CardContent className="flex justify-center py-10"><Spinner className="h-6 w-6" /></CardContent></Card>;
   if (error || !data) {
@@ -100,6 +170,7 @@ export function StudentSupervisorRequestSection() {
   const lastClosed = history[0] ?? null;
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Pengajuan Pembimbing</CardTitle>
@@ -130,25 +201,9 @@ export function StudentSupervisorRequestSection() {
           </Alert>
         )}
 
-        {history.length > 0 && (
-          <Collapsible open={historyOpen} onOpenChange={setHistoryOpen} className="border-t pt-3">
-            <CollapsibleTrigger asChild>
-              <Button variant="ghost" size="sm">{historyOpen ? 'Sembunyikan' : 'Tampilkan'} riwayat pengajuan ({history.length})</Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3 space-y-3">
-              {history.map((request) => (
-                <div key={request.id} className="rounded-md border p-3">
-                  <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <SupervisorRequestStatusBadge status={request.status} />
-                    <span>{formatDateTimeWib(request.createdAt)}</span>
-                  </div>
-                  <SupervisorRequestDetails request={request} showContent={false} />
-                </div>
-              ))}
-            </CollapsibleContent>
-          </Collapsible>
-        )}
       </CardContent>
     </Card>
+    {history.length > 0 && <SupervisorRequestHistoryTable history={history} />}
+    </>
   );
 }

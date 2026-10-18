@@ -77,6 +77,7 @@ export const API_CONFIG = {
       CRITERIA_REORDER: '/research-method/criteria/reorder',
       RUBRICS_REORDER: '/research-method/rubrics/reorder',
       WEIGHT_SUMMARY: '/research-method/weight-summary',
+      CPMK_COPY_TEMPLATE: '/research-method/cpmks/copy-template',
     },
     EXIT_SURVEY: {
       BASE: '/exit-surveys',

@@ -1,22 +1,26 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Download, Loader2, Upload } from 'lucide-react';
 
+import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { formatAttendance } from '@/components/research-method/AssessmentCells';
 import { PeriodSelect } from '@/components/research-method/PeriodSelect';
+import { PageHeading, SectionHeading } from '@/components/shared/PageHeading';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import EmptyState from '@/components/ui/empty-state';
-import { Spinner } from '@/components/ui/spinner';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { useActiveAcademicYear } from '@/hooks/shared/useActiveAcademicYear';
+import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { useRole } from '@/hooks/shared/useRole';
 import { useAttendance, useAttendanceUpload } from '@/hooks/research-method/useResearchMethod';
 import { downloadAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
-import { formatDateTimeWib, formatLecturerName } from '@/lib/text';
-import type { AttendancePreview } from '@/types/research-method.types';
+import { DateTimeCell, TruncatedText } from '@/lib/guidanceCells';
+import { BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
+import { formatDateTimeWib, formatLecturerName, toTitleCaseName } from '@/lib/text';
+import type { AttendanceImport, AttendancePreview, AttendanceRow } from '@/types/research-method.types';
 
 const MAX_FILES = 2;
 
@@ -28,11 +32,18 @@ export function getFilesProblem(files: File[]): string | null {
   return null;
 }
 
+/** Presensi rows: below 75% first (they decide a zero), then unknown NIMs, then the rest. */
+type RecordStatus = 'below' | 'unknown' | 'eligible';
+const RECORD_STATUS_ORDER: RecordStatus[] = ['below', 'unknown', 'eligible'];
+const RECORD_STATUS_LABELS: Record<RecordStatus, string> = { below: 'Di Bawah 75%', unknown: 'Tidak Dikenal', eligible: 'Memenuhi' };
+const RECORD_STATUS_VARIANTS = { below: 'destructive', unknown: 'outline', eligible: 'success' } as const;
+const recordStatus = (row: AttendanceRow): RecordStatus => (row.matched === false ? 'unknown' : row.isEligible ? 'eligible' : 'below');
+
 /**
- * Metode Penelitian > Presensi (rencana 10.5): ekspor aplikasi presensi diunggah koordinator,
- * dipratinjau lebih dulu, lalu diterapkan. Presensi di bawah 75% membuat nilai proposal otomatis 0
- * (setelah proposal final ada); unggahan koreksi yang memenuhi membuka kembali nilai itu selama
- * TA masih fase proposal.
+ * Metode Penelitian > Presensi (rencana 10.5; Paket P8): ekspor aplikasi presensi diunggah
+ * koordinator, dipratinjau lebih dulu, lalu diterapkan. Presensi di bawah 75% membuat nilai
+ * proposal otomatis 0 (setelah proposal final ada); unggahan koreksi yang memenuhi membuka
+ * kembali nilai itu selama TA masih fase proposal.
  */
 export default function Attendance() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -40,11 +51,13 @@ export default function Attendance() {
   const { academicYear } = useActiveAcademicYear();
   const [academicYearId, setAcademicYearId] = useState<string | null>(null);
   const yearId = academicYearId ?? academicYear?.id ?? null;
-  const { data, isLoading, error } = useAttendance(yearId);
+  const attendance = useAttendance(yearId);
+  const data = attendance.data;
   const { preview, upload } = useAttendanceUpload();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [previewResult, setPreviewResult] = useState<AttendancePreview | null>(null);
+  const [status, setStatus] = useState<RecordStatus | ''>('');
   const canUpload = isResearchMethodCoordinator();
   const filesProblem = getFilesProblem(files);
   const uploadReason = !canUpload ? 'Hanya Koordinator Metode Penelitian yang mengunggah presensi.' : filesProblem ?? (!previewResult ? 'Pratinjau berkas terlebih dahulu.' : null);
@@ -60,8 +73,61 @@ export default function Attendance() {
     if (inputRef.current) inputRef.current.value = '';
   };
 
+  const records = useMemo(() => {
+    const rank = (row: AttendanceRow) => RECORD_STATUS_ORDER.indexOf(recordStatus(row));
+    const sorted = [...(data?.current?.records ?? [])].sort((a, b) => rank(a) - rank(b) || a.identityNumber.localeCompare(b.identityNumber));
+    return status ? sorted.filter((row) => recordStatus(row) === status) : sorted;
+  }, [data, status]);
+  const recordTable = useLocalTable(records, (row, term) => haystack(row.identityNumber, row.studentName).includes(term));
+  const historyTable = useLocalTable(data?.history ?? [], (row, term) => haystack(row.classCode, row.uploadedBy?.fullName).includes(term), 5);
+
+  const recordColumns: Column<AttendanceRow>[] = [
+    { key: 'nim', header: 'NIM', width: 140, className: CLIP_CELL, render: (row) => <span className="whitespace-nowrap">{row.identityNumber}</span> },
+    { key: 'name', header: 'Nama', className: CLIP_CELL, render: (row) => <TruncatedText text={toTitleCaseName(row.studentName) || '-'} className="max-w-full" /> },
+    { key: 'present', header: 'Hadir', width: 110, className: CLIP_CELL, render: (row) => <span className="whitespace-nowrap">{row.presentCount ?? '-'} / {row.totalMeetings ?? '-'}</span> },
+    { key: 'percent', header: 'Kehadiran', width: 120, className: CLIP_CELL, render: (row) => formatAttendance(row.attendancePercentage) },
+    {
+      key: 'status',
+      header: 'Status',
+      width: BADGE_COLUMN_WIDTH.attendanceStatus,
+      className: CLIP_CELL,
+      render: (row) => {
+        const value = recordStatus(row);
+        return <Badge variant={RECORD_STATUS_VARIANTS[value]} className="whitespace-nowrap">{RECORD_STATUS_LABELS[value]}</Badge>;
+      },
+      filter: {
+        type: 'select',
+        value: status,
+        onChange: (value) => { setStatus(value as RecordStatus | ''); recordTable.resetPage(); },
+        options: [{ label: 'Semua', value: '' }, ...RECORD_STATUS_ORDER.map((value) => ({ label: RECORD_STATUS_LABELS[value], value }))],
+      },
+    },
+  ];
+
+  const historyColumns: Column<AttendanceImport>[] = [
+    { key: 'uploadedAt', header: 'Diunggah', width: DATE_COLUMN_WIDTH, className: CLIP_CELL, render: (row) => <DateTimeCell date={row.uploadedAt} /> },
+    { key: 'by', header: 'Oleh', className: CLIP_CELL, render: (row) => <TruncatedText text={formatLecturerName(row.uploadedBy?.fullName) || '-'} className="max-w-full" /> },
+    { key: 'class', header: 'Kelas', width: 120, className: CLIP_CELL, render: (row) => row.classCode ?? '-' },
+    { key: 'rows', header: 'Baris', width: 150, className: CLIP_CELL, render: (row) => <span className="whitespace-nowrap">{row.totals.totalRows} baris · {row.totals.eligibleRows} memenuhi</span> },
+    {
+      key: 'files',
+      header: 'Berkas',
+      width: 110,
+      className: 'text-center',
+      render: (row) => (
+        <div className="flex items-center justify-center gap-1">
+          {row.sourceFiles.map((file) => (
+            <TableIconAction key={file.index} icon={Download} label={`Unduh ${file.originalName}`} onClick={() => downloadAuthenticatedFileOrToast(file.url, file.originalName)} />
+          ))}
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <div className="space-y-6 p-6">
+      <PageHeading title="Presensi" subtitle="Presensi kelas Metode Penelitian dari aplikasi presensi; kehadiran di bawah 75% membuat nilai proposal otomatis 0" />
+
       <Card>
         <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
           <div className="space-y-1.5">
@@ -84,108 +150,104 @@ export default function Attendance() {
             className="block w-full text-sm file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm disabled:opacity-60"
           />
           {files.length > 0 && filesProblem && <p className="text-xs text-destructive">{filesProblem}</p>}
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {uploadReason && <p className="mr-auto text-xs text-muted-foreground">{uploadReason}</p>}
-            <span title={!canUpload ? uploadReason ?? undefined : filesProblem ?? undefined}>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={!canUpload || Boolean(filesProblem) || !yearId || preview.isPending}
-                onClick={() => yearId && preview.mutate({ academicYearId: yearId, files }, { onSuccess: (r) => setPreviewResult(r.data) })}
-              >
-                {preview.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Pratinjau
-              </Button>
-            </span>
-            <span title={uploadReason ?? undefined}>
-              <Button
-                size="sm"
-                disabled={Boolean(uploadReason) || !yearId || upload.isPending}
-                onClick={() => yearId && upload.mutate({ academicYearId: yearId, files }, { onSuccess: reset })}
-              >
-                {upload.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Unggah dan Terapkan
-              </Button>
-            </span>
+          <div className="flex flex-col gap-2">
+            {uploadReason && <p className="text-xs text-muted-foreground">{uploadReason}</p>}
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <span title={!canUpload ? uploadReason ?? undefined : filesProblem ?? undefined} className="inline-flex">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!canUpload || Boolean(filesProblem) || !yearId || preview.isPending}
+                  onClick={() => yearId && preview.mutate({ academicYearId: yearId, files }, { onSuccess: (r) => setPreviewResult(r.data) })}
+                >
+                  {preview.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Pratinjau
+                </Button>
+              </span>
+              <span title={uploadReason ?? undefined} className="inline-flex">
+                <Button
+                  size="sm"
+                  disabled={Boolean(uploadReason) || !yearId || upload.isPending}
+                  onClick={() => yearId && upload.mutate({ academicYearId: yearId, files }, { onSuccess: reset })}
+                >
+                  {upload.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}Unggah dan Terapkan
+                </Button>
+              </span>
+            </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {previewResult && (
-            <div className="space-y-2 rounded-lg border bg-muted/30 p-3 text-sm">
-              <p className="font-medium">Pratinjau {previewResult.sourceFiles.map((f) => f.originalName).join(' + ')}</p>
-              <p>
-                {previewResult.totals.totalRows} baris · {previewResult.totals.matchedRows} cocok dengan mahasiswa · {previewResult.totals.eligibleRows} memenuhi 75%
-                {' · '}{previewResult.totals.willAutoZeroCount ?? 0} akan bernilai 0 · {previewResult.totals.willSkipFinalizedCount ?? 0} sudah final (dilewati)
+      {previewResult && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Pratinjau {previewResult.sourceFiles.map((f) => f.originalName).join(' + ')}</CardTitle>
+            <CardDescription>Belum ada yang disimpan. Periksa ringkasan ini lalu pilih Unggah dan Terapkan.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p>
+              {previewResult.totals.totalRows} baris · {previewResult.totals.matchedRows} cocok dengan mahasiswa · {previewResult.totals.eligibleRows} memenuhi 75%
+              {' · '}{previewResult.totals.willAutoZeroCount ?? 0} akan bernilai 0 · {previewResult.totals.willSkipFinalizedCount ?? 0} sudah final (dilewati)
+            </p>
+            {previewResult.willAutoZero.length > 0 && (
+              <p className="text-destructive">
+                Nilai otomatis 0: {previewResult.willAutoZero.map((r) => `${r.studentName ?? r.identityNumber} (${formatAttendance(r.attendancePercentage)})`).join(', ')}
               </p>
-              {previewResult.willAutoZero.length > 0 && (
-                <p className="text-destructive">
-                  Nilai otomatis 0: {previewResult.willAutoZero.map((r) => `${r.studentName ?? r.identityNumber} (${formatAttendance(r.attendancePercentage)})`).join(', ')}
-                </p>
-              )}
-              {previewResult.unmatchedRows.length > 0 && (
-                <p className="text-muted-foreground">Tidak dikenal: {previewResult.unmatchedRows.map((r) => r.identityNumber).join(', ')}</p>
-              )}
+            )}
+            {previewResult.unmatchedRows.length > 0 && (
+              <p className="text-muted-foreground">Tidak dikenal: {previewResult.unmatchedRows.map((r) => r.identityNumber).join(', ')}</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="space-y-3">
+        <SectionHeading
+          title={`Presensi Berlaku${data?.academicYear.label ? ` ${data.academicYear.label}` : ''}`}
+          description={data?.current
+            ? `Kelas ${data.current.classCode ?? '-'} · diunggah ${formatDateTimeWib(data.current.uploadedAt)}${data.current.uploadedBy?.fullName ? ` oleh ${formatLecturerName(data.current.uploadedBy.fullName)}` : ''}. Unggahan terbaru ini yang dipakai Penilaian Proposal`
+            : 'Unggahan terbaru yang dipakai Penilaian Proposal'}
+        >
+          {data?.current && data.current.sourceFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {data.current.sourceFiles.map((file) => (
+                <Button key={file.index} variant="outline" size="sm" onClick={() => downloadAuthenticatedFileOrToast(file.url, file.originalName)}>
+                  <Download className="mr-2 h-4 w-4" />{file.originalName}
+                </Button>
+              ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </SectionHeading>
+        {attendance.error ? (
+          <p className="text-sm text-destructive">{attendance.error instanceof Error ? attendance.error.message : 'Gagal memuat presensi.'}</p>
+        ) : (
+          <CustomTable
+            columns={recordColumns}
+            {...recordTable.tableProps}
+            loading={attendance.isLoading}
+            isRefreshing={attendance.isFetching && !attendance.isLoading}
+            subtleRefresh
+            enableColumnFilters
+            tableClassName="table-fixed"
+            searchPlaceholder="Cari NIM atau nama..."
+            emptyText={recordTable.search || status ? 'Tidak ditemukan' : 'Presensi periode ini belum diunggah.'}
+            rowKey={(row) => row.id ?? row.identityNumber}
+            actions={<RefreshButton onClick={() => void attendance.refetch()} isRefreshing={attendance.isFetching && !attendance.isLoading} />}
+          />
+        )}
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Presensi Berlaku {data?.academicYear.label}</CardTitle>
-          <CardDescription>Unggahan terbaru yang dipakai penilaian proposal; unggahan sebelumnya disimpan sebagai riwayat.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {isLoading ? (
-            <div className="flex justify-center py-10"><Spinner className="h-6 w-6" /></div>
-          ) : error ? (
-            <p className="text-sm text-destructive">{error instanceof Error ? error.message : 'Gagal memuat presensi.'}</p>
-          ) : !data?.current ? (
-            <EmptyState size="sm" title="Tidak Ada Data" description="Presensi periode ini belum diunggah." />
-          ) : (
-            <>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-                <span>Kelas {data.current.classCode ?? '-'}</span>
-                <span>Diunggah {formatDateTimeWib(data.current.uploadedAt)}{data.current.uploadedBy?.fullName ? ` oleh ${formatLecturerName(data.current.uploadedBy.fullName)}` : ''}</span>
-                {data.current.sourceFiles.map((file) => (
-                  <Button key={file.index} variant="link" className="h-auto p-0" onClick={() => downloadAuthenticatedFileOrToast(file.url, file.originalName)}>
-                    <Download className="mr-1 h-4 w-4" />{file.originalName}
-                  </Button>
-                ))}
-              </div>
-              <Table className="table-fixed">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-32">NIM</TableHead>
-                    <TableHead>Nama</TableHead>
-                    <TableHead className="w-28">Hadir</TableHead>
-                    <TableHead className="w-28">Kehadiran</TableHead>
-                    <TableHead className="w-40">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(data.current.records ?? []).map((record) => (
-                    <TableRow key={record.id ?? record.identityNumber}>
-                      <TableCell>{record.identityNumber}</TableCell>
-                      <TableCell className="whitespace-normal">
-                        {record.studentName ?? '-'}
-                        {!record.matched && <span className="ml-2 text-xs text-muted-foreground">(tidak dikenal)</span>}
-                      </TableCell>
-                      <TableCell>{record.presentCount} / {record.totalMeetings}</TableCell>
-                      <TableCell>{formatAttendance(record.attendancePercentage)}</TableCell>
-                      <TableCell>
-                        {record.isEligible ? <Badge variant="success">Memenuhi</Badge> : <Badge variant="destructive">Di bawah 75%</Badge>}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {data.history.length > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Riwayat: {data.history.map((h) => `${formatDateTimeWib(h.uploadedAt)} (${h.totals.totalRows} baris)`).join(' · ')}
-                </p>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {(data?.history.length ?? 0) > 0 && (
+        <div className="space-y-3">
+          <SectionHeading title="Riwayat Unggahan" description="Unggahan sebelumnya pada periode ini, disimpan sebagai bukti" />
+          <CustomTable
+            columns={historyColumns}
+            {...historyTable.tableProps}
+            tableClassName="table-fixed"
+            emptyText="Tidak ditemukan"
+            rowKey={(row) => row.id}
+          />
+        </div>
+      )}
     </div>
   );
 }

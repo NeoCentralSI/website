@@ -16,6 +16,18 @@ export const MEASURED_MIN_WIDTH: Record<string, number> = {
   'Berhenti Studi Sementara (BSS)': 229,
   '30 September 2026': 157,
   '11 September 2026': 151,
+  // Paket P8
+  'Menunggu Pembimbing': 184,
+  'Menunggu Koordinator': 181,
+  'Belum Ada Pembimbing': 184,
+  'Sudah Ditetapkan': 149,
+  'Belum Ditetapkan': 148,
+  'Digantikan': 108,
+  '99/99 · Mendekati Batas': 188,
+  'Ditutup Dosen': 128,
+  'Menunggu Periode Berikutnya': 222,
+  'Di Bawah 75%': 129,
+  'Tidak Lulus': 113,
 };
 
 /**

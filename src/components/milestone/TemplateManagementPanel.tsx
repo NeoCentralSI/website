@@ -10,7 +10,11 @@ import {
   useDeleteTemplate,
   useBulkDeleteTemplates,
 } from "@/hooks/milestone/useMilestone";
-import type { MilestoneTemplate } from "@/types/milestone.types";
+import {
+  useProposalMilestoneTemplateMutations,
+  useProposalMilestoneTemplates,
+} from "@/hooks/research-method/useMilestoneTemplates";
+import type { CreateTemplateDto, MilestoneTemplate, TemplateTopic, ThesisTopic, UpdateTemplateDto } from "@/types/milestone.types";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -75,22 +79,55 @@ const emptyForm: TemplateFormState = {
   isActive: true,
 };
 
-export function TemplateManagementPanel() {
-  const [topicFilter, setTopicFilter] = useState<string | null>(null);
-  const [topicPickerOpen, setTopicPickerOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [formState, setFormState] = useState<TemplateFormState>(emptyForm);
-  const [orderedTemplates, setOrderedTemplates] = useState<MilestoneTemplate[]>([]);
-  const [reorderEnabled, setReorderEnabled] = useState(false);
-  const [draggingId, setDraggingId] = useState<string | null>(null);
-  const [hasReordered, setHasReordered] = useState(false);
-  const [isSavingOrder, setIsSavingOrder] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [templateToDelete, setTemplateToDelete] = useState<MilestoneTemplate | null>(null);
+/** A template as the panel shows it; proposal templates also carry their usage count. */
+type PanelTemplate = MilestoneTemplate & { usedCount?: number };
 
+type QueryLike<T> = {
+  data?: T;
+  isLoading: boolean;
+  isError: boolean;
+  error: unknown;
+  refetch: () => unknown;
+};
+
+type Done = { onSuccess?: () => void };
+
+/**
+ * Where the panel reads and writes its templates (Paket P8, 3.1): the thesis templates per topic,
+ * or the general proposal templates (no topic picker). The view is the same for both.
+ */
+interface TemplateSource {
+  phase: "thesis" | "proposal";
+  templatesQuery: QueryLike<PanelTemplate[]>;
+  /** Thesis phase only: the topic picker and the topic of a template. */
+  topics?: {
+    topicsQuery: QueryLike<ThesisTopic[]>;
+    templateTopicsQuery: QueryLike<TemplateTopic[]>;
+    topicFilter: string | null;
+    setTopicFilter: (id: string | null) => void;
+  };
+  create: (payload: CreateTemplateDto, done: Done) => void;
+  update: (templateId: string, data: UpdateTemplateDto, done: Done) => void;
+  remove: (templateId: string, done: Done) => void;
+  bulkRemove: (templateIds: string[], done: Done) => void;
+  /** Saves the order shown, first to last. */
+  saveOrder: (ordered: PanelTemplate[]) => Promise<void>;
+  isPending: { create: boolean; update: boolean; remove: boolean; bulkRemove: boolean };
+  /** The shortest name the server accepts. */
+  minNameLength: number;
+}
+
+/**
+ * Kelola template milestone. `phase="thesis"` (default): Kelola Tugas Akhir > Milestone, template
+ * per topik. `phase="proposal"` (K18; Paket P8, 3.1): Kelola > Metode Penelitian > Template
+ * Milestone, template fase proposal yang berlaku umum, tanpa pemilih topik.
+ */
+export function TemplateManagementPanel({ phase = "thesis" }: { phase?: "thesis" | "proposal" }) {
+  return phase === "proposal" ? <ProposalTemplateManagementPanel /> : <ThesisTemplateManagementPanel />;
+}
+
+function ThesisTemplateManagementPanel() {
+  const [topicFilter, setTopicFilter] = useState<string | null>(null);
   // Management view: include deactivated templates so they can be re-activated.
   // The list and the per-topic count use the same filter (phase "thesis" on the backend).
   const templatesQuery = useTemplates(topicFilter || undefined, { includeInactive: true });
@@ -101,11 +138,89 @@ export function TemplateManagementPanel() {
   const deleteTemplate = useDeleteTemplate();
   const bulkDeleteTemplates = useBulkDeleteTemplates();
 
+  const source: TemplateSource = {
+    phase: "thesis",
+    templatesQuery,
+    topics: { topicsQuery, templateTopicsQuery, topicFilter, setTopicFilter },
+    create: (payload, done) => createTemplate.mutate(payload, done),
+    update: (templateId, data, done) => updateTemplate.mutate({ templateId, data }, done),
+    remove: (templateId, done) => deleteTemplate.mutate(templateId, done),
+    bulkRemove: (templateIds, done) => bulkDeleteTemplates.mutate(templateIds, done),
+    saveOrder: async (ordered) => {
+      await Promise.all(
+        ordered.map((t, idx) => {
+          if (t.orderIndex === idx) return Promise.resolve();
+          return updateTemplate.mutateAsync({ templateId: t.id, data: { orderIndex: idx } });
+        })
+      );
+    },
+    isPending: {
+      create: createTemplate.isPending,
+      update: updateTemplate.isPending,
+      remove: deleteTemplate.isPending,
+      bulkRemove: bulkDeleteTemplates.isPending,
+    },
+    minNameLength: 1,
+  };
+  return <TemplateManagementView source={source} />;
+}
+
+function ProposalTemplateManagementPanel() {
+  const query = useProposalMilestoneTemplates();
+  const { create, update, remove, removeMany, reorder } = useProposalMilestoneTemplateMutations();
+  const data = useMemo<PanelTemplate[] | undefined>(
+    () => query.data?.map((t) => ({ ...t, topicId: null, topic: null, createdAt: t.updatedAt })),
+    [query.data]
+  );
+
+  const source: TemplateSource = {
+    phase: "proposal",
+    templatesQuery: { ...query, data },
+    create: (payload, done) =>
+      create.mutate({ name: payload.name, description: payload.description, isActive: payload.isActive, orderIndex: payload.orderIndex }, done),
+    update: (templateId, dto, done) =>
+      update.mutate({ id: templateId, dto: { name: dto.name, description: dto.description, isActive: dto.isActive, orderIndex: dto.orderIndex } }, done),
+    remove: (templateId, done) => remove.mutate(templateId, done),
+    bulkRemove: (templateIds, done) => removeMany.mutate(templateIds, done),
+    saveOrder: async (ordered) => {
+      await reorder.mutateAsync(ordered.map((t) => t.id));
+    },
+    isPending: { create: create.isPending, update: update.isPending, remove: remove.isPending, bulkRemove: removeMany.isPending },
+    minNameLength: 3,
+  };
+  return <TemplateManagementView source={source} />;
+}
+
+/** The proposal source has no topic picker; a stable no-op keeps the effect below quiet. */
+const NO_TOPIC_FILTER = () => {};
+
+function TemplateManagementView({ source }: { source: TemplateSource }) {
+  const isProposal = source.phase === "proposal";
+  const topicFilter = source.topics?.topicFilter ?? null;
+  const setTopicFilter = source.topics?.setTopicFilter ?? NO_TOPIC_FILTER;
+  const [topicPickerOpen, setTopicPickerOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [formState, setFormState] = useState<TemplateFormState>(emptyForm);
+  const [orderedTemplates, setOrderedTemplates] = useState<PanelTemplate[]>([]);
+  const [reorderEnabled, setReorderEnabled] = useState(false);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [hasReordered, setHasReordered] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<PanelTemplate | null>(null);
+
+  const templatesQuery = source.templatesQuery;
+  const topicsQuery = source.topics?.topicsQuery;
+  const templateTopicsQuery = source.topics?.templateTopicsQuery;
+
   // Stable references: a fresh `[]` on every render (while loading or after an error)
   // would re-trigger the ordering effect below on each render.
   const templates = useMemo(() => templatesQuery.data ?? [], [templatesQuery.data]);
-  const topics = useMemo(() => topicsQuery.data ?? [], [topicsQuery.data]);
-  const templateTopics = useMemo(() => templateTopicsQuery.data ?? [], [templateTopicsQuery.data]);
+  const topics = useMemo(() => topicsQuery?.data ?? [], [topicsQuery?.data]);
+  const templateTopics = useMemo(() => templateTopicsQuery?.data ?? [], [templateTopicsQuery?.data]);
 
   useEffect(() => {
     const sorted = [...templates].sort((a, b) => a.orderIndex - b.orderIndex);
@@ -119,12 +234,12 @@ export function TemplateManagementPanel() {
   // Select the first topic only when nothing valid is selected (initial load, or the
   // selected topic no longer exists). A refetch never overrides the user's choice.
   useEffect(() => {
-    if (templateTopics.length === 0) return;
+    if (isProposal || templateTopics.length === 0) return;
     const stillExists = topicFilter && templateTopics.some((t) => t.id === topicFilter);
     if (!stillExists) {
       setTopicFilter(templateTopics[0].id);
     }
-  }, [templateTopics, topicFilter]);
+  }, [isProposal, templateTopics, topicFilter, setTopicFilter]);
 
   const selectedTopic = templateTopics.find((t) => t.id === topicFilter) ?? null;
   const searchTerm = search.trim();
@@ -148,12 +263,12 @@ export function TemplateManagementPanel() {
 
   const isBusy =
     templatesQuery.isLoading ||
-    topicsQuery.isLoading ||
-    templateTopicsQuery.isLoading ||
-    createTemplate.isPending ||
-    updateTemplate.isPending ||
-    deleteTemplate.isPending ||
-    bulkDeleteTemplates.isPending;
+    Boolean(topicsQuery?.isLoading) ||
+    Boolean(templateTopicsQuery?.isLoading) ||
+    source.isPending.create ||
+    source.isPending.update ||
+    source.isPending.remove ||
+    source.isPending.bulkRemove;
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -176,7 +291,7 @@ export function TemplateManagementPanel() {
   };
 
   const handleBulkDelete = () => {
-    bulkDeleteTemplates.mutate(Array.from(selectedIds), {
+    source.bulkRemove(Array.from(selectedIds), {
       onSuccess: () => {
         setSelectedIds(new Set());
         setBulkDeleteDialogOpen(false);
@@ -186,7 +301,7 @@ export function TemplateManagementPanel() {
 
   const handleDeleteConfirm = () => {
     if (!templateToDelete) return;
-    deleteTemplate.mutate(templateToDelete.id, {
+    source.remove(templateToDelete.id, {
       onSuccess: () => {
         setDeleteDialogOpen(false);
         setTemplateToDelete(null);
@@ -202,7 +317,7 @@ export function TemplateManagementPanel() {
     setDialogOpen(true);
   };
 
-  const startEdit = (template: MilestoneTemplate) => {
+  const startEdit = (template: PanelTemplate) => {
     setFormState({
       id: template.id,
       name: template.name,
@@ -218,7 +333,7 @@ export function TemplateManagementPanel() {
     const payload = {
       name: formState.name.trim(),
       description: formState.description.trim() || null,
-      topicId: formState.topicId || null,
+      topicId: isProposal ? null : formState.topicId || null,
       orderIndex:
         formState.orderIndex === undefined || formState.orderIndex === null
           ? undefined
@@ -227,20 +342,13 @@ export function TemplateManagementPanel() {
     };
 
     if (formState.id) {
-      updateTemplate.mutate(
-        { templateId: formState.id, data: payload },
-        {
-          onSuccess: () => setDialogOpen(false),
-        }
-      );
+      source.update(formState.id, payload, { onSuccess: () => setDialogOpen(false) });
     } else {
-      createTemplate.mutate(payload, {
-        onSuccess: () => setDialogOpen(false),
-      });
+      source.create(payload, { onSuccess: () => setDialogOpen(false) });
     }
   };
 
-  const handleDelete = (template: MilestoneTemplate) => {
+  const handleDelete = (template: PanelTemplate) => {
     setTemplateToDelete(template);
     setDeleteDialogOpen(true);
   };
@@ -271,12 +379,7 @@ export function TemplateManagementPanel() {
     if (!hasReordered) return;
     setIsSavingOrder(true);
     try {
-      await Promise.all(
-        orderedTemplates.map((t, idx) => {
-          if (t.orderIndex === idx) return Promise.resolve();
-          return updateTemplate.mutateAsync({ templateId: t.id, data: { orderIndex: idx } });
-        })
-      );
+      await source.saveOrder(orderedTemplates);
       setHasReordered(false);
       setReorderEnabled(false);
     } catch (err) {
@@ -293,7 +396,9 @@ export function TemplateManagementPanel() {
           <div>
             <CardTitle>Kelola Template Milestone</CardTitle>
             <CardDescription>
-              Buat, perbarui, atau hapus template milestone untuk tugas akhir.
+              {isProposal
+                ? "Buat, perbarui, atau hapus template milestone fase proposal. Template berlaku umum untuk semua mahasiswa fase proposal, tanpa topik."
+                : "Buat, perbarui, atau hapus template milestone untuk tugas akhir."}
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
@@ -336,6 +441,7 @@ export function TemplateManagementPanel() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            {!isProposal && (
             <div className="w-full space-y-2 md:max-w-md">
               <Label>Topik</Label>
               <Popover open={topicPickerOpen} onOpenChange={setTopicPickerOpen}>
@@ -384,11 +490,12 @@ export function TemplateManagementPanel() {
                 </PopoverContent>
               </Popover>
             </div>
+            )}
             <div className="w-full space-y-2 md:w-64">
               <Label htmlFor="search">Cari template</Label>
               <Input
                 id="search"
-                placeholder="Cari nama/topik"
+                placeholder={isProposal ? "Cari nama/deskripsi" : "Cari nama/topik"}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -416,7 +523,7 @@ export function TemplateManagementPanel() {
             </div>
           )}
 
-          {templateTopicsQuery.isError ? (
+          {templateTopicsQuery?.isError ? (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Gagal memuat daftar topik</AlertTitle>
@@ -440,12 +547,12 @@ export function TemplateManagementPanel() {
                 </Button>
               </AlertDescription>
             </Alert>
-          ) : templateTopicsQuery.isLoading || templatesQuery.isLoading || (templateTopics.length > 0 && !topicFilter) ? (
+          ) : templateTopicsQuery?.isLoading || templatesQuery.isLoading || (!isProposal && templateTopics.length > 0 && !topicFilter) ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Memuat template...
             </div>
-          ) : templateTopics.length === 0 ? (
+          ) : !isProposal && templateTopics.length === 0 ? (
             <div className="text-sm text-muted-foreground">
               Belum ada topik tugas akhir. Tambahkan topik di tab Topik terlebih dahulu.
             </div>
@@ -453,7 +560,9 @@ export function TemplateManagementPanel() {
             <EmptyState
               size="sm"
               title="Belum Ada Template"
-              description={`Belum ada template milestone untuk topik ${selectedTopic?.name ?? "ini"}. Tambahkan template baru untuk memulai.`}
+              description={isProposal
+                ? "Belum ada template milestone fase proposal. Tambahkan template baru untuk memulai."
+                : `Belum ada template milestone untuk topik ${selectedTopic?.name ?? "ini"}. Tambahkan template baru untuk memulai.`}
               showButton
               buttonText="Tambah Template"
               buttonIcon={<Plus className="h-4 w-4" />}
@@ -517,6 +626,7 @@ export function TemplateManagementPanel() {
                       ) : null}
                       <p className="text-xs text-muted-foreground">
                         Urutan: #{template.orderIndex + 1}
+                        {typeof template.usedCount === "number" && ` · Dipakai ${template.usedCount} milestone mahasiswa`}
                       </p>
                     </div>
                   </div>
@@ -554,7 +664,9 @@ export function TemplateManagementPanel() {
               {formState.id ? "Edit Template Milestone" : "Tambah Template Milestone"}
             </DialogTitle>
             <DialogDescription>
-              Template akan digunakan mahasiswa untuk membuat milestone awal.
+              {isProposal
+                ? "Template fase Proposal, berlaku umum tanpa topik. Mahasiswa memasangnya saat milestone fase proposal masih kosong."
+                : "Template akan digunakan mahasiswa untuk membuat milestone awal."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -567,6 +679,7 @@ export function TemplateManagementPanel() {
                 placeholder="Contoh: Bab I - Pendahuluan"
               />
             </div>
+            {!isProposal && (
             <div className="space-y-2">
               <Label htmlFor="topicId">Topik</Label>
               <Select
@@ -591,6 +704,7 @@ export function TemplateManagementPanel() {
                 Pilih topik tugas akhir untuk template ini (opsional).
               </p>
             </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="description">Deskripsi</Label>
               <Textarea
@@ -635,11 +749,14 @@ export function TemplateManagementPanel() {
               </div>
             </div>
           </div>
+          {source.minNameLength > 1 && formState.name.trim().length < source.minNameLength && (
+            <p className="text-xs text-muted-foreground">Nama template minimal {source.minNameLength} karakter.</p>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isBusy}>
               Batal
             </Button>
-            <Button onClick={handleSubmit} disabled={isBusy || !formState.name.trim()}>
+            <Button onClick={handleSubmit} disabled={isBusy || formState.name.trim().length < source.minNameLength}>
               {isBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Simpan
             </Button>
@@ -659,13 +776,13 @@ export function TemplateManagementPanel() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={bulkDeleteTemplates.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogCancel disabled={source.isPending.bulkRemove}>Batal</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleBulkDelete}
-              disabled={bulkDeleteTemplates.isPending}
+              disabled={source.isPending.bulkRemove}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {bulkDeleteTemplates.isPending ? (
+              {source.isPending.bulkRemove ? (
                 <>
                   <Spinner className="mr-2 h-4 w-4" />
                   Menghapus...
@@ -689,13 +806,13 @@ export function TemplateManagementPanel() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteTemplate.isPending}>Batal</AlertDialogCancel>
+            <AlertDialogCancel disabled={source.isPending.remove}>Batal</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteConfirm}
-              disabled={deleteTemplate.isPending}
+              disabled={source.isPending.remove}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteTemplate.isPending ? (
+              {source.isPending.remove ? (
                 <>
                   <Spinner className="mr-2 h-4 w-4" />
                   Menghapus...

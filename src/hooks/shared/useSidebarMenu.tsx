@@ -131,7 +131,8 @@ export const useSidebarMenu = () => {
       { title: "Evaluasi", url: "/tugas-akhir/evaluasi" },
     ];
     const MONITORING_ITEM: SidebarLeafItem = { title: "Monitoring", url: "/tugas-akhir/monitoring" };
-    const PENETAPAN_ITEM: SidebarLeafItem = { title: "Penetapan Pembimbing", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" };
+    // Paket P8 (2): the submenu is "Penetapan"; its page keeps the title "Penetapan Pembimbing".
+    const PENETAPAN_ITEM: SidebarLeafItem = { title: "Penetapan", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" };
 
     // STUDENT MENU
     if (role.student) {
@@ -596,10 +597,7 @@ export const useSidebarMenu = () => {
                 title: "Data Hari Libur",
                 url: "/master-data/hari-libur",
               },
-              {
-                title: "Batas Bimbingan",
-                url: "/master-data/kuota-bimbingan",
-              },
+              // Paket P8 (2): no "Batas Bimbingan" for Admin; Kadep and Sekdep set it (K30).
             ],
           },
           ...(ENV.ENABLE_DEV_TOOLS

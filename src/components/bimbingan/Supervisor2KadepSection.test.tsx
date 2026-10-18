@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { vi } from "vitest";
+import { expectFooter } from "@/test/dialogFooter";
 
 import { Supervisor2KadepSection } from "./Supervisor2KadepSection";
 
@@ -13,6 +14,7 @@ vi.mock("@/services/lecturerGuidance.service", () => ({
   rejectSupervisor2KadepRequest: vi.fn(),
 }));
 
+vi.mock("lottie-react", () => ({ default: () => null }));
 vi.mock("@/services/thesis-proposal/supervision-quota.service", () => ({
   getLoadOverview: (...args: unknown[]) => mockLoadOverview(...args),
 }));
@@ -46,6 +48,7 @@ const request = {
   requestedAt: "2026-08-01T00:00:00.000Z",
 };
 
+// Paket P8: one table; Setujui and Tolak are icons in the row and buttons in the detail modal.
 describe("Supervisor2KadepSection quota gate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -57,9 +60,13 @@ describe("Supervisor2KadepSection quota gate", () => {
 
     renderSection();
 
-    expect(await screen.findByText(/Beban calon P2: 10\/10/)).toBeInTheDocument();
-    expect(screen.getByText(/sudah mencapai batas bimbingan/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Setujui/i })).toBeEnabled();
+    expect(await screen.findByText("10/10 · Penuh")).toBeInTheDocument();
+    const row = screen.getByText("Mahasiswa Uji").closest("tr")!;
+    expect(within(row).getByRole("button", { name: "Setujui" })).toBeEnabled();
+
+    fireEvent.click(within(row).getByRole("button", { name: "Lihat Detail" }));
+    const detail = await screen.findByRole("dialog", { name: "Detail Permintaan Pembimbing 2" });
+    expectFooter(detail, ["Batal", "Tolak", "Setujui"], "sudah mencapai batas bimbingan");
   });
 
   it("disables Setujui when the lecturer closed intake, as the backend does", async () => {
@@ -67,9 +74,12 @@ describe("Supervisor2KadepSection quota gate", () => {
 
     renderSection();
 
-    expect(await screen.findByText("Dosen sedang menutup penerimaan permintaan pembimbing.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Setujui/i })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /Tolak/i })).toBeEnabled();
+    expect(await screen.findByText("Penerimaan ditutup dosen")).toBeInTheDocument();
+    const row = screen.getByText("Mahasiswa Uji").closest("tr")!;
+    const approve = within(row).getByRole("button", { name: "Setujui" });
+    expect(approve).toBeDisabled();
+    expect(approve.parentElement).toHaveAttribute("title", "Setujui: Dosen sedang menutup penerimaan permintaan pembimbing.");
+    expect(within(row).getByRole("button", { name: "Tolak" })).toBeEnabled();
   });
 
   it("keeps Setujui available when the load cannot be read (fail-open)", async () => {
@@ -77,6 +87,7 @@ describe("Supervisor2KadepSection quota gate", () => {
 
     renderSection();
 
-    expect(await screen.findByRole("button", { name: /Setujui/i })).toBeEnabled();
+    const row = (await screen.findByText("Mahasiswa Uji")).closest("tr")!;
+    expect(within(row).getByRole("button", { name: "Setujui" })).toBeEnabled();
   });
 });
