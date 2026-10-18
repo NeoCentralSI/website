@@ -494,6 +494,41 @@ export const setStudentPeriodFlagsAPI = (
   flags: { eligibleResearchMethod?: boolean | null; takingThesisCourse?: boolean | null },
 ) => adminJson<unknown>(`/adminfeatures/students/${studentId}/period-flags/${academicYearId}`, { method: 'PATCH', body: JSON.stringify(flags) }, 'Gagal menyimpan keikutsertaan semester');
 
+/** Paket P9 (K36): Impor Keikutsertaan, what the import would change (or changed). */
+export interface PeriodFlagsImportPlan {
+  academicYear: { id: string; label: string };
+  totals: { rows: number; changed: number; unchanged: number; unknownNim: number; invalid: number };
+  changes: Array<{
+    row: number;
+    nim: string;
+    studentId: string;
+    fullName: string | null;
+    before: { eligibleResearchMethod: boolean | null; takingThesisCourse: boolean | null };
+    after: { eligibleResearchMethod: boolean | null; takingThesisCourse: boolean | null };
+  }>;
+  unknown: Array<{ row: number; nim: string }>;
+  invalid: Array<{ row: number; nim: string | null; reason: string }>;
+  applied?: number;
+}
+
+export const PERIOD_FLAGS_TEMPLATE_URL = '/adminfeatures/student-period-flags/template';
+
+async function periodFlagsImport(academicYearId: string, file: File, apply: boolean): Promise<{ data: PeriodFlagsImportPlan; message?: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  const response = await fetch(getApiUrl(`/adminfeatures/student-period-flags/${academicYearId}/import${apply ? '' : '/preview'}`), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+    body,
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(json.message || (apply ? 'Gagal mengimpor keikutsertaan' : 'Gagal membuat pratinjau impor'));
+  return json;
+}
+
+export const previewPeriodFlagsImportAPI = (academicYearId: string, file: File) => periodFlagsImport(academicYearId, file, false);
+export const applyPeriodFlagsImportAPI = (academicYearId: string, file: File) => periodFlagsImport(academicYearId, file, true);
+
 /** Paket P9 (K36): "Ikuti Data SIA" for one semester. */
 export const followSiaPeriodFlagsAPI = (studentId: string, academicYearId: string) =>
   adminJson<{ fromSia: boolean }>(`/adminfeatures/students/${studentId}/period-flags/${academicYearId}/follow-sia`, { method: 'POST' }, 'Gagal mengikuti data SIA');

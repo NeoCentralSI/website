@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useRole } from '@/hooks/shared/useRole';
 import { useSiaAvailability } from '@/hooks/shared/useSiaAvailability';
+import { StudentPeriodFlagsImportDialog } from '@/components/master-data/StudentPeriodFlagsImportDialog';
 import {
   getStudentsAPI,
   getAcademicYearsAPI,
@@ -15,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Eye, RefreshCw, Pencil, Check, X } from 'lucide-react';
+import { Eye, RefreshCw, Pencil, Check, X, FileUp } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { adminUpdateStudentAPI } from '@/services/admin.service';
@@ -129,6 +130,8 @@ export default function Mahasiswa() {
   });
 
   const sia = useSiaAvailability(showSyncButton());
+  // Paket P9 (K36): Impor Keikutsertaan (Admin).
+  const [importOpen, setImportOpen] = useState(false);
   const syncMutation = useMutation({
     mutationFn: triggerSiaSyncAPI,
     onSuccess: (result) => {
@@ -480,6 +483,11 @@ export default function Mahasiswa() {
                 </SelectContent>
               </Select>
             </div>
+            {isAdmin() && (
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+                <FileUp className="mr-2 h-4 w-4" />Impor Keikutsertaan
+              </Button>
+            )}
             <RefreshButton
               onClick={() => refetch()}
               isRefreshing={isFetching && !isLoading}
@@ -487,6 +495,7 @@ export default function Mahasiswa() {
           </div>
         }
       />
+      {isAdmin() && importOpen && <StudentPeriodFlagsImportDialog open={importOpen} onOpenChange={setImportOpen} />}
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>
