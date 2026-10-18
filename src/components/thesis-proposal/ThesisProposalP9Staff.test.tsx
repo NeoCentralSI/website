@@ -268,6 +268,24 @@ describe('Penetapan Pembimbing (Paket P9, 5)', () => {
     await waitFor(() => expect(quota.clearPeriodLimits).toHaveBeenCalledWith('ay-1'));
   });
 
+  it('Beban Dosen for Sekretaris Departemen: read only, the limits shown without the edit button', async () => {
+    roles.kadep = false;
+    roles.sekdep = true;
+    vi.mocked(quota.getLoadOverview).mockResolvedValue(loads({ period: { softLimit: 6, hardLimit: 12 }, applicable: { softLimit: 6, hardLimit: 12, source: 'period' } }));
+    wrap(<KadepThesisSupervisorAssignment />, '/?tab=beban-dosen');
+    expect(await screen.findByText('Batas lunak: 6')).toBeInTheDocument();
+    expect(screen.getByText('Batas keras: 12')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ubah Batas Semester Ini' })).not.toBeInTheDocument();
+    expect(screen.getByRole('table')).toBeInTheDocument();
+  });
+
+  it('Batas Bimbingan for Sekretaris Departemen: the general limit stays editable', async () => {
+    roles.kadep = false;
+    roles.sekdep = true;
+    wrap(<SupervisionQuotaPage />);
+    expect(await screen.findByRole('button', { name: 'Ubah Batas Umum' })).toBeEnabled();
+  });
+
   it('Beban Dosen of a past semester: the limits cannot be changed', async () => {
     vi.mocked(assignments.getAssignmentBoard).mockResolvedValue(board({ academicYear: { id: 'ay-0', label: '2025/2026 Genap', isOperational: false } }));
     wrap(<KadepThesisSupervisorAssignment />, '/?tab=beban-dosen&semester=ay-0');
