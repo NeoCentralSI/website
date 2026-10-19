@@ -5,8 +5,8 @@ import type { MyStudentItem } from "@/services/lecturerGuidance.service";
 import { getMyStudents, sendWarningToStudent, type MyStudentsFilter, type WarningType } from "@/services/lecturerGuidance.service";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// K21: default "Aktif" (research + on_leave); finished and failed students stay reachable.
-// K27: "Fase Proposal" lists the students whose proposal guidance this lecturer supervises.
+// Default "Aktif" (research + on_leave); finished and failed students stay reachable.
+// "Fase Proposal" lists the students whose proposal guidance this lecturer supervises.
 const STUDENT_FILTERS: { value: MyStudentsFilter; label: string }[] = [
   { value: "active", label: "Aktif" },
   { value: "proposal", label: "Fase Proposal" },
@@ -62,8 +62,8 @@ import { ThesisActivityBadge } from '@/components/shared/ThesisActivityBadge';
 import { SupervisionClockCell } from '@/components/shared/SupervisionClockCell';
 
 /**
- * Fixed layout: every column but "Mahasiswa" has a width, so the table fills the card. Paket E6
- * (1): the minimum width keeps "Mahasiswa" as wide as its longest badge ("Berhenti Studi
+ * Fixed layout: every column but "Mahasiswa" has a width, so the table fills the card. The
+ * minimum width keeps "Mahasiswa" as wide as its longest badge ("Berhenti Studi
  * Sementara (BSS)", MY_STUDENTS_NAME_MIN_WIDTH) next to the fixed columns (782 px, Aksi with four
  * icons); below it the table scrolls, with the action column pinned to the right.
  */
@@ -72,11 +72,11 @@ const MY_STUDENTS_TABLE_CLASS = "table-fixed min-w-[1014px]";
 /** A warning can be sent while the activity level is Lambat or Berisiko. */
 const needsWarning = (level?: string | null): level is WarningType => level === "slow" || level === "at_risk";
 
-/** An active relation of this lecturer (a replaced supervisor's row is read-only, Paket E4 1.1). */
+/** An active relation of this lecturer (a replaced supervisor's row is read-only). */
 const isActiveSupervisor = (row: MyStudentItem) => (row.supervisorStatus ?? "active") === "active" && !row.noLongerSupervising;
 
 /**
- * Paket E5 (3.2, 3.4): "Ajukan Perubahan" for an active Pembimbing 1 or 2 (disabled with the
+ * "Ajukan Perubahan" for an active Pembimbing 1 or 2 (disabled with the
  * reason when a rule blocks it); "Isi Evaluasi" only when the evaluation is due and the viewer is
  * Pembimbing 1.
  */
@@ -105,7 +105,7 @@ export default function LecturerMyStudentsPage() {
     student: MyStudentItem | null;
   }>({ open: false, student: null });
 
-  // Paket E5 (3.2-3.4): row actions and the "Alihkan" bulk action.
+  // Row actions and the "Alihkan" bulk action.
   const [selectedThesisIds, setSelectedThesisIds] = useState<Set<string>>(new Set());
   const [transferOpen, setTransferOpen] = useState(false);
   const [changeFormThesisId, setChangeFormThesisId] = useState<string | null>(null);
@@ -178,7 +178,7 @@ export default function LecturerMyStudentsPage() {
 
   const columns: Column<MyStudentItem>[] = useMemo(() => [
     {
-      // Paket E5 (3.3): only the students that may be handed over can be ticked.
+      // Only the students that may be handed over can be ticked.
       key: 'select',
       header: () => (
         <Checkbox
@@ -227,7 +227,7 @@ export default function LecturerMyStudentsPage() {
           )}
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
             {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="max-w-full truncate text-xs" />}
-            {/* Paket E5 (3.2): a running change request; the marker opens its detail. */}
+            {/* A running change request; the marker opens its detail. */}
             {row.changeRequest?.hasOpenRequest && row.thesisId && (
               <button
                 type="button"
@@ -237,7 +237,7 @@ export default function LecturerMyStudentsPage() {
                 <Badge variant="warning" className="max-w-full truncate whitespace-nowrap text-xs">Perubahan berjalan</Badge>
               </button>
             )}
-            {/* Paket E4 (1.1): a replaced supervisor reads the student under "Semua" only. */}
+            {/* A replaced supervisor reads the student under "Semua" only. */}
             {row.noLongerSupervising && (
               <Badge variant="outline" className="max-w-full truncate text-xs text-muted-foreground">Tidak lagi membimbing</Badge>
             )}
@@ -325,7 +325,7 @@ export default function LecturerMyStudentsPage() {
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (row) => {
         // Only an active supervisor relation may send a warning (backend rule); a replaced
-        // supervisor's row is read-only (Paket E4, 1.1).
+        // supervisor's row is read-only.
         const canWarn = needsWarning(row.activityLevel) && (row.supervisorStatus ?? "active") === "active" && !row.noLongerSupervising;
         return (
           <div className="flex items-center justify-end gap-1">
@@ -400,8 +400,8 @@ export default function LecturerMyStudentsPage() {
 
       <TabsNav tabs={tabs} />
 
-      {/* Paket E4 (4): only the summary and the students table; Permohonan has its own page.
-          Paket E5: "Ajukan Perubahan", "Isi Evaluasi" and "Alihkan" act on the rows. */}
+      {/* Only the summary and the students table; Permohonan has its own page.
+          "Ajukan Perubahan", "Isi Evaluasi" and "Alihkan" act on the rows. */}
       {!isLoading && data?.students && data.students.length > 0 && (
         <MyStudentsCharts students={data.students} />
       )}
@@ -433,7 +433,7 @@ export default function LecturerMyStudentsPage() {
           rowKey={(row) => row.thesisId ?? row.studentId}
           actions={
             <div className="flex items-center gap-2">
-              {/* Paket E5 (3.3): appears with the number of ticked students. */}
+              {/* Appears with the number of ticked students. */}
               {transferStudents.length > 0 && (
                 <Button variant="outline" className="h-9 gap-1.5" onClick={() => setTransferOpen(true)}>
                   <ArrowRightLeft className="h-4 w-4" />

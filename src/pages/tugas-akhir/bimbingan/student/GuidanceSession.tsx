@@ -140,7 +140,7 @@ export default function GuidanceSessionPage() {
   const documentPreview = useAuthenticatedBlobUrl(documentUrl, activeTab === "document");
 
   // Status check
-  // K19: the lecturer may ask for a revised summary (summary_rejected); the student revises
+  // The lecturer may ask for a revised summary (summary_rejected); the student revises
   // and resubmits it. Legacy "rescheduled" is a scheduled session like "accepted".
   const isSummaryRejected = guidance?.status === "summary_rejected";
   const isScheduled = guidance?.status === "accepted" || guidance?.status === "rescheduled";

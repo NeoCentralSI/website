@@ -9,7 +9,7 @@ import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 interface TopicDistributionChartProps {
   topicDistribution: TopicDistribution[] | undefined;
   isLoading: boolean;
-  /** Paket P9 (6): the same bars for another distribution; defaults are the topic chart's own. */
+  /** The same bars for another distribution; defaults are the topic chart's own. */
   title?: string;
   emptyDescription?: string;
   /** Unit in the tooltip ("tugas akhir"). */

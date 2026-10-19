@@ -6,7 +6,7 @@ import { ThesisChangeRequestTable } from '@/components/thesis-change-request/The
 import { useRole } from '@/hooks/shared';
 
 /**
- * Tugas Akhir > Perubahan (Paket E4, 4.2; Paket E5, 3.2): the Ketua Departemen's decisions on
+ * Tugas Akhir > Perubahan: the Ketua Departemen's decisions on
  * Pengajuan Perubahan Tugas Akhir. Supervisors have no Perubahan page: they decide their own
  * steps in Permohonan and ask for a change from Mahasiswa Bimbingan, so they are sent there.
  */

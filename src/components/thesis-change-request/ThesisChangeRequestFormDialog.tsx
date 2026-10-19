@@ -48,7 +48,7 @@ export function ThesisChangeRequestFormDialog({ open, onOpenChange, context }: {
   context: ThesisChangeContext;
 }) {
   const thesis = context.thesis;
-  // K34 (Paket E6): a kind the rules block now is disabled with its reason.
+  // A kind the rules block now is disabled with its reason.
   const blockOf = (type: ChangeRequestType) => context.typeBlocks?.[type] ?? null;
   const firstOpenType = CHANGE_TYPES.find((type) => !blockOf(type)) ?? 'title';
   const [requestType, setRequestType] = useState<ChangeRequestType>(firstOpenType);
@@ -195,7 +195,7 @@ export function ThesisChangeRequestFormDialog({ open, onOpenChange, context }: {
                 {optionsLoading ? (
                   <Spinner className="h-5 w-5" />
                 ) : (
-                  // Paket E6 (4): the same searchable picker as "Alihkan", with each lecturer's load.
+                  // The same searchable picker as "Alihkan", with each lecturer's load.
                   <SearchableCombobox
                     ariaLabel={current ? 'Pembimbing pengganti' : 'Pembimbing yang ditambahkan'}
                     options={toSupervisorComboboxOptions(candidates)}

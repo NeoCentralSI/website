@@ -100,7 +100,7 @@ beforeEach(() => {
   ]);
 });
 
-describe('ThesisChangeRequestCard (compact, Paket E4, 5)', () => {
+describe('ThesisChangeRequestCard (compact)', () => {
   it('disables Ajukan Perubahan and shows the reason when a request cannot be made', async () => {
     vi.mocked(service.getThesisChangeContext).mockResolvedValue(context({
       viewerRole: 'pembimbing_1',
@@ -147,7 +147,7 @@ describe('ThesisChangeRequestCard (compact, Paket E4, 5)', () => {
     await waitFor(() => expect(service.cancelChangeRequest).toHaveBeenCalledWith('req-1'));
   });
 
-  it('K34 (Paket E6): a kind the rules block is disabled with its reason', async () => {
+  it('A kind the rules block is disabled with its reason', async () => {
     const supervisorReason = 'Perubahan pembimbing hanya dapat diajukan sampai sebelum pendaftaran seminar hasil. Tugas akhir ini sudah terdaftar atau lulus seminar hasil.';
     vi.mocked(service.getThesisChangeContext).mockResolvedValue(context({
       viewerRole: 'pembimbing_1',
@@ -195,7 +195,7 @@ function openMenu(trigger: HTMLElement) {
   fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' });
 }
 
-describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
+describe('Tugas Akhir > Perubahan (Ketua Departemen)', () => {
   const meta = (total: number, page = 1, pageSize = 10) => ({ page, pageSize, total, totalPages: Math.max(Math.ceil(total / pageSize), 1) });
   const counts = { awaitingDecision: 1, inProgress: 0 };
   const row = (overrides: Partial<ThesisChangeRequestRow> = {}): ThesisChangeRequestRow => ({ ...request(), viewStatus: 'in_progress', ...overrides });
@@ -247,7 +247,7 @@ describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
     await waitFor(() => expect(service.getChangeRequestInbox).toHaveBeenLastCalledWith({ status: 'in_progress', kind: 'transfer', search: '2211522', page: 1, pageSize: 10 }));
   });
 
-  it('Paket E6 (1): the longest jenis, status and date stay inside their cells', async () => {
+  it('The longest jenis, status and date stay inside their cells', async () => {
     vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([atKadep({ requestType: 'both', createdAt: '2026-09-30T03:00:00.000Z' })]));
     wrap(<ThesisChangeRequestTable />);
     await screen.findByText('Ilham Nofaldi');
@@ -259,7 +259,7 @@ describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
     expectColumnFits(header('Status'), cells[4], 'Menunggu Keputusan Anda');
   });
 
-  it('Lanjutan Paket E6: Batal closes the Detail modal; a closed request has only Tutup', async () => {
+  it('Batal closes the Detail modal; a closed request has only Tutup', async () => {
     vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([atKadep(), row({ id: 'req-done', status: 'approved', viewStatus: 'approved', student: person('s2', 'NABIL RIZKI') })]));
     wrap(<ThesisChangeRequestTable />);
     const waiting = (await screen.findByText('Ilham Nofaldi')).closest('tr')!;
@@ -274,7 +274,7 @@ describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
     expectFooter(detail, ['Tutup']);
   });
 
-  it('Paket E6 (6): a request the rules block now is marked, and Setujui waits with the reason', async () => {
+  it('A request the rules block now is marked, and Setujui waits with the reason', async () => {
     const reason = 'Pengajuan ini tidak dapat disetujui saat ini. Perubahan judul tidak dapat diajukan selama seminar hasil sedang berproses. Pengajuan tetap menunggu dan dapat ditolak.';
     vi.mocked(service.getChangeRequestInbox).mockResolvedValue(inbox([atKadep({ applyBlockReason: reason })]));
     wrap(<ThesisChangeRequestTable />);
@@ -353,7 +353,7 @@ describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
     wrap(<ThesisChangeRequestTable />);
 
     const tableRow = (await screen.findByText('Ilham Nofaldi')).closest('tr')!;
-    // Lanjutan Paket E6: the row has the Detail icon only until it is the Ketua Departemen's turn.
+    // The row has the Detail icon only until it is the Ketua Departemen's turn.
     expect(within(tableRow).getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(['Lihat Detail']);
     expect(within(tableRow).queryByRole('button', { name: 'Putuskan Langsung' })).not.toBeInTheDocument();
     fireEvent.click(within(tableRow).getByRole('button', { name: 'Lihat Detail' }));
@@ -369,7 +369,7 @@ describe('Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2)', () => {
   });
 });
 
-describe('LecturerTransferStudentsDialog (Paket E5, 3.3: the students ticked in Mahasiswa Bimbingan)', () => {
+describe('LecturerTransferStudentsDialog (the students ticked in Mahasiswa Bimbingan)', () => {
   it('lists the ticked students, offers only lecturers who may hold the position, and sends one request for all', async () => {
     vi.mocked(service.submitTransfer).mockResolvedValue({ success: true, message: 'ok', data: { batchId: 'b1', requests: [] } });
     const onSuccess = vi.fn();
@@ -386,7 +386,7 @@ describe('LecturerTransferStudentsDialog (Paket E5, 3.3: the students ticked in 
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
     expect(screen.getByText(/Hanya dosen yang memiliki peran Pembimbing 1 yang ditampilkan/)).toBeInTheDocument();
 
-    // Paket E6 (4): a searchable picker (name or NIP) with each lecturer's load at the right.
+    // A searchable picker (name or NIP) with each lecturer's load at the right.
     fireEvent.click(await screen.findByRole('combobox', { name: 'Dosen tujuan' }));
     const options = (await screen.findAllByRole('option')).map((option) => option.textContent);
     // Not the lecturer themselves, and not a lecturer without the Pembimbing 1 role.
@@ -405,7 +405,7 @@ describe('LecturerTransferStudentsDialog (Paket E5, 3.3: the students ticked in 
   });
 });
 
-describe('ThesisChangeRequestMiniTable (Paket E5, 1.1 and 1.2)', () => {
+describe('ThesisChangeRequestMiniTable', () => {
   it('shows a two-line date, nowrap badges and the detail as an icon', () => {
     const onDetail = vi.fn();
     wrap(<ThesisChangeRequestMiniTable requests={[request({ status: 'approved' })]} onDetail={onDetail} />);
@@ -414,13 +414,13 @@ describe('ThesisChangeRequestMiniTable (Paket E5, 1.1 and 1.2)', () => {
     expect(table.className).toContain('table-fixed');
     const cells = within(within(table).getAllByRole('row')[1]).getAllByRole('cell');
     expect(within(cells[0]).getByText('9 Oktober 2026')).toBeInTheDocument();
-    // Paket E6 (1): jenis and status stacked in one column as wide as the longest badge.
+    // Jenis and status stacked in one column as wide as the longest badge.
     expect(within(cells[1]).getByText('Disetujui').className).toContain('whitespace-nowrap');
     fireEvent.click(within(cells[2]).getByRole('button', { name: 'Lihat Detail' }));
     expect(onDetail).toHaveBeenCalled();
   });
 
-  it('Paket E6 (1): the longest badge and date stay inside their cells', () => {
+  it('The longest badge and date stay inside their cells', () => {
     wrap(<ThesisChangeRequestMiniTable requests={[request({ requestType: 'both', createdAt: '2026-09-30T03:00:00.000Z' })]} onDetail={() => {}} />);
     const table = screen.getByRole('table');
     const headers = within(table).getAllByRole('columnheader');

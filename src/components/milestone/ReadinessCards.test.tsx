@@ -182,7 +182,7 @@ describe("readiness cards", () => {
   });
 });
 
-describe("readiness cards after the event (Paket E4, 3.2/3.3)", () => {
+describe("readiness cards after the event", () => {
   beforeEach(() => vi.clearAllMocks());
 
   const passedSupervisors = [

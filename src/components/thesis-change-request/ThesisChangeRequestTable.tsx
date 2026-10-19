@@ -57,7 +57,7 @@ const KIND_OPTIONS: { label: string; value: ChangeRequestKindFilter | '' }[] = [
 ];
 
 /**
- * Fixed widths except "Mahasiswa dan Perubahan" (Paket E6, 1): the badge and date columns fit
+ * Fixed widths except "Mahasiswa dan Perubahan": the badge and date columns fit
  * their longest text and the free-text column narrows instead; below 1000 px the table scrolls.
  */
 const TABLE_CLASS = 'table-fixed min-w-[1000px]';
@@ -70,12 +70,12 @@ type DialogTarget =
   | { kind: 'batch'; batchId: string; state: ChangeDecisionDialogState };
 
 /**
- * Tugas Akhir > Perubahan (Ketua Departemen, Paket E5, 3.2): every Pengajuan Perubahan Tugas
+ * Tugas Akhir > Perubahan (Ketua Departemen): every Pengajuan Perubahan Tugas
  * Akhir with the final decision. "Semua" by default, sorted by the server (Menunggu Keputusan
  * Anda first); Jenis and Status are filtered in the column header, the search matches name, NIM
  * or title. Setujui / Tolak icons once it is the Ketua Departemen's turn; while a lecturer
- * step is open the direct decision (with a reason) is made in the Detail modal (Lanjutan Paket
- * E6: no separate icon); an "Alihkan Mahasiswa" batch is decided together in its group modal.
+ * step is open the direct decision (with a reason) is made in the Detail modal
+ * (no separate icon); an "Alihkan Mahasiswa" batch is decided together in its group modal.
  * The lecturer steps are decided by the lecturers in Tugas Akhir > Permohonan.
  */
 export function ThesisChangeRequestTable() {

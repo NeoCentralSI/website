@@ -24,7 +24,7 @@ export function useStudentGuidance() {
   const [supervisorFilter, setSupervisorFilter] = useState<string>(initialSupervisor);
   const [page, setPage] = useState<number>(initialPage);
   const [pageSize, setPageSize] = useState<number>(initialLimit > 0 ? initialLimit : 10);
-  // Paket E4 (2.2): filter in the "Jenis" column header, default Semua.
+  // Filter in the "Jenis" column header, default Semua.
   const [phase, setPhase] = useState<PhaseFilterValue>(PHASE_PARAM[searchParams.get('fase') ?? ''] ?? '');
 
   const { data, isLoading, refetch, isFetching } = useQuery({

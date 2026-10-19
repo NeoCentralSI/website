@@ -9,8 +9,8 @@ import { PageHeading } from "@/components/shared/PageHeading";
 import { TabsNav } from "@/components/ui/tabs-nav";
 
 /**
- * Kelola > Metode Penelitian (K18; Paket P8, 3): one address per tab, as Kelola Tugas Akhir.
- * Lanjutan P8 (18 Oktober 2026): the page and its master data are the Sekretaris Departemen's
+ * Kelola > Metode Penelitian: one address per tab, as Kelola Tugas Akhir.
+ * The page and its master data are the Sekretaris Departemen's
  * only (route guard in App.tsx): Template Milestone (fase proposal, umum), CPMK and Rubrik
  * Penilaian, the last two with their own period select inside the panel.
  */

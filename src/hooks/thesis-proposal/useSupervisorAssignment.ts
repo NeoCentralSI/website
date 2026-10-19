@@ -34,7 +34,7 @@ export function useSupervisorAssignmentOverview(academicYearId?: string | null) 
   });
 }
 
-/** Paket P9 (5): every Kadep decision and the issue refresh it (all under 'thesis-proposal'). */
+/** Every Kadep decision and the issue refresh it (all under 'thesis-proposal'). */
 export function useAssignmentBoard(academicYearId?: string | null) {
   return useQuery({
     queryKey: supervisorAssignmentKeys.board(academicYearId),

@@ -31,7 +31,7 @@ interface RequestSupervisor2DialogProps {
 }
 
 // Info kuota aman untuk mahasiswa (canon §7.3): hanya traffic light.
-/** Paket P9 (3): a full lecturer stays selectable (the lecturer and the Ketua Departemen decide). */
+/** A full lecturer stays selectable (the lecturer and the Ketua Departemen decide). */
 export const SUPERVISOR2_FULL_NOTE = "Beban dosen ini sudah penuh; permintaan tetap bisa dikirim dan dapat ditolak.";
 export const SUPERVISOR2_CLOSED_NOTE = "Dosen sedang menutup penerimaan permintaan.";
 const TRAFFIC_LIGHT_META: Record<string, { label: string; className: string }> = {
@@ -135,7 +135,7 @@ export function RequestSupervisor2Dialog({
           ) : (
             filteredLecturers.map((lecturer) => {
               const isSelected = selectedLecturer?.id === lecturer.id;
-              // Paket P9 (3): only a closed intake locks the card; a full lecturer gets a warning.
+              // Only a closed intake locks the card; a full lecturer gets a warning.
               const isClosed = lecturer.acceptingRequests === false;
               const isFull = lecturer.trafficLight === "red";
               const trafficMeta = lecturer.trafficLight

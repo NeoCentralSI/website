@@ -18,7 +18,7 @@ interface EligibilityResult {
   /** SIA flag of the running semester: the student takes Metode Penelitian. */
   takesResearchMethod: boolean;
   canAccessKerjaPraktek: boolean;
-  /** K14: the Tugas Akhir pages are always reachable; their actions explain what is not allowed yet. */
+  /** The Tugas Akhir pages are always reachable; their actions explain what is not allowed yet. */
   canAccessTugasAkhir: boolean;
   requirements: {
     kerjaPraktek: {
@@ -29,7 +29,7 @@ interface EligibilityResult {
 
 /**
  * Student eligibility shared by Kerja Praktik (SKS) and Tugas Akhir. The Tugas Akhir side no
- * longer gates pages (K14); it only reports the SIA flags of the running semester from the
+ * longer gates pages; it only reports the SIA flags of the running semester from the
  * user profile.
  */
 export function useStudentEligibility(): EligibilityResult {

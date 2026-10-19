@@ -46,10 +46,10 @@ const TABS = [
 ];
 
 /**
- * Metode Penelitian > Presensi (rencana 10.5; Paket P8): ekspor aplikasi presensi diunggah
+ * Metode Penelitian > Presensi: ekspor aplikasi presensi diunggah
  * koordinator, dipratinjau lebih dulu, lalu diterapkan. Presensi di bawah 75% membuat nilai
  * proposal otomatis 0 (setelah proposal final ada); unggahan koreksi yang memenuhi membuka
- * kembali nilai itu selama TA masih fase proposal. Paket P9 (9): the period select beside the
+ * kembali nilai itu selama TA masih fase proposal. The period select beside the
  * title, Pilih Berkas as a Button, and two panels with one table each.
  */
 export default function Attendance() {

@@ -55,7 +55,7 @@ export interface ThesisChangeRequest {
   decision: { by: ChangeRequestPerson | null; notes: string | null; at: string } | null;
   appliedAt: string | null;
   createdAt: string;
-  /** Paket E6: why this open request may not be approved now (K34, K8); null when it may. */
+  /** Why this open request may not be approved now; null when it may. */
   applyBlockReason?: string | null;
   /** Only sent to the new supervisor and the Ketua Departemen. */
   newSupervisorLoad?: SupervisorLoad | null;
@@ -76,7 +76,7 @@ export interface ThesisChangeContext {
   /** Why "Ajukan Perubahan" is disabled; null when it is available. */
   blockReason: string | null;
   /**
-   * K34 (Paket E6): why each kind cannot be submitted now (null when it can); the kind choice of
+   * Why each kind cannot be submitted now (null when it can); the kind choice of
    * "Ajukan Perubahan" disables a blocked kind with its reason.
    */
   typeBlocks?: Record<ChangeRequestType, string | null>;
@@ -89,7 +89,7 @@ export interface SupervisorOption {
   name: string;
   identityNumber: string | null;
   positions: SupervisorPosition[];
-  /** Paket E6 (4): shown at the right of the option in the searchable picker. */
+  /** Shown at the right of the option in the searchable picker. */
   load?: SupervisorLoad | null;
 }
 
@@ -114,14 +114,14 @@ export interface ChangeDecisionDto {
   notes?: string | null;
 }
 
-/** A row of a change-request table, with the status it shows this viewer (Paket E5, 1.5). */
+/** A row of a change-request table, with the status it shows this viewer. */
 export type ThesisChangeRequestRow = ThesisChangeRequest & { viewStatus: ChangeRequestViewStatus };
 
 /** Jenis filter of Tugas Akhir > Perubahan: "transfer" is a request of an "Alihkan" batch. */
 export type ChangeRequestKindFilter = ChangeRequestType | 'transfer';
 
 /**
- * Tugas Akhir > Perubahan (Ketua Departemen, Paket E5): one page, "Semua" by default and sorted
+ * Tugas Akhir > Perubahan (Ketua Departemen): one page, "Semua" by default and sorted
  * by status priority on the server; filtered, searched and paged there.
  */
 export interface ChangeRequestInbox {

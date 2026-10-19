@@ -15,12 +15,12 @@ interface RecordDetailDialogProps {
   title: string;
   description?: ReactNode;
   children: ReactNode;
-  /** Approval actions may sit here as well as in the row (Paket E4, 0.2). */
+  /** Approval actions may sit here as well as in the row. */
   footer?: ReactNode;
 }
 
 /**
- * Modal "Detail" sebuah baris tabel (Paket E4, 0.2): semua atribut dan langkah persetujuan.
+ * Modal "Detail" sebuah baris tabel: semua atribut dan langkah persetujuan.
  * Isinya tidak pernah lebih lebar dari dialog; yang panjang digulir ke bawah.
  */
 export function RecordDetailDialog({ open, onOpenChange, title, description, children, footer }: RecordDetailDialogProps) {

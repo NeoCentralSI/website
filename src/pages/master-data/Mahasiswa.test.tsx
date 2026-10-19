@@ -156,7 +156,7 @@ describe('Mahasiswa page', () => {
     expect(screen.queryByText('Tugas Akhir')).not.toBeInTheDocument();
   });
 
-  it('Paket P9: without SIA_BASE_URL the "Sinkronkan data SIA" button is disabled with the reason', async () => {
+  it('Without SIA_BASE_URL the "Sinkronkan data SIA" button is disabled with the reason', async () => {
     siaStatus.configured = false;
     vi.mocked(getStudentsAPI).mockResolvedValue({
       students: [],

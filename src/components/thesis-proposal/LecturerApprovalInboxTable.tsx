@@ -44,7 +44,7 @@ import { SupervisorRequestDetails } from './SupervisorRequestDetails';
 import { SupervisorRequestResponseDialog, type SupervisorResponseState } from './SupervisorRequestResponseDialog';
 
 /**
- * Fixed widths except "Usulan" (Paket E6, 1): the badge columns fit their longest label and
+ * Fixed widths except "Usulan": the badge columns fit their longest label and
  * "Usulan" narrows instead; below 1000 px the table scrolls.
  */
 const TABLE_CLASS = 'table-fixed min-w-[1000px]';
@@ -70,7 +70,7 @@ const statusLabel = (status: string) =>
 
 function statusOptionsFor(jenis: LecturerInboxJenis | ''): string[] {
   if (jenis === 'supervisor_request') return REQUEST_STATUSES;
-  // Paket P9 (4): a Pembimbing 2 request always waits for the lecturer.
+  // A Pembimbing 2 request always waits for the lecturer.
   if (jenis === 'supervisor2') return ['awaiting_me'];
   if (jenis) return CHANGE_STATUSES;
   return ALL_STATUSES;
@@ -107,14 +107,14 @@ export function LecturerSupervisionLoadControls() {
 }
 
 /**
- * Tugas Akhir > Permohonan (Paket E5, 3.1): the lecturer's approval inbox in one table, the
+ * Tugas Akhir > Permohonan: the lecturer's approval inbox in one table, the
  * "Pengajuan Pembimbing" of the proposal phase and the lecturer's own steps of a "Perubahan
  * TA" (previous supervisor, new supervisor, or Pembimbing 1 for a title). "Semua" by default,
- * sorted by the server (what waits for the viewer first); Jenis (Paket E6: Pengajuan
+ * sorted by the server (what waits for the viewer first); Jenis (Pengajuan
  * Pembimbing, Perubahan Judul, Perubahan Pembimbing, Perubahan Judul & Pembimbing) and Status
  * are filtered in the column header. Terima / Tolak (an arrow to forward to the Ketua Departemen when the
  * lecturer is full) and Setujui / Tolak are icons in the row, everything else in the modal.
- * Paket P9 (4): the Pembimbing 2 requests are the Jenis "Pembimbing 2" (Lihat, Bersedia, Tolak),
+ * The Pembimbing 2 requests are the Jenis "Pembimbing 2" (Lihat, Bersedia, Tolak),
  * first among what waits; the page has this one table.
  */
 export function LecturerApprovalInboxTable() {
@@ -155,7 +155,7 @@ export function LecturerApprovalInboxTable() {
       render: (row) => <ThesisStudentInfoCell {...studentOf(row)} />,
     },
     {
-      // Paket E6 (3): one badge; the details (position, before → after) are in Usulan.
+      // One badge; the details (position, before → after) are in Usulan.
       key: 'kind',
       header: 'Jenis',
       width: BADGE_COLUMN_WIDTH.lecturerInboxJenis,

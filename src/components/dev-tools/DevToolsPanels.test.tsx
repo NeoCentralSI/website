@@ -118,14 +118,14 @@ describe('DevTools panels', () => {
     expect(screen.getByText('DevTools')).toBeInTheDocument();
   });
 
-  it('Period panel offers the SIA sync and no period close (K2)', () => {
+  it('Period panel offers the SIA sync and no period close', () => {
     siaStatus.configured = true;
     wrap(<DevToolsPeriodPanel />);
     expect(screen.getByRole('button', { name: 'Jalankan Sinkronisasi SIA' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Dry-run' })).not.toBeInTheDocument();
   });
 
-  it('Paket P9: without SIA_BASE_URL the sync button is disabled with the reason', async () => {
+  it('Without SIA_BASE_URL the sync button is disabled with the reason', async () => {
     siaStatus.configured = false;
     wrap(<DevToolsPeriodPanel />);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Jalankan Sinkronisasi SIA' })).toBeDisabled());
@@ -156,7 +156,7 @@ describe('DevTools panels', () => {
     );
   });
 
-  // Paket E2: a server-side search keeps the old rows, the focus and the typed text.
+  // A server-side search keeps the old rows, the focus and the typed text.
   it('Student panel keeps the rows and the focus while a search is on its way', async () => {
     wrap(<DevToolsStudentPanel />);
     expect(await screen.findByText('Ilham Nofaldi')).toBeInTheDocument();

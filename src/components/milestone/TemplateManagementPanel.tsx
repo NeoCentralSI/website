@@ -93,7 +93,7 @@ type QueryLike<T> = {
 type Done = { onSuccess?: () => void };
 
 /**
- * Where the panel reads and writes its templates (Paket P8, 3.1): the thesis templates per topic,
+ * Where the panel reads and writes its templates: the thesis templates per topic,
  * or the general proposal templates (no topic picker). The view is the same for both.
  */
 interface TemplateSource {
@@ -119,7 +119,7 @@ interface TemplateSource {
 
 /**
  * Kelola template milestone. `phase="thesis"` (default): Kelola Tugas Akhir > Milestone, template
- * per topik. `phase="proposal"` (K18; Paket P8, 3.1): Kelola > Metode Penelitian > Template
+ * per topik. `phase="proposal"`: Kelola > Metode Penelitian > Template
  * Milestone, template fase proposal yang berlaku umum, tanpa pemilih topik.
  */
 export function TemplateManagementPanel({ phase = "thesis" }: { phase?: "thesis" | "proposal" }) {

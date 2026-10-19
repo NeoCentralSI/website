@@ -81,7 +81,7 @@ describe("DataMasterTaPanel form", () => {
     vi.mocked(createMasterDataThesis).mockResolvedValue({});
   });
 
-  it("Paket E6 (2): the title is clamped to two lines with an ellipsis and the topic badge ends with one", async () => {
+  it("The title is clamped to two lines with an ellipsis and the topic badge ends with one", async () => {
     renderPanel();
     const title = await screen.findByText("Sistem Informasi Tugas Akhir");
     expect(title.className).toContain("line-clamp-2");

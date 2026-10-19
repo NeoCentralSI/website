@@ -9,13 +9,13 @@ import { formatLecturerName } from '@/lib/text';
 import { SUPERVISION_LOAD_LEVEL_LABELS, type SupervisionLoadLevel } from '@/lib/thesisLabels';
 import type { LecturerLoadRow, SupervisionLoadOverview } from '@/types/thesis-proposal.types';
 
-/** Beban: the full lecturers first (Paket P8, "Semua" sorted by what needs attention). */
+/** Beban: the full lecturers first ("Semua" sorted by what needs attention). */
 const LEVEL_ORDER: SupervisionLoadLevel[] = ['full', 'near_limit', 'available'];
 const LEVEL_OPTIONS = [{ label: 'Semua', value: '' }, ...LEVEL_ORDER.map((value) => ({ label: SUPERVISION_LOAD_LEVEL_LABELS[value], value }))];
 
 type Breakdown = LecturerLoadRow['breakdown'];
 /**
- * Paket P9 (6): one narrow, right-aligned number column per stage of `breakdown` (all five fit at
+ * One narrow, right-aligned number column per stage of `breakdown` (all five fit at
  * 1366 px, so nothing is merged into "Lainnya"). "Pembimbing 2" counts the lecturer's Pembimbing 2
  * roles, across the stages.
  */
@@ -30,7 +30,7 @@ const COUNT_COLUMNS: { key: keyof Breakdown; header: string; title: string; widt
 interface Props {
   overview: SupervisionLoadOverview;
   isFetching?: boolean;
-  /** "Batas lunak", "Batas keras" and the edit button (Paket P9). */
+  /** "Batas lunak", "Batas keras" and the edit button. */
   toolbar?: ReactNode;
 }
 

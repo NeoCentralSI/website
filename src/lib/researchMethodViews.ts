@@ -2,7 +2,7 @@ import type { ThesisBadgeVariant } from '@/lib/thesisLabels';
 import type { AssessmentView, AssessorParty, MonitoringRow } from '@/types/research-method.types';
 
 /**
- * Paket P8: what a row of a Metode Penelitian table needs, derived from the API data (no new
+ * What a row of a Metode Penelitian table needs, derived from the API data (no new
  * enum on the server). Each list below is also the order of "Semua": what needs attention first.
  */
 

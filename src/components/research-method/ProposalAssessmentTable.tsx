@@ -76,7 +76,7 @@ interface Props {
 }
 
 /**
- * Paket P8: the Penilaian Proposal queue of one party in one table, for Tugas Akhir > Proposal
+ * The Penilaian Proposal queue of one party in one table, for Tugas Akhir > Proposal
  * (pembimbing) and Metode Penelitian > Penilaian Proposal (koordinator). "Semua" by default,
  * sorted with what the viewer has to score first; Status is filtered in its column header. The
  * row actions are icons; the detail opens in a modal.

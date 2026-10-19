@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 
 /**
  * Search and pagination done in the browser for a list the page already holds whole
- * (Paket E4 pages: Permohonan, Perubahan, Evaluasi). The page returns to 1 whenever the
+ * (the Permohonan, Perubahan and Evaluasi pages). The page returns to 1 whenever the
  * keyword or the rows change shape; `searchOf` gives the text a row is matched on.
  */
 export function useClientTable<T>(rows: T[], searchOf: (row: T) => Array<string | null | undefined>, initialPageSize = 10) {

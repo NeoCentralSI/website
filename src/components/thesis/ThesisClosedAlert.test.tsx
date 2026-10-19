@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ThesisClosedAlert } from './ThesisClosedAlert';
 
-describe('ThesisClosedAlert (Paket E4, 7 and its Lanjutan)', () => {
+describe('ThesisClosedAlert (stopped and finished theses)', () => {
   it('a stopped thesis: "dihentikan pada <tanggal>", system cancellations mentioned', () => {
     render(<ThesisClosedAlert status="failed" closedAt="2026-10-15T03:00:00.000Z" />);
     expect(screen.getByText('Tugas akhir ini dihentikan pada 15 Oktober 2026')).toBeInTheDocument();

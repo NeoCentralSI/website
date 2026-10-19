@@ -291,7 +291,7 @@ export async function reorderResearchMethodRubrics(
   await parseValue(response, "Gagal menyimpan urutan rubrik");
 }
 
-/** Paket P8 (3.2): what "Salin Template" created in the target period. */
+/** What "Salin Template" created in the target period. */
 export interface ResearchMethodCopyResult {
   cpmk: number;
   supervisorCriteria: number;

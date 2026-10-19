@@ -8,7 +8,7 @@ vi.mock("lottie-react", () => ({
   default: () => <div data-testid="lottie-mock" />,
 }));
 
-// K14: create actions stay visible but are disabled with a visible reason.
+// Create actions stay visible but are disabled with a visible reason.
 describe("MilestoneList create actions", () => {
   it("disables 'Buat dari Template' and 'Buat Manual' with the reason for a non-research thesis", () => {
     const reason = getGuidanceActionBlockReason("on_leave");
@@ -27,7 +27,7 @@ describe("MilestoneList create actions", () => {
     expect(fromTemplate.length).toBeGreaterThan(0);
     for (const button of fromTemplate) {
       expect(button).toBeDisabled();
-      // Paket P8: a disabled button gets no pointer events, so the reason is on its wrapper.
+      // A disabled button gets no pointer events, so the reason is on its wrapper.
       expect(button.parentElement).toHaveAttribute("title", reason);
     }
     expect(screen.getByRole("button", { name: /Buat Manual/ })).toBeDisabled();
@@ -52,7 +52,7 @@ describe("MilestoneList create actions", () => {
     expect(screen.getByRole("button", { name: /Buat Manual/ })).toBeEnabled();
   });
 
-  it("Paket P8 (5): the empty list says which templates the running phase offers", () => {
+  it("The empty list says which templates the running phase offers", () => {
     const { rerender } = render(
       <MilestoneList milestones={[]} progress={null} isOwner currentPhase="proposal" onCreateNew={vi.fn()} onCreateFromTemplates={vi.fn()} />,
     );

@@ -55,7 +55,7 @@ function useRefreshAfterChange() {
   const queryClient = useQueryClient();
   return () => {
     queryClient.invalidateQueries({ queryKey: thesisChangeRequestKeys.all });
-    // Paket E5: a lecturer's steps are rows of Tugas Akhir > Permohonan (and its sidebar badge).
+    // A lecturer's steps are rows of Tugas Akhir > Permohonan (and its sidebar badge).
     queryClient.invalidateQueries({ queryKey: ['thesis-proposal', 'lecturer-inbox'] });
     queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
     queryClient.invalidateQueries({ queryKey: ['student-detail'] });

@@ -30,7 +30,7 @@ interface GuidanceHistorySectionProps {
 }
 
 /**
- * Sessions of both phases in one list, told apart by the Jenis badge (Paket E4, 2.3). As tall
+ * Sessions of both phases in one list, told apart by the Jenis badge. As tall
  * as its content; a long list scrolls inside the card at the same max height as Milestone (2.5).
  */
 export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySectionProps) {
@@ -43,7 +43,7 @@ export function GuidanceHistorySection({ guidanceHistory }: GuidanceHistorySecti
     );
 
     return (
-        // Paket E6 (5): fills its column so it is as tall as Milestone beside it.
+        // Fills its column so it is as tall as Milestone beside it.
         <Card className="flex-1">
             <CardHeader className="pb-4">
                 <CardTitle className="flex items-center gap-2 text-base">

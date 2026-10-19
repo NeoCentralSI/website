@@ -4,7 +4,7 @@ import { openAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
 import { formatDateShortId, formatDateTimeWib } from '@/lib/text';
 
 /**
- * Kolom Aksi menempel di kanan (pengaman di layar sempit). Paket E4 (0.4): latarnya ikut warna
+ * Kolom Aksi menempel di kanan (pengaman di layar sempit). Latarnya ikut warna
  * baris dan hover baris, tanpa bayangan, supaya tidak tampak sebagai blok tersendiri.
  */
 export const STICKY_ACTION_COLUMN_CLASS =

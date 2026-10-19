@@ -11,7 +11,7 @@ interface ActivityDistributionChartProps {
   activityDistribution: ActivityDistribution[] | undefined;
   isLoading: boolean;
   /**
-   * Paket P9 (6): the same pie for another distribution (Kelola → Batas Bimbingan). Defaults are
+   * The same pie for another distribution (Kelola → Batas Bimbingan). Defaults are
    * the activity chart's own title, labels, colours and empty text.
    */
   title?: string;

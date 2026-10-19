@@ -3,7 +3,7 @@ import { SUPERVISOR_REQUEST_STATUS_SHORT_LABELS } from '@/lib/thesisLabels';
 import type { StudentProposalOverview, StudentSupervisorRequests, SupervisorRequest } from '@/types/thesis-proposal.types';
 
 /**
- * Paket P9 (2): what the student Proposal page shows, as pure functions (the stepper and the one
+ * What the student Proposal page shows, as pure functions (the stepper and the one
  * action of the Pengajuan Pembimbing card).
  */
 

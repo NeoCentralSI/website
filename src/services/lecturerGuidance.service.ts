@@ -9,7 +9,7 @@ export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed"
 export interface MyStudentItem {
   /** Relation status of the current lecturer to this thesis (active/released). */
   supervisorStatus?: string | null;
-  /** Paket E4 (1.1): this lecturer was replaced; shown under "Semua" only, read-only. */
+  /** This lecturer was replaced; shown under "Semua" only, read-only. */
   noLongerSupervising?: boolean;
   studentId: string;
   fullName: string;
@@ -19,7 +19,7 @@ export interface MyStudentItem {
   thesisTitle?: string;
   thesisStatus?: ThesisLifecycleStatus | null;
   roles?: string[]; // e.g., ["pembimbing1"]
-  /** Nilai turunan (E3); null bila TA tidak berstatus Penelitian. */
+  /** Nilai turunan; null bila TA tidak berstatus Penelitian. */
   activityLevel?: ThesisActivityLevel | null;
   lastActivityAt?: string | null;
   daysSinceActivity?: number | null;
@@ -36,7 +36,7 @@ export interface MyStudentItem {
   lastGuidanceAt?: string | null;
   startDate?: string | null;
   /**
-   * Paket E5: the open-request marker, "Ajukan Perubahan" and "Alihkan" of the row, with the
+   * The open-request marker, "Ajukan Perubahan" and "Alihkan" of the row, with the
    * reason when a rule blocks them (null for a closed relation the backend does not read).
    */
   changeRequest?: {
@@ -50,7 +50,7 @@ export interface MyStudentItem {
 
 export interface GuidanceItem {
   id: string;
-  /** K27: Jenis sesi (Proposal / Penelitian). */
+  /** Jenis sesi (Proposal / Penelitian). */
   phase?: ThesisPhase;
   studentId?: string;
   studentName?: string;
@@ -106,9 +106,9 @@ export interface StudentDetail extends ThesisPhaseSummary {
   lastActivityAt: string | null;
   daysSinceActivity: number | null;
   supervisionClock: SupervisionClock | null;
-  /** True while the thesis is back in proposal because of a guidance evaluation (E5). */
+  /** True while the thesis is back in proposal because of a guidance evaluation. */
   repeatingProposal?: boolean;
-  /** Paket E4 (1.1): the viewer's supervision ended (replaced); the page is read-only. */
+  /** The viewer's supervision ended (replaced); the page is read-only. */
   noLongerSupervising?: boolean;
   startDate: string | null;
   startDateFormatted: string | null;
@@ -193,7 +193,7 @@ export const getStudentDetail = async (thesisId: string): Promise<{ success: boo
   return res.json();
 };
 
-/** K21: list filter; "active" (default) = research + on_leave. */
+/** List filter; "active" (default) = research + on_leave. */
 export type MyStudentsFilter = "active" | "proposal" | "completed" | "failed" | "all";
 
 export const getMyStudents = async (params?: { roles?: string; status?: MyStudentsFilter }): Promise<{ success: boolean; count: number; students: MyStudentItem[] }> => {
@@ -248,7 +248,7 @@ export const getScheduledGuidances = async (params?: { page?: number; pageSize?:
   return res.json();
 };
 
-/** K19: rejecting needs a reason; the lecturer may suggest another (future) time. */
+/** Rejecting needs a reason; the lecturer may suggest another (future) time. */
 export const rejectGuidanceRequest = async (
   guidanceId: string,
   body: { reason: string; suggestedDate?: string | null },
@@ -288,7 +288,7 @@ export const cancelGuidanceByLecturer = async (guidanceId: string, body: { reaso
   return res.json();
 };
 
-/** K19: the lecturer moves an accepted session (status stays accepted). */
+/** The lecturer moves an accepted session (status stays accepted). */
 export const rescheduleGuidanceByLecturer = async (
   guidanceId: string,
   body: { newDate: string; reason: string; duration?: number },
@@ -304,7 +304,7 @@ export const rescheduleGuidanceByLecturer = async (
   return res.json();
 };
 
-/** K19: the lecturer asks the student to revise the session summary (notes required). */
+/** The lecturer asks the student to revise the session summary (notes required). */
 export const rejectSessionSummary = async (
   guidanceId: string,
   body: { notes: string },

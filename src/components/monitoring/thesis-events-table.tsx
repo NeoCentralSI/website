@@ -48,7 +48,7 @@ interface ThesisEventsTableProps {
  * seminar and defence modules show: their badge is given the schedule, so it derives the
  * display status itself (a scheduled event whose start has passed reads "Sedang
  * Berlangsung"). The status filter, like the summary cards, goes by the stored status.
- * Search and the filter run in the browser. Paket E5: the rows come in the order of the
+ * Search and the filter run in the browser. The rows come in the order of the
  * seminar and defence modules (status priority, then the latest); the status filter sits in
  * the column header and the detail is an icon.
  */

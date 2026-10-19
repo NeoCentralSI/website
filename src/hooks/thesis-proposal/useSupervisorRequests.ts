@@ -29,7 +29,7 @@ export function useLecturerSupervisorInbox(enabled = true) {
 }
 
 /**
- * Tugas Akhir > Permohonan (Paket E5): a page of the lecturer's approval inbox from the server,
+ * Tugas Akhir > Permohonan: a page of the lecturer's approval inbox from the server,
  * sorted by status priority; the old page stays while the next loads.
  */
 export function useLecturerApprovalInbox(

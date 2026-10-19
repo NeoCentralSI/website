@@ -77,7 +77,7 @@ describe('form rules (R22)', () => {
     expect(getFilesProblem([new File(['x'], 'a.xlsx')])).toBeNull();
   });
 
-  it('Paket P9 (2): the stepper tells the student where the assessment stands', () => {
+  it('The stepper tells the student where the assessment stands', () => {
     const base = { id: 'a', academicYear: { id: 'ay', label: 'x' }, file: { fileName: 'p', fileSize: 1, url: 'u', submittedAt: null }, supervisorScored: true, coordinatorScored: false, isFinalized: false, finalScore: null, result: null, attendanceAutoZeroed: false };
     const stepOf = (current: typeof base | null) => buildProposalSteps({
       thesis: { id: 't', title: 'x', status: 'proposal', startDate: null, topic: null, academicYear: null, supervisors: [] },
@@ -101,7 +101,7 @@ const queueOf = (rows: AssessmentView[]): AssessmentQueue => ({
   rows,
 });
 
-describe('Tugas Akhir > Proposal (pembimbing), Paket P8', () => {
+describe('Tugas Akhir > Proposal (pembimbing)', () => {
   const rows = [
     view({ id: 'a2', student: { id: 's2', fullName: 'Uji Lulus', identityNumber: '2211528015' }, supervisorScore: 64, coordinatorScore: 20, finalScore: 84, isFinalized: true, result: 'passed', canScore: false, scoreBlockReason: 'Penilaian proposal sudah final.' }),
     view({ id: null, proposal: null, student: { id: 's3', fullName: 'Uji Ditetapkan', identityNumber: '2211528010' }, canScore: false, scoreBlockReason: 'Mahasiswa belum mengajukan proposal final.' }),
@@ -163,7 +163,7 @@ describe('Tugas Akhir > Proposal (pembimbing), Paket P8', () => {
   });
 });
 
-describe('Metode Penelitian > Penilaian Proposal (koordinator), Paket P8', () => {
+describe('Metode Penelitian > Penilaian Proposal (koordinator)', () => {
   it('a reader sees the queue; the score action is disabled with the reason', async () => {
     vi.mocked(service.getCoordinatorQueue).mockResolvedValue(queueOf([
       view({ supervisorScore: 60, thesis: { id: 't1', title: 'Sistem A', status: 'proposal', supervisorAssignedAt: null, supervisors: [{ lecturerId: 'l1', fullName: 'AINA HUBBY AZIIRA, M.Eng', role: 'Pembimbing 1' }] } }),
@@ -202,11 +202,11 @@ describe('Monitoring Kelas', () => {
     }],
   };
 
-  it('shows labels, not raw values; readers do not get the Proses Kelulusan panel (Paket P9: a panel of its own)', async () => {
+  it('shows labels, not raw values; readers do not get the Proses Kelulusan panel (a panel of its own)', async () => {
     vi.mocked(service.getMonitoring).mockResolvedValue(monitoring);
     wrap(<ClassMonitoring />);
     expect(await screen.findByText('Uji Proposal Siap Dinilai')).toBeInTheDocument();
-    // Paket P8: the stage of the row instead of raw values.
+    // The stage of the row instead of raw values.
     expect(screen.getByText('Bimbingan Proposal')).toBeInTheDocument();
     expect(screen.getByText(/^Ditetapkan 1 Sep/)).toBeInTheDocument();
     expect(screen.queryByText('assigned')).not.toBeInTheDocument();
@@ -217,7 +217,7 @@ describe('Monitoring Kelas', () => {
     expect(service.getPromotionPreview).not.toHaveBeenCalled();
   });
 
-  it('Paket P8: "Semua" puts the stages that need attention first; the longest stage fits its cell', async () => {
+  it('"Semua" puts the stages that need attention first; the longest stage fits its cell', async () => {
     vi.mocked(service.getMonitoring).mockResolvedValue({
       ...monitoring,
       rows: [
@@ -251,7 +251,7 @@ describe('Monitoring Kelas', () => {
   });
 });
 
-describe('Metode Penelitian > Presensi, Paket P8', () => {
+describe('Metode Penelitian > Presensi', () => {
   const overview: AttendanceOverview = {
     academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' },
     thresholdPercent: 75,
@@ -281,7 +281,7 @@ describe('Metode Penelitian > Presensi, Paket P8', () => {
     expect(within(rows[0]).getByText('Di Bawah 75%')).toBeInTheDocument();
     expect(within(rows[1]).getByText('Tidak Dikenal')).toBeInTheDocument();
     expectColumnFits(within(table).getByRole('columnheader', { name: /Status/ }), within(rows[0]).getAllByRole('cell')[4], 'Di Bawah 75%');
-    // Paket P9 (9): Pilih Berkas is a Button; the reason is in the tooltip; two panels.
+    // Pilih Berkas is a Button; the reason is in the tooltip; two panels.
     const choose = screen.getByRole('button', { name: /Pilih Berkas/ });
     expect(choose).toBeDisabled();
     expect(choose.parentElement).toHaveAttribute('title', 'Hanya Koordinator Metode Penelitian yang mengunggah presensi.');

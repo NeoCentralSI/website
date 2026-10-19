@@ -17,7 +17,7 @@ function toUploadPath(filePath?: string | null): string | null {
 }
 
 /**
- * Paket C (C10): DocumentPreviewDialog for protected thesis files, same props.
+ * DocumentPreviewDialog for protected thesis files, same props.
  * The file is fetched with the Authorization header and shown from a blob URL, so the JWT
  * never appears in a URL (iframe, "Buka tab", "Unduh"). The blob URL is revoked when the
  * dialog closes.

@@ -15,7 +15,7 @@ interface StudentDetailHeaderProps {
 }
 
 /**
- * Top of the student detail (Paket E6, 5): the student's name with the NIM below, back, reload
+ * Top of the student detail: the student's name with the NIM below, back, reload
  * and the thesis status. The supervisors are in the "Informasi Tugas Akhir" card.
  */
 export function StudentDetailHeader({ student, status, onRefresh, isRefreshing }: StudentDetailHeaderProps) {

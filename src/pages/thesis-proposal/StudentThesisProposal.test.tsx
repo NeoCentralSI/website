@@ -1,5 +1,5 @@
 /**
- * Paket P9 (2): the student Proposal page in the form of Seminar Hasil (Ringkasan and Riwayat
+ * The student Proposal page in the form of Seminar Hasil (Ringkasan and Riwayat
  * Pengajuan Pembimbing), and the request form on its own page with the lecturer catalog.
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -106,7 +106,7 @@ const steps = () => within(screen.getByRole('list', { name: 'Tahap proposal' }))
 
 beforeEach(() => vi.clearAllMocks());
 
-describe('Proposal mahasiswa (Paket P9, 2)', () => {
+describe('Proposal mahasiswa', () => {
   it('without a request: no Informasi Proposal; a student who may not submit reads why in the Pengajuan card', async () => {
     vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({}, { canSubmit: false, eligibleResearchMethod: false, blockedReason: NOT_ELIGIBLE }));
     vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(noThesis());
@@ -231,7 +231,7 @@ describe('Proposal mahasiswa (Paket P9, 2)', () => {
   });
 });
 
-describe('Pengajuan Pembimbing page (Paket P9, 2)', () => {
+describe('Pengajuan Pembimbing page', () => {
   const lecturer = (id: string, fullName: string, group: string, offeredTopics: string[], acceptingRequests = true): CatalogLecturer => ({
     lecturerId: id, fullName, identityNumber: id, avatarUrl: null, scienceGroup: { id: group, name: group }, acceptingRequests,
     activeCount: 3, softLimit: 8, hardLimit: 10, level: 'available', supervisedTopics: [], offeredTopics,

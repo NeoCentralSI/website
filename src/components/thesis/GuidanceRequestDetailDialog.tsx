@@ -31,7 +31,7 @@ export default function GuidanceRequestDetailDialog({
   const [mode, setMode] = useState<'view' | 'approve' | 'reject'>('view');
   const [approveFeedback, setApproveFeedback] = useState("");
   const [rejectFeedback, setRejectFeedback] = useState("");
-  // K19: optional alternative time suggested with a rejection
+  // Optional alternative time suggested with a rejection
   const [rejectSuggested, setRejectSuggested] = useState<Date | null>(null);
   const suggestedInPast = !!rejectSuggested && rejectSuggested.getTime() <= Date.now();
   const [submitting, setSubmitting] = useState(false);

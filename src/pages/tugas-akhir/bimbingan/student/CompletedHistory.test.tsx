@@ -32,7 +32,7 @@ function renderPage() {
 const thesisWith = (status: MyThesisDetail["status"], extra: Partial<MyThesisDetail> = {}) =>
   ({ id: "thesis-1", title: "Sistem Uji", status, ...extra }) as MyThesisDetail;
 
-describe("Riwayat Bimbingan (Paket E7, K28)", () => {
+describe("Riwayat Bimbingan", () => {
   beforeEach(() => {
     vi.mocked(getStudentSupervisors).mockResolvedValue({ thesisId: "thesis-1", supervisors: [] } as never);
   });

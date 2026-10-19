@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { formatDateShortId, formatDateTimeWib, formatLecturerName, toTitleCaseName } from "@/lib/text";
 
-// Paket C (C5): "14 Oktober 2026 14.00 WIB", always Asia/Jakarta, 24-hour clock with a dot.
+// "14 Oktober 2026 14.00 WIB", always Asia/Jakarta, 24-hour clock with a dot.
 describe("formatDateTimeWib", () => {
   it("formats an ISO value in WIB with a dot as the time separator", () => {
     expect(formatDateTimeWib("2026-10-14T07:00:00.000Z")).toBe("14 Oktober 2026 14.00 WIB");

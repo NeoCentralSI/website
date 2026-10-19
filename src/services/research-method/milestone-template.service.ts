@@ -1,6 +1,6 @@
 import { getJson, send } from '@/services/thesis-proposal/api';
 
-/** General proposal-phase milestone template (K18): no topic, managed by the Sekretaris Departemen only. */
+/** General proposal-phase milestone template: no topic, managed by the Sekretaris Departemen only. */
 export interface ProposalMilestoneTemplate {
   id: string;
   name: string;
@@ -16,7 +16,7 @@ export interface ProposalMilestoneTemplateInput {
   name: string;
   description?: string | null;
   isActive?: boolean;
-  /** Paket P8: as on the thesis template form; empty = after the last one. */
+  /** As on the thesis template form; empty = after the last one. */
   orderIndex?: number;
 }
 

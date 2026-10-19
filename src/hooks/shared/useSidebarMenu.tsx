@@ -63,7 +63,7 @@ export const useSidebarMenu = () => {
   const isResearchMethodCoordinatorRole = isResearchMethodCoordinator();
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
-  // Paket E4 (4.1), Paket E5 (3.1): Tugas Akhir > Permohonan carries what waits for the
+  // Tugas Akhir > Permohonan carries what waits for the
   // lecturer, the supervisor requests and the lecturer's change-request steps together.
   const { data: approvalInbox } = useLecturerApprovalInbox({ page: 1, pageSize: 1 }, isPembimbingRole);
   const waitingRequestCount = approvalInbox?.counts.waiting ?? 0;
@@ -91,7 +91,7 @@ export const useSidebarMenu = () => {
     };
 
     /**
-     * Metode Penelitian (Paket P, plan 6): the coordinator runs the class (Monitoring Kelas,
+     * Metode Penelitian: the coordinator runs the class (Monitoring Kelas,
      * Presensi, Penilaian Proposal); Kadep and Sekdep follow it read-only in Monitoring Kelas.
      * Supervisors score in Tugas Akhir > Proposal; Sekdep's master data is Kelola > Metode Penelitian.
      */
@@ -111,7 +111,7 @@ export const useSidebarMenu = () => {
     const proposalItems: SidebarLeafItem[] = role.pembimbing ? [{ title: "Proposal", url: "/tugas-akhir/proposal" }] : [];
 
     /**
-     * Paket E5 (3.5): a supervisor's Tugas Akhir order is Permohonan, Proposal, Bimbingan,
+     * A supervisor's Tugas Akhir order is Permohonan, Proposal, Bimbingan,
      * Seminar Hasil, Sidang TA. Supervisors have no Perubahan or Evaluasi page (they act from
      * Permohonan and Mahasiswa Bimbingan). Permohonan and Proposal are for supervisors; a
      * lecturer without the supervisor role keeps Bimbingan, Seminar Hasil and Sidang TA.
@@ -125,13 +125,13 @@ export const useSidebarMenu = () => {
       { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
       { title: "Sidang TA", url: "/tugas-akhir/sidang" },
     ];
-    /** Paket E5 (3.5): the Ketua Departemen's two decision queues, last in Tugas Akhir. */
+    /** The Ketua Departemen's two decision queues, last in Tugas Akhir. */
     const KADEP_DECISION_ITEMS: SidebarLeafItem[] = [
       { title: "Perubahan", url: "/tugas-akhir/perubahan" },
       { title: "Evaluasi", url: "/tugas-akhir/evaluasi" },
     ];
     const MONITORING_ITEM: SidebarLeafItem = { title: "Monitoring", url: "/tugas-akhir/monitoring" };
-    // Paket P8 (2): the submenu is "Penetapan"; its page keeps the title "Penetapan Pembimbing".
+    // The submenu is "Penetapan"; its page keeps the title "Penetapan Pembimbing".
     const PENETAPAN_ITEM: SidebarLeafItem = { title: "Penetapan", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" };
 
     // STUDENT MENU
@@ -155,9 +155,9 @@ export const useSidebarMenu = () => {
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
-        // K14: Tugas Akhir is always shown (Overview, Proposal, Bimbingan, Seminar Hasil, Sidang);
+        // Tugas Akhir is always shown (Overview, Proposal, Bimbingan, Seminar Hasil, Sidang);
         // without a thesis its pages show an empty state or actions disabled with a reason.
-        // The separate "Metode Penelitian" menu for students is gone (Paket P).
+        // The separate "Metode Penelitian" menu for students is gone.
         {
           title: "Tugas Akhir",
           url: "#",
@@ -248,7 +248,7 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
-      // Lanjutan P8 (18 Oktober 2026): Kelola > Metode Penelitian is the Sekdep's; the coordinator's
+      // Kelola > Metode Penelitian is the Sekdep's; the coordinator's
       // menu is Metode Penelitian > Monitoring Kelas, Presensi, Penilaian Proposal.
 
       return {
@@ -299,7 +299,7 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        // Paket E4 (4.5), Paket E5 (3.5): Monitoring, Penetapan Pembimbing, the supervisor's items,
+        // Monitoring, Penetapan Pembimbing, the supervisor's items,
         // then the two decision queues (Perubahan, Evaluasi).
         items: [MONITORING_ITEM, PENETAPAN_ITEM, ...supervisorThesisItems(), ...KADEP_DECISION_ITEMS],
       });
@@ -342,7 +342,7 @@ export const useSidebarMenu = () => {
     }
 
     // LECTURER (SEKDEP) MENU
-    // Canon SIMPTA v2.0 §4 + Q5 (audit BR-24): Sekdep adalah pengelola data
+    // Sekdep adalah pengelola data
     // master TA + monitoring read-only. Role Sekdep saja bukan pembimbing
     // operasional dan tidak menerbitkan Penetapan Pembimbing (hanya membaca). Untuk akun multi-role, menu
     // operasional tetap mengikuti role tambahan yang benar-benar dimiliki.
@@ -385,7 +385,7 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        // Paket E4 (4.5): Monitoring first. Read-only Penetapan Pembimbing (Sekdep sees the
+        // Monitoring first. Read-only Penetapan Pembimbing (Sekdep sees the
         // period's batch and downloads it), then the supervisor's items for a supervising Sekdep.
         items: [MONITORING_ITEM, PENETAPAN_ITEM, ...(role.pembimbing ? supervisorThesisItems() : [])],
       });
@@ -470,7 +470,7 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        // Paket E4 (4.5): Monitoring first, then the supervisor's items for a supervising GKM.
+        // Monitoring first, then the supervisor's items for a supervising GKM.
         items: [MONITORING_ITEM, ...(role.pembimbing ? supervisorThesisItems() : [])],
       });
 
@@ -591,7 +591,7 @@ export const useSidebarMenu = () => {
                 title: "Data Hari Libur",
                 url: "/master-data/hari-libur",
               },
-              // Paket P8 (2): no "Batas Bimbingan" for Admin; Kadep and Sekdep set it (K30).
+              // No "Batas Bimbingan" for Admin; Kadep and Sekdep set it.
             ],
           },
           ...(ENV.ENABLE_DEV_TOOLS

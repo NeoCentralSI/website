@@ -26,9 +26,9 @@ function Loading() {
 }
 
 /**
- * Tugas Akhir > Penetapan (Paket P9, 5): one semester for the whole page (default the running
+ * Tugas Akhir > Penetapan: one semester for the whole page (default the running
  * one; a past semester is read only), three panels. Ketua Departemen decides, issues, and sets the
- * semester's limits in Beban Dosen; Sekretaris Departemen reads every panel (decision P9; the
+ * semester's limits in Beban Dosen; Sekretaris Departemen reads every panel (the
  * general limit stays in Kelola → Batas Bimbingan for both).
  */
 export default function KadepThesisSupervisorAssignment() {

@@ -1,5 +1,5 @@
 /**
- * Label bahasa Indonesia untuk nilai enum TA (§2.2b Paket A). API mengirim nilai enum,
+ * Label bahasa Indonesia untuk nilai enum TA. API mengirim nilai enum,
  * frontend memberi label di sini. Isi peta harus sama persis dengan
  * `app/backend/src/constants/thesisLabels.js`.
  */
@@ -26,7 +26,7 @@ export interface SupervisionClock {
   /** True selama TA berstatus BSS: masa bimbingan berhenti. */
   isPaused: boolean;
 }
-/** Status sesi bimbingan (`GuidanceStatus`, K19). */
+/** Status sesi bimbingan (`GuidanceStatus`). */
 export type GuidanceSessionStatus =
   | "requested"
   | "accepted"
@@ -39,7 +39,7 @@ export type GuidanceSessionStatus =
   | "deleted";
 /** Pihak yang membatalkan sesi (`GuidanceActor`). */
 export type GuidanceActor = "student" | "lecturer" | "system";
-/** Status milestone (`MilestoneStatus`, K20). */
+/** Status milestone (`MilestoneStatus`). */
 export type MilestoneStatusValue = "not_started" | "in_progress" | "pending_review" | "revision_needed" | "completed" | "deleted";
 
 export type ThesisBadgeVariant = "default" | "secondary" | "destructive" | "outline" | "warning" | "success" | "info";
@@ -83,7 +83,7 @@ export const EVALUATION_DUE_LABELS: Record<EvaluationDue, string> = {
   one_year: "Evaluasi 1 tahun jatuh tempo",
 };
 
-/** Jenis Pengajuan Perubahan Tugas Akhir (`ThesisChangeRequestType`, K10). */
+/** Jenis Pengajuan Perubahan Tugas Akhir (`ThesisChangeRequestType`). */
 export type ChangeRequestType = "title" | "supervisor" | "both";
 export type ChangeRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 /** Posisi pembimbing yang diubah (`ThesisSupervisorPosition`). */
@@ -100,7 +100,7 @@ export const CHANGE_REQUEST_TYPE_LABELS: Record<ChangeRequestType, string> = {
 /** Jenis "Alihkan": pengajuan pembimbing yang dibuat lewat "Alihkan Mahasiswa" (punya `batchId`). */
 export const CHANGE_REQUEST_TRANSFER_LABEL = "Alihkan";
 
-/** Jenis yang tampil di tabel Perubahan (Paket E4, 4.2): Judul / Pembimbing / Judul dan Pembimbing / Alihkan. */
+/** Jenis yang tampil di tabel Perubahan: Judul / Pembimbing / Judul dan Pembimbing / Alihkan. */
 export function getChangeRequestKindLabel(request: { requestType: ChangeRequestType; batchId?: string | null }): string {
   return request.batchId ? CHANGE_REQUEST_TRANSFER_LABEL : getChangeRequestTypeLabel(request.requestType);
 }
@@ -120,7 +120,7 @@ export const CHANGE_REQUEST_STATUS_VARIANTS: Record<ChangeRequestStatus, ThesisB
 };
 
 /**
- * Paket E5 (1.5): status of a row of the change-request tables, which depends on the viewer
+ * Status of a row of the change-request tables, which depends on the viewer
  * while the request is open. Tugas Akhir > Perubahan (Ketua Departemen) uses "awaiting_decision";
  * the Perubahan TA rows of Tugas Akhir > Permohonan (a lecturer's own steps) use "awaiting_me".
  */
@@ -201,7 +201,7 @@ export const GUIDANCE_EVALUATION_STATUS_VARIANTS: Record<GuidanceEvaluationStatu
   rejected: "destructive",
 };
 
-/** Paket E5: status of a row of the Ketua Departemen's Evaluasi table ("Tercatat" = Lanjut Bimbingan). */
+/** Status of a row of the Ketua Departemen's Evaluasi table ("Tercatat" = Lanjut Bimbingan). */
 export type GuidanceEvaluationViewStatus = "awaiting_decision" | "approved" | "rejected" | "recorded";
 
 export const GUIDANCE_EVALUATION_VIEW_STATUS_LABELS: Record<GuidanceEvaluationViewStatus, string> = {
@@ -225,9 +225,9 @@ export const GUIDANCE_EVALUATION_OBSERVATION_LABELS: Record<GuidanceEvaluationOb
   noRevision: "Tidak menyerahkan revisi sesuai arahan",
 };
 
-/** Alasan aksi bimbingan/milestone terkunci selama TA mengulang proposal (E5). */
+/** Alasan aksi bimbingan/milestone terkunci selama TA mengulang proposal. */
 export const REPEAT_PROPOSAL_LOCK_REASON = "Mengulang proposal berdasarkan evaluasi bimbingan.";
-/** Fase proposal belum terbuka (K27): sama dengan pesan backend. */
+/** Fase proposal belum terbuka: sama dengan pesan backend. */
 export const PROPOSAL_NOT_ASSIGNED_REASON =
   "Bimbingan dan milestone fase proposal terbuka setelah Ketua Departemen menerbitkan Penetapan Pembimbing.";
 
@@ -251,7 +251,7 @@ export interface ThesisPhaseSummary {
   phases?: { proposal: PhaseActivity; research: PhaseActivity };
 }
 
-/** `rescheduled` adalah data lama yang diperlakukan sama dengan `accepted` (K19). */
+/** `rescheduled` adalah data lama yang diperlakukan sama dengan `accepted`. */
 export const GUIDANCE_STATUS_LABELS: Record<GuidanceSessionStatus, string> = {
   requested: "Menunggu Persetujuan",
   accepted: "Terjadwal",
@@ -328,7 +328,7 @@ export const THESIS_ACTIVITY_LEVELS: ThesisActivityLevel[] = ["active", "slow", 
 /** Status TA yang masih berjalan (belum selesai atau gagal). */
 export const OPEN_THESIS_STATUSES: ThesisLifecycleStatus[] = ["proposal", "research", "on_leave"];
 
-/** Status Pengajuan Pembimbing (`ThesisSupervisorRequestStatus`, K10). */
+/** Status Pengajuan Pembimbing (`ThesisSupervisorRequestStatus`). */
 export type SupervisorRequestStatus =
   | "pending"
   | "under_review"
@@ -348,9 +348,9 @@ export type SupervisionLoadLevel = "available" | "near_limit" | "full";
 export type ResearchMethodResult = "passed" | "failed";
 /** Versi Penetapan Pembimbing per periode: hanya satu yang berlaku. */
 export type AssignmentBatchStatus = "current" | "superseded";
-/** Keputusan proses kelulusan (naik ke Penelitian, K13). */
+/** Keputusan proses kelulusan (naik ke Penelitian). */
 export type PromotionDecision = "promote" | "wait_sia" | "wait_thesis_course" | "wait_next_period";
-/** Proposal revisi TA yang mengulang proposal (Lanjutan Paket P). */
+/** Proposal revisi TA yang mengulang proposal. */
 export type ProposalRevisionStatus = "submitted" | "revision_requested" | "approved";
 
 export const SUPERVISOR_REQUEST_STATUS_LABELS: Record<SupervisorRequestStatus, string> = {
@@ -369,7 +369,7 @@ export const SUPERVISOR_REQUEST_STATUS_LABELS: Record<SupervisorRequestStatus, s
 };
 
 /**
- * Paket E5 (1.2): the short status of a Pengajuan Pembimbing in a table cell, so the badge stays
+ * The short status of a Pengajuan Pembimbing in a table cell, so the badge stays
  * on one line inside its column; the full label is its tooltip.
  */
 export const SUPERVISOR_REQUEST_STATUS_SHORT_LABELS: Record<SupervisorRequestStatus, string> = {
@@ -387,16 +387,16 @@ export const SUPERVISOR_REQUEST_STATUS_SHORT_LABELS: Record<SupervisorRequestSta
   closed: "Ditutup",
 };
 
-/** Paket E5 (3.1): the two kinds of rows of Tugas Akhir > Permohonan. */
+/** The two kinds of rows of Tugas Akhir > Permohonan. */
 export type LecturerInboxKind = "supervisor_request" | "change_request" | "supervisor2_request";
 
 /**
- * Paket E6 (3): the Jenis of a Permohonan row, one badge: the supervisor request, or the kind of
+ * The Jenis of a Permohonan row, one badge: the supervisor request, or the kind of
  * change ("Alihkan" is a supervisor change). Also the values of the Jenis filter.
  */
 export type LecturerInboxJenis = "supervisor_request" | "change_title" | "change_supervisor" | "change_both" | "supervisor2";
 
-/** Paket P9 (4): "Pembimbing 2", the proposal-phase Pembimbing 2 requests, in the same table. */
+/** "Pembimbing 2", the proposal-phase Pembimbing 2 requests, in the same table. */
 export const LECTURER_INBOX_JENIS_LABELS: Record<LecturerInboxJenis, string> = {
   supervisor_request: "Pengajuan Pembimbing",
   change_title: "Perubahan Judul",
@@ -561,7 +561,7 @@ export function getThesisActivityVariant(value: string | null | undefined): Thes
 }
 
 /**
- * K15 transitions, mirrored from `backend/src/services/thesisLifecycle.service.js`.
+ * Status transitions, mirrored from `backend/src/services/thesisLifecycle.service.js`.
  * `on_leave` may only return to `statusBeforeLeave` (or become `failed`).
  */
 export const THESIS_STATUS_TRANSITIONS: Record<ThesisLifecycleStatus, ThesisLifecycleStatus[]> = {
@@ -572,7 +572,7 @@ export const THESIS_STATUS_TRANSITIONS: Record<ThesisLifecycleStatus, ThesisLife
   failed: [],
 };
 
-/** Statuses a new thesis may start with in the data master (K21). */
+/** Statuses a new thesis may start with in the data master. */
 export const CREATABLE_THESIS_STATUSES: ThesisLifecycleStatus[] = ["proposal", "research", "completed", "failed"];
 
 /** Options for the status field: the current status plus the allowed transitions. */
@@ -613,8 +613,8 @@ export function getThesisActivityOptions(): { value: ThesisActivityLevel; label:
 }
 
 /**
- * Alasan aksi bimbingan dinonaktifkan (K14): aksi tulis bimbingan dan milestone untuk TA
- * berstatus `research`, atau `proposal` setelah Penetapan Pembimbing (K27). Mengembalikan null
+ * Alasan aksi bimbingan dinonaktifkan: aksi tulis bimbingan dan milestone untuk TA
+ * berstatus `research`, atau `proposal` setelah Penetapan Pembimbing. Mengembalikan null
  * bila aksi boleh dilakukan.
  */
 export function getGuidanceActionBlockReason(
@@ -623,11 +623,11 @@ export function getGuidanceActionBlockReason(
   options: { repeatingProposal?: boolean | null; proposalPhaseOpen?: boolean | null } = {},
 ): string | null {
   if (status === "research") return null;
-  // TA yang dikembalikan ke proposal oleh evaluasi bimbingan menyebut alasannya (E5).
+  // TA yang dikembalikan ke proposal oleh evaluasi bimbingan menyebut alasannya.
   if (status === "proposal" && options.repeatingProposal) {
     return `${REPEAT_PROPOSAL_LOCK_REASON} Bimbingan dan milestone terkunci sampai Pembimbing 1 menyetujui proposal revisi (Tugas Akhir > Proposal).`;
   }
-  // Fase proposal terbuka setelah Penetapan Pembimbing (K27).
+  // Fase proposal terbuka setelah Penetapan Pembimbing.
   if (status === "proposal") return options.proposalPhaseOpen ? null : PROPOSAL_NOT_ASSIGNED_REASON;
   if (!status) return owner === "Anda" ? "Anda belum memiliki tugas akhir yang aktif." : "Mahasiswa belum memiliki tugas akhir yang aktif.";
   return `Aksi ini hanya tersedia untuk tugas akhir berstatus "${THESIS_STATUS_LABELS.research}". Status tugas akhir ${owner} saat ini: "${getThesisStatusLabel(status)}".`;

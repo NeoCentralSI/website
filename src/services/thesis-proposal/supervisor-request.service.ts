@@ -32,7 +32,7 @@ export const withdrawRequest = (id: string) =>
 // Lecturer
 export const getLecturerInbox = () =>
   getJson<LecturerInbox>(`${BASE}/supervisor-requests/inbox`, 'Gagal memuat permohonan pembimbing');
-/** Tugas Akhir > Permohonan (Paket E5): Pengajuan Pembimbing and the lecturer's Perubahan TA steps. */
+/** Tugas Akhir > Permohonan: Pengajuan Pembimbing and the lecturer's Perubahan TA steps. */
 export async function getLecturerApprovalInbox(params: {
   kind?: LecturerInboxJenis;
   status?: string;

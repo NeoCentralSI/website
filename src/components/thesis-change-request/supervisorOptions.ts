@@ -3,7 +3,7 @@ import { formatLecturerName } from '@/lib/text';
 import type { SupervisorOption } from '@/types/thesis-change-request.types';
 
 /**
- * Paket E6 (4): lecturers for the searchable picker of "Alihkan Mahasiswa" and "Ajukan
+ * Lecturers for the searchable picker of "Alihkan Mahasiswa" and "Ajukan
  * Perubahan": searched by name or NIP, with the supervision load at the right ("7/10").
  */
 export function toSupervisorComboboxOptions(options: SupervisorOption[]): ComboboxOption[] {

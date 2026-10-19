@@ -83,7 +83,7 @@ export function getSubmitBlockReason(form: FormState, chosenFull: boolean): stri
 
 /**
  * Formulir Pengajuan Pembimbing dengan dua jalur: Pilih Dosen Sendiri dan Ditetapkan Departemen.
- * Paket P9 (2): on its own page; the lecturer is chosen from the catalog table. Batal and a sent
+ * On its own page; the lecturer is chosen from the catalog table. Batal and a sent
  * request go back to the Proposal page; Simpan Draf stays.
  */
 export function StudentSupervisorRequestForm({ draft, onClose, onSubmitted }: {

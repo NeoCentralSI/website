@@ -75,10 +75,10 @@ function supervisorsOf(row: MonitoringRow) {
 }
 
 /**
- * Metode Penelitian > Monitoring Kelas (Paket P8): semua mahasiswa kelas periode itu dan sejauh
- * mana prosesnya, ekspor, dan proses kelulusan (naik ke Penelitian, K13). Bawaan "Semua",
+ * Metode Penelitian > Monitoring Kelas: semua mahasiswa kelas periode itu dan sejauh
+ * mana prosesnya, ekspor, dan proses kelulusan (naik ke Penelitian). Bawaan "Semua",
  * diurutkan dari tahap yang paling butuh perhatian; Tahap disaring di kepala kolom.
- * Paket P9 (9): the period select beside the title; Peserta Kelas and Proses Kelulusan are two
+ * The period select beside the title; Peserta Kelas and Proses Kelulusan are two
  * panels, one table each.
  */
 export default function ClassMonitoring() {

@@ -10,9 +10,9 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSupervisorQueue } from '@/hooks/research-method/useResearchMethod';
 
 /**
- * Tugas Akhir > Proposal (dosen pembimbing, rencana bagian 6; Paket P8): mahasiswa bimbingan fase
+ * Tugas Akhir > Proposal (dosen pembimbing): mahasiswa bimbingan fase
  * proposal per periode, proposal final, presensi, dan "Nilai Proposal". Pembimbing 1 normalnya
- * mengisi; Pembimbing 2 boleh mengisi sebagai cadangan (K9). Nilai terkunci setelah dikirim.
+ * mengisi; Pembimbing 2 boleh mengisi sebagai cadangan. Nilai terkunci setelah dikirim.
  */
 export default function LecturerThesisProposal() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();

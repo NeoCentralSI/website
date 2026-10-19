@@ -19,7 +19,7 @@ import { toTitleCaseName } from '@/lib/text';
 import { approveSupervisor2Request, rejectSupervisor2Request } from '@/services/lecturerGuidance.service';
 import type { Supervisor2InboxItem } from '@/types/thesis-proposal.types';
 
-/** The body of "Detail Permintaan Pembimbing 2" in Permohonan (Paket P9, 4). */
+/** The body of "Detail Permintaan Pembimbing 2" in Permohonan. */
 export function Supervisor2InboxDetails({ item }: { item: Supervisor2InboxItem }) {
   return (
     <dl className="grid gap-3 text-sm sm:grid-cols-[10rem_1fr]">

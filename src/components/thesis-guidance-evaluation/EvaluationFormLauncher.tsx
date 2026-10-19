@@ -4,7 +4,7 @@ import { useEvaluationContext } from '@/hooks/thesis-guidance-evaluation/useThes
 import { LecturerThesisGuidanceEvaluationFormDialog } from './LecturerThesisGuidanceEvaluationFormDialog';
 
 /**
- * Loads the thesis context and opens the existing "Isi Evaluasi" form (Paket E5, 3.4: from the
+ * Loads the thesis context and opens the existing "Isi Evaluasi" form (from the
  * "Isi Evaluasi" icon of Mahasiswa Bimbingan).
  */
 export function EvaluationFormLauncher({ thesisId, onClose }: { thesisId: string; onClose: () => void }) {

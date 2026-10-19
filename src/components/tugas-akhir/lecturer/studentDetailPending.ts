@@ -17,7 +17,7 @@ export function isReadinessAwaitingViewer(status: ReadinessStatusBase | null | u
     return !!status && !!status.currentUserRole && !status.currentUserHasApproved && !status.approveBlockedReason && !status.isPassed;
 }
 
-/** Section anchors of the single-page student detail (Paket E4, 5). */
+/** Section anchors of the single-page student detail. */
 export const DETAIL_SECTIONS = {
     milestone: "bagian-milestone",
     revision: "bagian-revisi-proposal",
@@ -34,7 +34,7 @@ export interface DetailActionItem {
 }
 
 /**
- * "Perlu tindakan Anda" (Paket E4, 5): what waits for the signed-in supervisor on this student,
+ * "Perlu tindakan Anda": what waits for the signed-in supervisor on this student,
  * each with the section it scrolls to. Empty when nothing waits.
  */
 export function getStudentDetailActionItems(input: {

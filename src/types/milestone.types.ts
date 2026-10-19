@@ -50,7 +50,7 @@ export type UpdateTemplateDto = Partial<CreateTemplateDto>;
 export interface Milestone {
   id: string;
   thesisId: string;
-  /** K27: fase saat milestone dibuat (Proposal / Penelitian). */
+  /** Fase saat milestone dibuat (Proposal / Penelitian). */
   phase?: ThesisPhase;
   title: string;
   description?: string | null;
@@ -64,7 +64,7 @@ export interface Milestone {
   validatedAt?: string | null;
   /** Catatan keputusan (setujui / minta revisi) dari Pembimbing 1. */
   supervisorNotes?: string | null;
-  /** Feedback pembimbing (P1/P2), terpisah dari catatan keputusan (Paket C, C9). */
+  /** Feedback pembimbing, terpisah dari catatan keputusan. */
   feedback?: string | null;
   feedbackBy?: string | null;
   feedbackByName?: string | null;
@@ -411,7 +411,7 @@ export interface ReadinessStatusBase {
   approveBlockedReason: string | null;
   /** Why "Batalkan Persetujuan" is disabled (e.g. the event is already passed). */
   revokeBlockedReason?: string | null;
-  /** Paket E4 (3.2): the seminar (or defence) is passed; the card is read-only. */
+  /** The seminar (or defence) is passed; the card is read-only. */
   isPassed?: boolean;
   passedAt?: string | null;
 }
@@ -481,7 +481,7 @@ export interface StudentsReadyForSeminarResponse {
 export interface DefenceReadinessStatus extends ReadinessStatusBase {
   defenceReadiness: ReadinessApproval;
   canRegisterDefence: boolean;
-  /** Paket E4 (3.3): before the results seminar is passed the card only shows that requirement. */
+  /** Before the results seminar is passed the card only shows that requirement. */
   seminarPassed?: boolean;
 }
 

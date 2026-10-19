@@ -72,19 +72,19 @@ const CASES = [
   ["ThesisLifecycleStatus", THESIS_STATUS_LABELS, "THESIS_STATUS_LABELS"],
   ["ThesisPhase", THESIS_PHASE_LABELS, "THESIS_PHASE_LABELS"],
   ["ThesisTerminationReason", THESIS_TERMINATION_REASON_LABELS, "THESIS_TERMINATION_REASON_LABELS"],
-  // Paket B: guidance session status (K19), cancelling party, milestone status (K20)
+  // Guidance session status, cancelling party, milestone status
   ["GuidanceStatus", GUIDANCE_STATUS_LABELS, "GUIDANCE_STATUS_LABELS"],
   ["GuidanceActor", GUIDANCE_ACTOR_LABELS, "GUIDANCE_ACTOR_LABELS"],
   ["MilestoneStatus", MILESTONE_STATUS_LABELS, "MILESTONE_STATUS_LABELS"],
-  // Paket E (E4): Pengajuan Perubahan Tugas Akhir
+  // Pengajuan Perubahan Tugas Akhir
   ["ThesisChangeRequestType", CHANGE_REQUEST_TYPE_LABELS, "CHANGE_REQUEST_TYPE_LABELS"],
   ["ThesisChangeRequestStatus", CHANGE_REQUEST_STATUS_LABELS, "CHANGE_REQUEST_STATUS_LABELS"],
   ["ThesisSupervisorPosition", SUPERVISOR_POSITION_LABELS, "SUPERVISOR_POSITION_LABELS"],
-  // Paket E (E5): Evaluasi Bimbingan
+  // Evaluasi Bimbingan
   ["GuidanceEvaluationType", GUIDANCE_EVALUATION_TYPE_LABELS, "GUIDANCE_EVALUATION_TYPE_LABELS"],
   ["GuidanceEvaluationRecommendation", GUIDANCE_EVALUATION_RECOMMENDATION_LABELS, "GUIDANCE_EVALUATION_RECOMMENDATION_LABELS"],
   ["GuidanceEvaluationStatus", GUIDANCE_EVALUATION_STATUS_LABELS, "GUIDANCE_EVALUATION_STATUS_LABELS"],
-  // Paket P: Pengajuan Pembimbing and Metode Penelitian
+  // Pengajuan Pembimbing and Metode Penelitian
   ["ThesisSupervisorRequestStatus", SUPERVISOR_REQUEST_STATUS_LABELS, "SUPERVISOR_REQUEST_STATUS_LABELS"],
   ["SupervisorRequestRoute", SUPERVISOR_REQUEST_ROUTE_LABELS, "SUPERVISOR_REQUEST_ROUTE_LABELS"],
   ["ResearchMethodAssessmentResult", RESEARCH_METHOD_RESULT_LABELS, "RESEARCH_METHOD_RESULT_LABELS"],
@@ -121,7 +121,7 @@ describe.skipIf(!HAS_BACKEND)("thesisLabels parity with the backend", () => {
     expect(getThesisStatusOptions().map((o) => o.value)).toEqual(enumValues("ThesisLifecycleStatus"));
   });
 
-  it("K15 transitions are identical to the backend lifecycle table", () => {
+  it("status transitions are identical to the backend lifecycle table", () => {
     const backend = readBackend("src/services/thesisLifecycle.service.js");
     const block = backend.match(/THESIS_STATUS_TRANSITIONS = Object\.freeze\(\{([\s\S]*?)\}\);/);
     expect(block).not.toBeNull();
@@ -169,7 +169,7 @@ describe("thesisLabels", () => {
     expect(reason).toContain("Mengulang proposal berdasarkan evaluasi bimbingan.");
     expect(getGuidanceActionBlockReason("proposal")).not.toContain("Mengulang proposal");
     expect(getGuidanceActionBlockReason("research", "Anda", { repeatingProposal: true })).toBeNull();
-    // K27: the proposal phase opens after Penetapan Pembimbing, never while repeating (E5)
+    // The proposal phase opens after Penetapan Pembimbing, never while repeating
     expect(getGuidanceActionBlockReason("proposal")).toContain("Penetapan Pembimbing");
     expect(getGuidanceActionBlockReason("proposal", "Anda", { proposalPhaseOpen: true })).toBeNull();
     expect(getGuidanceActionBlockReason("proposal", "Anda", { proposalPhaseOpen: true, repeatingProposal: true })).toContain("Mengulang proposal");

@@ -113,7 +113,7 @@ function openMenu(trigger: HTMLElement) {
   fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' });
 }
 
-describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)', () => {
+describe('Tugas Akhir > Permohonan (the lecturer approval inbox)', () => {
   const lecturerInbox = (level: 'available' | 'full'): LecturerInbox => ({
     academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' },
     load: { activeCount: level === 'full' ? 10 : 3, softLimit: 8, hardLimit: 10, level, acceptingRequests: true },
@@ -204,7 +204,7 @@ describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)'
       'Mahasiswa', 'Jenis', 'Usulan', 'Tanggal Masuk', 'Status', 'Aksi',
     ]);
     const rows = within(table).getAllByRole('row').slice(1);
-    // Paket E6 (3): Jenis is one badge; the details stay in Usulan.
+    // Jenis is one badge; the details stay in Usulan.
     expect(within(rows[0]).getAllByRole('cell')[1]).toHaveTextContent(/^Pengajuan Pembimbing$/);
     expect(within(rows[0]).getByText('Menunggu Dosen')).toBeInTheDocument();
     expect(within(rows[1]).getAllByRole('cell')[1]).toHaveTextContent(/^Perubahan Pembimbing$/);
@@ -230,7 +230,7 @@ describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)'
     await waitFor(() => expect(requests.getLecturerApprovalInbox).toHaveBeenLastCalledWith({ kind: 'change_supervisor', status: 'awaiting_me', search: undefined, page: 1, pageSize: 10 }));
   });
 
-  it('Paket E6 (1): the longest jenis, status and date stay inside their cells', async () => {
+  it('The longest jenis, status and date stay inside their cells', async () => {
     vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([
       changeRow({ requestType: 'both', title: { previous: 'Lama', next: 'Baru', newTopic: null }, createdAt: '2026-09-30T03:00:00.000Z' }),
     ]));
@@ -244,7 +244,7 @@ describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)'
     expectColumnFits(header('Status'), cells[4], 'Menunggu Persetujuan Anda');
   });
 
-  it('Paket E6 (6): a change step the rules block now is marked, and Setujui waits with the reason', async () => {
+  it('A change step the rules block now is marked, and Setujui waits with the reason', async () => {
     const reason = 'Pengajuan ini tidak dapat disetujui saat ini. Perubahan judul tidak dapat diajukan selama seminar hasil sedang berproses. Pengajuan tetap menunggu dan dapat ditolak.';
     vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([changeRow({ applyBlockReason: reason })]));
     wrap(<LecturerApprovalInboxTable />);
@@ -266,7 +266,7 @@ describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)'
     await waitFor(() => expect(changeService.decideAsLecturer).toHaveBeenCalledWith('chg-1', { approve: true, notes: null }));
   });
 
-  it('Paket P9 (4): the Pembimbing 2 requests are the Jenis "Pembimbing 2" of the same table (Lihat, Bersedia, Tolak)', async () => {
+  it('The Pembimbing 2 requests are the Jenis "Pembimbing 2" of the same table (Lihat, Bersedia, Tolak)', async () => {
     const p2: LecturerApprovalRow = {
       kind: 'supervisor2_request', id: 'n-1', viewStatus: 'awaiting_me', createdAt: '2026-10-15T03:00:00.000Z',
       supervisor2Request: { requestId: 'n-1', thesisId: 't3', studentId: 's3', studentName: 'PUTRI AYU', studentEmail: 'putri@student.unand.ac.id', studentNim: '2211528003', thesisTitle: 'Judul Putri', requestedAt: '2026-10-15T03:00:00.000Z' },
@@ -298,13 +298,13 @@ describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)'
     fireEvent.click(await screen.findByRole('button', { name: 'Lihat Detail' }));
     expect(await screen.findByText('Detail Pengajuan Pembimbing')).toBeInTheDocument();
     expect(screen.getByText('Rumusan masalah')).toBeInTheDocument();
-    // Lanjutan Paket E6: Batal, then the actions, Tolak destructive, Terima last.
+    // Batal, then the actions, Tolak destructive, Terima last.
     expectFooter(screen.getByRole('dialog'), ['Batal', 'Tandai Sedang Ditinjau', 'Tolak', 'Terima']);
-    // Paket P9 (1.3): Tandai Sedang Ditinjau is an outline button.
+    // Tandai Sedang Ditinjau is an outline button.
     expect(within(screen.getByRole('dialog')).getByRole('button', { name: 'Tandai Sedang Ditinjau' }).className).toContain('border-primary/30');
   });
 
-  it('Lanjutan Paket E6: when the lecturer is full the note is one line above the buttons; a closed request has only Tutup', async () => {
+  it('When the lecturer is full the note is one line above the buttons; a closed request has only Tutup', async () => {
     vi.mocked(requests.getLecturerInbox).mockResolvedValue(lecturerInbox('full'));
     vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([
       supervisorRow(request({ status: 'under_review' })),
@@ -323,7 +323,7 @@ describe('Tugas Akhir > Permohonan (Paket E5, 3.1: the lecturer approval inbox)'
     expectFooter(dialog, ['Tutup']);
   });
 
-  it('Lanjutan Paket E6: the Perubahan TA detail says the lecturer\'s step on one line above Batal, Tolak, Setujui', async () => {
+  it('The Perubahan TA detail says the lecturer\'s step on one line above Batal, Tolak, Setujui', async () => {
     vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([changeRow()]));
     wrap(<LecturerApprovalInboxTable />);
     fireEvent.click(within((await screen.findByText('Nabil Rizki')).closest('tr')!).getByRole('button', { name: 'Lihat Detail' }));

@@ -63,7 +63,7 @@ export async function cancelChangeRequest(requestId: string) {
   return parse<ThesisChangeRequest>(await post(`/${requestId}/cancel`), 'Gagal membatalkan pengajuan');
 }
 
-/** Tugas Akhir > Perubahan (Ketua Departemen): one page sorted by status priority (Paket E5). */
+/** Tugas Akhir > Perubahan (Ketua Departemen): one page sorted by status priority. */
 export async function getChangeRequestInbox(params: {
   status?: ChangeRequestViewStatus;
   kind?: ChangeRequestKindFilter;

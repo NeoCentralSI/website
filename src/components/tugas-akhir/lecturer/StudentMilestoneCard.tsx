@@ -56,17 +56,17 @@ interface StudentMilestoneCardProps {
     isPembimbing1: boolean;
     /** Ended thesis (completed/failed): read-only history. */
     isEnded: boolean;
-    /** K14: why milestone write actions are closed; null when they are open. */
+    /** Why milestone write actions are closed; null when they are open. */
     actionBlockReason: string | null;
     /**
-     * Paket E4 (2.4): milestones of the other phase continue the same list below the current
+     * Milestones of the other phase continue the same list below the current
      * phase, each with its phase badge, read-only, without action buttons.
      */
     readOnlyMilestones?: StudentDetail["milestones"];
     readOnlyPhase?: ThesisPhase;
 }
 
-/** Shared max height of the Milestone and Riwayat Bimbingan lists (Paket E4, 2.5). */
+/** Shared max height of the Milestone and Riwayat Bimbingan lists. */
 export const DETAIL_LIST_MAX_HEIGHT_CLASS = "max-h-150";
 
 /**
@@ -86,7 +86,7 @@ export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEn
     const [milestoneTargetDate, setMilestoneTargetDate] = useState<Date | undefined>();
     const [milestoneSupervisorNotes, setMilestoneSupervisorNotes] = useState("");
 
-    // K20: feedback from P1 or P2 (does not change the milestone status)
+    // Feedback from Pembimbing 1 or Pembimbing 2 (does not change the milestone status)
     const [feedbackMilestoneId, setFeedbackMilestoneId] = useState<string | null>(null);
 
     const awaitingReview = countMilestonesAwaitingReview(milestones, { isPembimbing1, isEnded });
@@ -189,7 +189,7 @@ export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEn
     const previousFeedback = milestones.find((m) => m.id === feedbackMilestoneId)?.feedback;
 
     return (
-        // Paket E6 (5): fills its column so it is as tall as Riwayat Bimbingan beside it.
+        // Fills its column so it is as tall as Riwayat Bimbingan beside it.
         <Card className="flex-1">
             <CardHeader className="flex flex-row items-start justify-between gap-3 pb-4">
                 <div className="min-w-0 space-y-1">
@@ -275,7 +275,7 @@ export function StudentMilestoneCard({ thesisId, milestones, isPembimbing1, isEn
                                                             <CheckCircle2 className="h-4 w-4" />
                                                         </Button>
                                                     )}
-                                                    {/* K20: Pembimbing 1 and 2 may give feedback (no status change) */}
+                                                    {/* Pembimbing 1 and 2 may give feedback (no status change) */}
                                                     {!actionBlockReason && (
                                                         <Button
                                                             variant="ghost"

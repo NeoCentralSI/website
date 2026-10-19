@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 import type { ProposalStep } from './studentProposalState';
 
 /**
- * Paket P9 (2): the vertical stepper of the student Proposal page, in the form of
+ * The vertical stepper of the student Proposal page, in the form of
  * `StudentThesisSeminarStatusCard` (emerald checks, a progress bar). A failed assessment is red.
  */
 export function StudentProposalStatusCard({ steps }: { steps: ProposalStep[] }) {

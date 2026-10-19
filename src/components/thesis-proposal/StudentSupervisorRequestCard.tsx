@@ -25,7 +25,7 @@ import { SupervisorRequestDetails } from './SupervisorRequestDetails';
 export const SUPERVISOR_REQUEST_FORM_PATH = '/tugas-akhir/proposal/pengajuan';
 
 /**
- * Paket P9 (2): the right-hand card "Pengajuan Pembimbing": a short status and one action
+ * The right-hand card "Pengajuan Pembimbing": a short status and one action
  * (Ajukan Pembimbing, Lanjutkan Draf, Tarik Pengajuan, Batalkan Pengajuan or Lihat Detail). The
  * form is its own page; a student who may not submit reads why here.
  */

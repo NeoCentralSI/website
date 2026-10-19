@@ -196,7 +196,7 @@ export function useResearchMethodAssessment(
     onError: (error: Error) => toast.error(error.message),
   });
 
-  // Paket P8 (3.2): "Salin Template" into this (empty) period.
+  // "Salin Template" into this (empty) period.
   const copyTemplateMutation = useMutation({
     mutationFn: (sourceAcademicYearId: string) =>
       copyResearchMethodCpmkTemplate({

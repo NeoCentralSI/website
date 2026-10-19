@@ -70,11 +70,11 @@ export default function StudentGuidancePage() {
 
   // The detail endpoint answers 404 only when the student has no thesis at all.
   const isNotInThesisPhase = isThesisDetailError;
-  // Paket E4 (7) and its Lanjutan: a stopped or finished thesis keeps its sessions visible,
+  // A stopped or finished thesis keeps its sessions visible,
   // read-only, under a ribbon with the day it was closed.
   const closedStatus = thesisDetail?.status === "failed" || thesisDetail?.status === "completed" ? thesisDetail.status : null;
   const isThesisStopped = !!closedStatus;
-  // K14/K27: guidance writes for status `research`, or `proposal` after Penetapan Pembimbing;
+  // Guidance writes for status `research`, or `proposal` after Penetapan Pembimbing;
   // the button stays visible but disabled with the reason.
   const actionBlockReason = thesisDetail
     ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", {
@@ -387,7 +387,7 @@ export default function StudentGuidancePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {/* K19: a reason is required for every cancellation */}
+          {/* A reason is required for every cancellation */}
           {(
             <div className="py-2">
               <label className="text-sm font-medium mb-1.5 block">Alasan Pembatalan <span className="text-destructive">*</span></label>

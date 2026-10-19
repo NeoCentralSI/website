@@ -51,12 +51,12 @@ interface StudentThesisSummaryCardProps {
 }
 
 /**
- * "Informasi Tugas Akhir" (Paket E6, 5): one card with a grid of two to three columns, the
+ * "Informasi Tugas Akhir": one card with a grid of two to three columns, the
  * title on the full first row, then topic, Pembimbing 1 and 2, supervision time with the due
  * marker, activity, and the progress of guidance (n of 8) and milestones (n of m).
  */
 export function StudentThesisSummaryCard({ detail, topicName, supervisors, guidanceProgress }: StudentThesisSummaryCardProps) {
-    // 10.7: the meters follow the current phase; proposal sessions have no minimum (K27).
+    // The meters follow the current phase; proposal sessions have no minimum.
     const phase = detail.currentPhase ?? "research";
     const phaseMilestones = detail.milestones.filter((milestone) => (milestone.phase ?? "research") === phase);
     const completedMilestones = phaseMilestones.filter((milestone) => milestone.status === "completed").length;

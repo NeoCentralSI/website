@@ -39,7 +39,7 @@ export function changeRequestKindPhrase(request: ThesisChangeRequest): string {
   return 'pembimbing';
 }
 
-/** Requests that touched the title, or the supervisors (Paket E4, 6: the two history links). */
+/** Requests that touched the title, or the supervisors (the two history links). */
 export const changesTitle = (request: ThesisChangeRequest) => request.requestType === 'title' || request.requestType === 'both';
 export const changesSupervisor = (request: ThesisChangeRequest) => request.requestType === 'supervisor' || request.requestType === 'both';
 
@@ -83,7 +83,7 @@ export function ThesisChangeRequestDetailDialog({ request, onClose }: { request:
                 </Button>
               )}
               <Button size="sm" variant="destructive" onClick={() => openDecision(false)}>Tolak</Button>
-              {/* Paket E6: while the rules block approving, Setujui waits with the reason. */}
+              {/* While the rules block approving, Setujui waits with the reason. */}
               <span title={request.applyBlockReason ?? undefined}>
                 <Button size="sm" disabled={!!request.applyBlockReason} onClick={() => openDecision(true)}>Setujui</Button>
               </span>
@@ -151,9 +151,9 @@ export function ThesisChangeRequestDetailDialog({ request, onClose }: { request:
 }
 
 /**
- * Mini history table of one thesis: tanggal, jenis, status, Detail (Paket E4, 5 and 6; Paket E5:
- * the table standard, with a fixed layout, a two-line date and the detail as an icon). Paket E6
- * (1): jenis and status are stacked in one column as wide as the longest badge, so the table
+ * Mini history table of one thesis: tanggal, jenis, status, Detail, in the table standard (a
+ * fixed layout, a two-line date and the detail as an icon). Jenis
+ * and status are stacked in one column as wide as the longest badge, so the table
  * fits a half-width card without a badge leaving its cell.
  */
 export function ThesisChangeRequestMiniTable({ requests, onDetail, emptyText = 'Belum ada riwayat pengajuan.' }: {

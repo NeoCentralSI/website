@@ -40,7 +40,7 @@ interface FormState {
     academicYearId: string;
     startDate: string;
     status: ThesisLifecycleStatus;
-    /** Status when the dialog opened (null = new thesis); K21 transitions start from here. */
+    /** Status when the dialog opened (null = new thesis); the allowed transitions start from here. */
     originalStatus: ThesisLifecycleStatus | null;
     statusBeforeLeave: ThesisLifecycleStatus | null;
     terminationReason: ThesisTerminationReason | "none";
@@ -268,7 +268,7 @@ export function DataMasterTaPanel() {
         {
             key: "title",
             header: "Judul / Topik",
-            // Paket E6 (2): the title wraps to two lines with an ellipsis (the cell is nowrap by
+            // The title wraps to two lines with an ellipsis (the cell is nowrap by
             // default), the topic badge ends with an ellipsis; both keep the full text in `title`.
             render: (t) => (
                 <div className="min-w-[180px] max-w-[260px]">

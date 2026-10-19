@@ -69,16 +69,16 @@ export default function StudentMilestonePage() {
 
   // The detail endpoint answers 404 only when the student has no thesis at all.
   const isNotInThesisPhase = isThesisDetailError;
-  // 10.7: the current phase is editable; the other phase is listed below, read-only.
+  // The current phase is editable; the other phase is listed below, read-only.
   const currentPhase: ThesisPhase = thesisDetail?.currentPhase ?? "research";
   const otherPhase: ThesisPhase = currentPhase === "proposal" ? "research" : "proposal";
 
-  // Paket E4 (7) and its Lanjutan: a stopped or finished thesis keeps its milestones visible,
+  // A stopped or finished thesis keeps its milestones visible,
   // read-only, under a ribbon with the day it was closed.
   const closedStatus = thesisDetail?.status === "failed" || thesisDetail?.status === "completed" ? thesisDetail.status : null;
   const isThesisStopped = !!closedStatus;
 
-  // K14/K27: milestone writes for `research`, or `proposal` after Penetapan Pembimbing;
+  // Milestone writes for `research`, or `proposal` after Penetapan Pembimbing;
   // buttons stay visible but disabled with the reason.
   const actionBlockReason = thesisDetail
     ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", {
@@ -98,7 +98,7 @@ export default function StudentMilestonePage() {
 
   const progress = milestonesData?.progress ?? null;
 
-  // Proposal templates are general (K18); thesis-phase templates follow the topic.
+  // Proposal templates are general; thesis-phase templates follow the topic.
   const { data: templates = [], isLoading: isLoadingTemplates } =
     useTemplates(undefined, { phase: currentPhase, enabled: !!thesisDetail });
 

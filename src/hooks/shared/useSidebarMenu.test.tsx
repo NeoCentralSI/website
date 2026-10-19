@@ -64,7 +64,7 @@ describe("useSidebarMenu", () => {
     mockRole({ isStudent: true });
   });
 
-  // K14 (Paket P): one Tugas Akhir menu for students, no separate Metode Penelitian menu.
+  // One Tugas Akhir menu for students, no separate Metode Penelitian menu.
   it("gives students Tugas Akhir > Overview, Proposal, Bimbingan, Seminar Hasil, Sidang and no Metode Penelitian menu", () => {
     const { result } = renderHook(() => useSidebarMenu());
 
@@ -84,13 +84,13 @@ describe("useSidebarMenu", () => {
     { title: "Penilaian Proposal", url: "/metode-penelitian/penilaian" },
   ];
 
-  // Paket P: supervisors score in Tugas Akhir > Proposal (no Metode Penelitian menu, K16).
-  // Paket E5 (3.5): Permohonan, Proposal, Bimbingan, Seminar Hasil, Sidang TA; supervisors have
+  // Supervisors score in Tugas Akhir > Proposal (no Metode Penelitian menu).
+  // Permohonan, Proposal, Bimbingan, Seminar Hasil, Sidang TA; supervisors have
   // no Perubahan or Evaluasi page.
   const SUPERVISOR_TA = ["Permohonan", "Proposal", "Bimbingan", "Seminar Hasil", "Sidang TA"];
   const KADEP_DECISIONS = ["Perubahan", "Evaluasi"];
 
-  it("gives supervisors the Tugas Akhir order of Paket E5 and no Metode Penelitian menu", () => {
+  it("gives supervisors their Tugas Akhir order and no Metode Penelitian menu", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isPembimbing: true });
 
@@ -102,7 +102,7 @@ describe("useSidebarMenu", () => {
     expect(items.map((item) => item.url)).not.toContain("/tugas-akhir/evaluasi");
   });
 
-  it("shows what waits for the lecturer on Permohonan, both kinds (Paket E4, 4.1; Paket E5, 3.1)", () => {
+  it("shows what waits for the lecturer on Permohonan, both kinds", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isPembimbing: true });
     inbox.counts.waiting = 2;
@@ -118,7 +118,7 @@ describe("useSidebarMenu", () => {
     expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Bimbingan", "Seminar Hasil", "Sidang TA"]);
   });
 
-  it("gives the Research Method coordinator Monitoring Kelas, Presensi, Penilaian Proposal and no Kelola (Lanjutan P8)", () => {
+  it("gives the Research Method coordinator Monitoring Kelas, Presensi, Penilaian Proposal and no Kelola", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isResearchMethodCoordinator: true });
 
@@ -133,10 +133,10 @@ describe("useSidebarMenu", () => {
     expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual([
       "Monitoring", "Penetapan", "Bimbingan", "Seminar Hasil", "Sidang TA", "Perubahan", "Evaluasi",
     ]);
-    // Paket P8 (2): the submenu is "Penetapan"; its page keeps the title "Penetapan Pembimbing".
+    // The submenu is "Penetapan"; its page keeps the title "Penetapan Pembimbing".
     expect(menuOf("Tugas Akhir")?.items?.[1]).toEqual({ title: "Penetapan", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" });
     const kelolaMenu = menuOf("Kelola");
-    // 4.4: "Persetujuan Tugas Akhir" is gone, replaced by Perubahan and Evaluasi.
+    // "Persetujuan Tugas Akhir" is gone, replaced by Perubahan and Evaluasi.
     expect(kelolaMenu?.items.map((item) => item.title)).not.toContain("Persetujuan Tugas Akhir");
     expect(kelolaMenu?.items).toContainEqual({ title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" });
     expect(kelolaMenu?.items).toContainEqual({ title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" });
@@ -147,13 +147,13 @@ describe("useSidebarMenu", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true, isPembimbing: true });
 
-    // Paket E5 (3.5): Monitoring, Penetapan, Permohonan, Proposal, Bimbingan, Seminar Hasil, Sidang TA, Perubahan, Evaluasi.
+    // Monitoring, Penetapan, Permohonan, Proposal, Bimbingan, Seminar Hasil, Sidang TA, Perubahan, Evaluasi.
     expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Monitoring", "Penetapan", ...SUPERVISOR_TA, ...KADEP_DECISIONS]);
   });
 
-  // BR-24: Sekdep-only gets no operational queues; master data stays in Kelola > Metode
-  // Penelitian (K18: the duplicate "CPMK & Rubrik Penilaian" entry is gone).
-  it("gives Sekdep read-only Monitoring Kelas and the master data under Kelola (BR-24, K18)", () => {
+  // Sekdep-only gets no operational queues; master data stays in Kelola > Metode
+  // Penelitian (the duplicate "CPMK & Rubrik Penilaian" entry is gone).
+  it("gives Sekdep read-only Monitoring Kelas and the master data under Kelola", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
     mockRole({ isDosen: true, isSekdep: true });
 
@@ -165,7 +165,7 @@ describe("useSidebarMenu", () => {
     expect(kelolaTitles.indexOf("Metode Penelitian")).toBeLessThan(kelolaTitles.indexOf("Tugas Akhir"));
   });
 
-  it("limits Sekdep Tugas Akhir menu to read-only pages (BR-24)", () => {
+  it("limits Sekdep Tugas Akhir menu to read-only pages", () => {
     mockAuthUser({ id: "sekdep-1", fullName: "Sekdep Uji" });
     mockRole({ isDosen: true, isSekdep: true });
 
@@ -260,7 +260,7 @@ describe("useSidebarMenu", () => {
         { title: "Data Hari Libur", url: "/master-data/hari-libur" },
       ]),
     );
-    // Paket P8 (2): Admin has no "Batas Bimbingan" (K30: Kadep and Sekdep set it).
+    // Admin has no "Batas Bimbingan" (Kadep and Sekdep set it).
     expect(masterItems?.map((item) => item.title)).not.toContain("Batas Bimbingan");
     expect(admin.result.current.navMain.flatMap((item) => item.items ?? []).map((item) => item.url)).not.toContain("/master-data/kuota-bimbingan");
     admin.unmount();

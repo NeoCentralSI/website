@@ -6,7 +6,7 @@ import { getSiaSyncStatus } from '@/services/sia.service';
 export const SIA_NOT_AVAILABLE = 'Sinkronisasi SIA belum tersedia.';
 
 /**
- * Whether SIA can be read (Paket P9 rule: before the real SIA API exists, SIA_BASE_URL on
+ * Whether SIA can be read (before the real SIA API exists, SIA_BASE_URL on
  * neocentral.dev is empty). Reads `configured` from GET /sia/sync/status (Admin). Until the answer
  * comes, the buttons stay usable; the backend refuses anyway.
  */

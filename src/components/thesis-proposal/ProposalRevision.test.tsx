@@ -59,7 +59,7 @@ describe('Proposal revisi (mengulang proposal)', () => {
     expect(getRevisionNotesProblem('Perjelas metodologi.')).toBeNull();
   });
 
-  it('Paket P9 (2): steps 3 to 5 are the repeat steps only for a thesis repeating its proposal', () => {
+  it('Steps 3 to 5 are the repeat steps only for a thesis repeating its proposal', () => {
     const labels = (o: StudentProposalOverview) => buildProposalSteps(o, undefined).map((step) => step.label);
     expect(labels(overview({ applicable: false, evaluation: null, canSubmit: false }))).toEqual([
       'Pengajuan Pembimbing', 'Penetapan Pembimbing', 'Proposal Final', 'Penilaian Proposal', 'Naik ke Penelitian',

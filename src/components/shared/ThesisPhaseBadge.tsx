@@ -6,7 +6,7 @@ interface ThesisPhaseBadgeProps {
   className?: string;
 }
 
-/** Badge jenis Proposal / Penelitian (`ThesisPhase`); label dari thesisLabels (Paket E4, 2.1). */
+/** Badge jenis Proposal / Penelitian (`ThesisPhase`); label dari thesisLabels. */
 export function ThesisPhaseBadge({ phase, className }: ThesisPhaseBadgeProps) {
   return (
     <Badge variant={getThesisPhaseVariant(phase)} className={className}>

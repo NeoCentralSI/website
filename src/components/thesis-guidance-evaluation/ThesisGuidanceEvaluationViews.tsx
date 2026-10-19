@@ -27,8 +27,8 @@ export function ThesisGuidanceEvaluationDetailDialog({ evaluation, onClose }: { 
 }
 
 /**
- * Mini history table of one thesis: tanggal, tahap, status, Detail (Paket E4, 5 and 6; Paket E5:
- * the table standard, with a fixed layout, a two-line date and the detail as an icon).
+ * Mini history table of one thesis: tanggal, tahap, status, Detail, in the table standard (a
+ * fixed layout, a two-line date and the detail as an icon).
  */
 export function ThesisGuidanceEvaluationMiniTable({ evaluations, onDetail, emptyText = 'Belum ada evaluasi.' }: {
   evaluations: ThesisGuidanceEvaluation[];
@@ -86,7 +86,7 @@ export function ThesisGuidanceEvaluationHistoryLink({ evaluations }: { evaluatio
   );
 }
 
-/** A running academic warning (1-month extension), as a ribbon (Paket E4, 6). */
+/** A running academic warning (1-month extension), as a ribbon. */
 export function AcademicWarningAlert({ warning, className }: {
   warning: ThesisGuidanceEvaluationContext['academicWarning'] | null | undefined;
   className?: string;

@@ -20,7 +20,7 @@ import type { SupervisorRequest } from '@/types/thesis-proposal.types';
 import { SupervisorRequestDetails } from './SupervisorRequestDetails';
 
 /**
- * Paket P9 (2): panel "Riwayat Pengajuan Pembimbing", one table like Riwayat Kehadiran Seminar
+ * Panel "Riwayat Pengajuan Pembimbing", one table like Riwayat Kehadiran Seminar
  * (every request the student sent, newest first). The detail modal has only Tutup.
  */
 export function StudentSupervisorRequestHistoryTable({ requests, isLoading }: { requests: SupervisorRequest[]; isLoading?: boolean }) {

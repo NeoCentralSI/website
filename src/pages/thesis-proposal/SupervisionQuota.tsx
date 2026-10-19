@@ -10,7 +10,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useSupervisionLoadOverview } from '@/hooks/thesis-proposal/useSupervisionQuota';
 
 /**
- * Kelola > Batas Bimbingan (K30; Paket P9, 6): Ketua dan Sekretaris Departemen. Halaman ini
+ * Kelola > Batas Bimbingan: Ketua dan Sekretaris Departemen. Halaman ini
  * mengelola batas umum; batas per semester ada di Penetapan → Beban Dosen. Tiga grafik, lalu
  * tabel Beban Dosen dengan batas umum di toolbarnya.
  */

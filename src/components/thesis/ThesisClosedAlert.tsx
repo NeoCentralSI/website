@@ -11,8 +11,8 @@ interface ThesisClosedAlertProps {
 }
 
 /**
- * Pita di atas bimbingan dan milestone tugas akhir yang sudah ditutup: dihentikan (Paket E4, 7)
- * atau selesai (Lanjutan Paket E4). Isinya tetap terlihat, baca-saja (K14).
+ * Pita di atas bimbingan dan milestone tugas akhir yang sudah ditutup: dihentikan
+ * atau selesai. Isinya tetap terlihat, baca-saja.
  */
 export function ThesisClosedAlert({ status, closedAt, className }: ThesisClosedAlertProps) {
   const date = closedAt ? formatDateShortId(closedAt) : '-';

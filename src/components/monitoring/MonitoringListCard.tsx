@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * Every card of the Monitoring pages (all three tabs and the detail): the subtitle and the
- * first list item sit close but not touching, the same in every card (Paket E4, 8).
+ * first list item sit close but not touching, the same in every card.
  */
 export const MONITORING_CARD_CLASS = "gap-3";
 

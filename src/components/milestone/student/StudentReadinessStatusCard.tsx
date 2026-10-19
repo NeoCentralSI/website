@@ -30,7 +30,7 @@ export interface StudentReadinessStatusCardProps {
  * Student view of seminar/defence readiness: system requirements, every supervisor's
  * approval, and "Minta Persetujuan" (a notification only, nothing is uploaded). The two
  * kinds share this card so they stay symmetric; both always show, side by side with equal
- * height (Paket E4, 3.1). A passed event turns the card read-only (3.2); the defence card
+ * height. A passed event turns the card read-only; the defence card
  * first waits for the results seminar (3.3).
  */
 export function StudentReadinessStatusCard({ kind, thesisId, className }: StudentReadinessStatusCardProps & { kind: ReadinessKind }) {

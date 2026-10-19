@@ -6,7 +6,7 @@ import { ThesisGuidanceEvaluationTable } from '@/components/thesis-guidance-eval
 import { useRole } from '@/hooks/shared';
 
 /**
- * Tugas Akhir > Evaluasi (Paket E4, 4.3; Paket E5, 3.4): the Ketua Departemen's decisions on
+ * Tugas Akhir > Evaluasi: the Ketua Departemen's decisions on
  * Evaluasi Bimbingan. Supervisors have no Evaluasi page: Pembimbing 1 fills a due evaluation
  * from Mahasiswa Bimbingan or the student detail, so they are sent there.
  */

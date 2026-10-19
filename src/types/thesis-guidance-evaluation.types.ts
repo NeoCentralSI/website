@@ -38,7 +38,7 @@ export interface ThesisGuidanceEvaluation {
     by: EvaluationPerson | null;
     notes: string | null;
     at: string | null;
-    /** Lanjutan Paket E7: closed by the system when the thesis became Selesai (status Ditolak). */
+    /** Closed by the system when the thesis became Selesai (status Ditolak). */
     closedBySystem?: boolean;
   } | null;
   createdAt: string;
@@ -78,11 +78,11 @@ export interface SubmitEvaluationDto {
   notes?: string | null;
 }
 
-/** A row of the Ketua Departemen's Evaluasi table, with its row status (Paket E5). */
+/** A row of the Ketua Departemen's Evaluasi table, with its row status. */
 export type EvaluationInboxRow = ThesisGuidanceEvaluation & { viewStatus: GuidanceEvaluationViewStatus };
 
 /**
- * Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5): one page, "Semua" by default and sorted
+ * Tugas Akhir > Evaluasi (Ketua Departemen): one page, "Semua" by default and sorted
  * by status priority on the server; filtered, searched and paged there.
  */
 export interface EvaluationInbox {

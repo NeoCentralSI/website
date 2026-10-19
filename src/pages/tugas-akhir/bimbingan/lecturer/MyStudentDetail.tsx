@@ -31,11 +31,11 @@ import { getStudentDetail } from "@/services/lecturerGuidance.service";
 
 const MY_STUDENTS_PATH = "/tugas-akhir/bimbingan/lecturer/my-students";
 
-/** Read-only reason when the viewer was replaced as supervisor (Paket E4, 1.1). */
+/** Read-only reason when the viewer was replaced as supervisor. */
 const NO_LONGER_SUPERVISING_REASON = "Anda tidak lagi membimbing mahasiswa ini. Halaman ini hanya dapat dibaca.";
 
 /**
- * Bimbingan > Mahasiswa > detail (supervisor), one compact page (Paket E4, 5; Paket E6, 5):
+ * Bimbingan > Mahasiswa > detail (supervisor), one compact page:
  * header with the name and NIM and the "Perlu tindakan Anda" ribbon; one "Informasi Tugas
  * Akhir" card (title, topic, supervisors, supervision time, activity, progress); Milestone |
  * Riwayat Bimbingan of equal height; Kesiapan Seminar | Kesiapan Sidang; Evaluasi | Perubahan.
@@ -69,7 +69,7 @@ export default function LecturerMyStudentDetailPage() {
     const { data: evaluationContext } = useEvaluationContext(thesisId, !!thesisId);
     const { data: proposalRevision } = useLecturerProposalRevision(thesisId);
 
-    // 10.7 / 2.4: the current phase is worked on; the other phase follows read-only in the same list.
+    // The current phase is worked on; the other phase follows read-only in the same list.
     const currentPhase = detailData?.currentPhase ?? "research";
     const otherPhase = currentPhase === "proposal" ? "research" : "proposal";
     const phaseMilestones = useMemo(
@@ -81,11 +81,11 @@ export default function LecturerMyStudentDetailPage() {
         [detailData?.milestones, otherPhase],
     );
 
-    // Ended thesis (K15): read-only history. A replaced supervisor reads only (1.1).
+    // Ended thesis: read-only history. A replaced supervisor reads only.
     const isCancelled = detailData?.status === "failed" || detailData?.status === "completed";
     const noLongerSupervising = !!detailData?.noLongerSupervising;
     const isReadOnly = isCancelled || noLongerSupervising;
-    // K14/K27: milestone/guidance writes for `research`, or `proposal` after Penetapan Pembimbing.
+    // Milestone/guidance writes for `research`, or `proposal` after Penetapan Pembimbing.
     const actionBlockReason = noLongerSupervising
         ? NO_LONGER_SUPERVISING_REASON
         : detailData
@@ -205,13 +205,13 @@ export default function LecturerMyStudentDetailPage() {
                 guidanceProgress={readinessStatus?.guidanceProgress}
             />
 
-            {/* 3. Proposal revision (Lanjutan Paket P), then Milestone | Riwayat Bimbingan */}
+            {/* 3. Proposal revision, then Milestone | Riwayat Bimbingan */}
             {showProposalRevision && (
                 <section id={DETAIL_SECTIONS.revision} className="scroll-mt-6">
                     <LecturerProposalRevisionCard thesisId={thesisId} />
                 </section>
             )}
-            {/* Paket E6 (5): both columns stretch to the same height; each list scrolls inside. */}
+            {/* Both columns stretch to the same height; each list scrolls inside. */}
             <div className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
                 <section id={DETAIL_SECTIONS.milestone} className="flex min-w-0 scroll-mt-6 flex-col">
                     <StudentMilestoneCard

@@ -19,7 +19,7 @@ export function ThesisChangeRequestStatusBadge({ status }: { status: ChangeReque
   return <Badge variant={CHANGE_REQUEST_STATUS_VARIANTS[status] ?? 'outline'} className="whitespace-nowrap">{getChangeRequestStatusLabel(status)}</Badge>;
 }
 
-/** Paket E5 (1.5): the status a row shows this viewer ("Menunggu Persetujuan Anda", "Sedang Berjalan", ...). */
+/** The status a row shows this viewer ("Menunggu Persetujuan Anda", "Sedang Berjalan", ...). */
 export function ThesisChangeRequestViewStatusBadge({ status }: { status: ChangeRequestViewStatus }) {
   return (
     <Badge variant={CHANGE_REQUEST_VIEW_STATUS_VARIANTS[status] ?? 'outline'} className="whitespace-nowrap">
@@ -29,7 +29,7 @@ export function ThesisChangeRequestViewStatusBadge({ status }: { status: ChangeR
 }
 
 /**
- * Paket E6: an open request the rules block from being approved now (e.g. the seminar was
+ * An open request the rules block from being approved now (e.g. the seminar was
  * registered after it was sent); the reason is the tooltip.
  */
 export function ThesisChangeRequestBlockedBadge({ reason }: { reason: string | null | undefined }) {
@@ -41,7 +41,7 @@ export function ThesisChangeRequestBlockedBadge({ reason }: { reason: string | n
   );
 }
 
-/** The row status, with the "Terblokir" marker under it while approving is blocked (Paket E6). */
+/** The row status, with the "Terblokir" marker under it while approving is blocked. */
 export function ThesisChangeRequestRowStatus({ status, blockReason }: { status: ChangeRequestViewStatus; blockReason?: string | null }) {
   return (
     <div className="flex flex-col items-start gap-1">

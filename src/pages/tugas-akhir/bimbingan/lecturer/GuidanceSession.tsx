@@ -87,7 +87,7 @@ export default function LecturerGuidanceSessionPage() {
     },
   });
 
-  // K19 dialogs: summary revision, lecturer reschedule, lecturer cancel
+  // Dialogs: summary revision, lecturer reschedule, lecturer cancel
   const [dialog, setDialog] = useState<null | "revise" | "reschedule" | "cancel">(null);
   const refreshAfterAction = () => {
     queryClient.invalidateQueries({ queryKey: ["lecturer-guidance-session", guidanceId] });
@@ -149,7 +149,7 @@ export default function LecturerGuidanceSessionPage() {
   // Status
   const isPendingApproval = guidance?.status === "summary_pending";
   const isCompleted = guidance?.status === "completed";
-  // K19: legacy "rescheduled" is a scheduled session like "accepted"
+  // Legacy "rescheduled" is a scheduled session like "accepted"
   const isAccepted = guidance?.status === "accepted" || guidance?.status === "rescheduled";
   const statusContext = guidance ? getGuidanceStatusContext(guidance) : null;
   const hasSummary = !!guidance?.sessionSummary;

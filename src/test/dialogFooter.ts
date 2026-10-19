@@ -1,7 +1,7 @@
 import { expect } from 'vitest';
 
 /**
- * Lanjutan Paket E6: the footer buttons of a detail modal, in order (the first is Batal or Tutup),
+ * The footer buttons of a detail modal, in order (the first is Batal or Tutup),
  * all in one row, with the note (if any) as its own line above that row.
  */
 export function footerButtons(dialog: HTMLElement): HTMLButtonElement[] {

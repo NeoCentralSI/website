@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * Paket P8 (1.1): the page title and subtitle at the top of the page, outside any card, as on
+ * The page title and subtitle at the top of the page, outside any card, as on
  * Permohonan, Perubahan and Evaluasi. The subtitle has no full stop at the end.
  */
 export function PageHeading({ title, subtitle, children, className }: {
@@ -24,7 +24,7 @@ export function PageHeading({ title, subtitle, children, className }: {
   );
 }
 
-/** A heading for a second table on the same page (Paket P8): outside the table's card. */
+/** A heading for a second table on the same page: outside the table's card. */
 export function SectionHeading({ title, description, children }: {
   title: ReactNode;
   description?: ReactNode;

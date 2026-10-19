@@ -18,7 +18,7 @@ import { academicYearOptionLabel, useResearchMethodPeriod } from "./useResearchM
 import { ResearchMethodCpmkCatalog } from "./ResearchMethodCpmkCatalog";
 
 /**
- * Tab "CPMK" di Kelola > Metode Penelitian (Paket P8, 3.2), meniru CPMK Tugas Akhir: pilihan
+ * Tab "CPMK" di Kelola > Metode Penelitian, meniru CPMK Tugas Akhir: pilihan
  * periode di dalam panel (di toolbar tabel) dan "Salin Template" dari periode lain selama periode
  * ini belum punya CPMK. Salinan memuat CPMK beserta kriteria dan rubrik kedua pihak.
  */

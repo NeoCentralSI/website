@@ -20,14 +20,14 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   cpmks: ResearchMethodCpmkWithRubrics[];
   assessor: ResearchMethodAssessor;
-  /** Both parties' maximum scores; the final score is their sum (K31). */
+  /** Both parties' maximum scores; the final score is their sum. */
   supervisorTotal: number;
   coordinatorTotal: number;
   minimumPassingScore: number;
 }
 
 /**
- * Paket P8 (3.2): "Pratinjau Form Penilaian" of Kelola > Metode Penelitian, the pattern of the
+ * "Pratinjau Form Penilaian" of Kelola > Metode Penelitian, the pattern of the
  * defence rubric preview: the form one party fills in Penilaian Proposal, read-only.
  */
 export function ResearchMethodRubricPreviewDialog({ open, onOpenChange, cpmks, assessor, supervisorTotal, coordinatorTotal, minimumPassingScore }: Props) {

@@ -33,7 +33,7 @@ export default function CompletedHistoryPage() {
     enabled: hasThesis,
   });
 
-  // Paket E7 (K28): a thesis made Selesai by its defence keeps its history readable (with the
+  // A thesis made Selesai by its defence keeps its history readable (with the
   // closed notice, as on the Bimbingan and Milestone pages); a stopped thesis (Gagal) does not.
   const isThesisInactive = thesisDetail?.status === "failed";
   const isThesisCompleted = thesisDetail?.status === "completed";

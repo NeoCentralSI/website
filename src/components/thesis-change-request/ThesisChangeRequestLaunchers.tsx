@@ -13,7 +13,7 @@ function LoadingDialog({ title, onClose }: { title: string; onClose: () => void 
 }
 
 /**
- * Paket E5 (3.2): "Ajukan Perubahan" from a row of Mahasiswa Bimbingan opens the same form as
+ * "Ajukan Perubahan" from a row of Mahasiswa Bimbingan opens the same form as
  * the Perubahan Tugas Akhir card of the student detail, with the thesis context loaded here.
  */
 export function ThesisChangeRequestFormLauncher({ thesisId, onClose }: { thesisId: string; onClose: () => void }) {
@@ -22,7 +22,7 @@ export function ThesisChangeRequestFormLauncher({ thesisId, onClose }: { thesisI
   return <ThesisChangeRequestFormDialog open onOpenChange={(open) => { if (!open) onClose(); }} context={context} />;
 }
 
-/** Paket E5 (3.2): the marker of a row with a running request opens that request's detail. */
+/** The marker of a row with a running request opens that request's detail. */
 export function OpenThesisChangeRequestLauncher({ thesisId, onClose }: { thesisId: string; onClose: () => void }) {
   const { data: context, isLoading } = useThesisChangeContext(thesisId);
   if (isLoading || !context) return <LoadingDialog title="Detail Pengajuan Perubahan" onClose={onClose} />;

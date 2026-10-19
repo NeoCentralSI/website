@@ -38,7 +38,7 @@ interface SlowStudentsCardProps {
 /**
  * "Progres Lambat & Berisiko": running theses whose activity level is Lambat or Berisiko,
  * Berisiko first, then the longest without activity. Ketua Departemen, Sekretaris Departemen
- * and GKM can warn them all (Paket E4, 8), after confirming how many students receive it.
+ * and GKM can warn them all, after confirming how many students receive it.
  */
 export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading }: SlowStudentsCardProps) {
   const { isKadep, isSekdep, isGkm } = useRole();

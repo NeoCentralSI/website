@@ -13,7 +13,7 @@ const lecturer = (id: string, fullName: string, trafficLight: 'green' | 'yellow'
   id, fullName, identityNumber: id, email: null, scienceGroup: 'Sistem Informasi', trafficLight, acceptingRequests, normalAvailable: null, activeCount: null,
 });
 
-/** Paket P9 (3): a full lecturer stays selectable with a warning; a closed intake stays locked. */
+/** A full lecturer stays selectable with a warning; a closed intake stays locked. */
 describe('Ajukan Pembimbing 2', () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -57,7 +57,7 @@ beforeEach(() => {
   vi.mocked(rm.getAssessmentForm).mockResolvedValue({ party: "supervisor", academicYear: { id: "ay-active", label: "x" }, weight: 75, minimumScore: 60, criteria: [] });
 });
 
-describe("Kelola > Metode Penelitian (Paket P8, 3)", () => {
+describe("Kelola > Metode Penelitian", () => {
   it("Sekdep: title outside the cards, three tabs with their own address, the proposal template panel", async () => {
     wrap(<ResearchMethod />);
     expect(screen.getByRole("heading", { level: 1, name: "Kelola Metode Penelitian" })).toBeInTheDocument();
@@ -71,14 +71,14 @@ describe("Kelola > Metode Penelitian (Paket P8, 3)", () => {
     expect(setTitle).toHaveBeenCalledWith("Kelola Metode Penelitian");
   });
 
-  it("an unknown tab goes back to Template Milestone; the three tabs are always there (Lanjutan P8: the page is the Sekdep's)", async () => {
+  it("an unknown tab goes back to Template Milestone; the three tabs are always there (the page is the Sekdep's)", async () => {
     wrap(<ResearchMethod />, "/kelola/metode-penelitian/tidak-ada");
     await waitFor(() => expect(screen.getByTestId("template-panel")).toBeInTheDocument());
     for (const name of ["Template Milestone", "CPMK", "Rubrik Penilaian"]) expect(screen.getByRole("link", { name })).toBeInTheDocument();
   });
 });
 
-describe("CPMK panel (Paket P8, 3.2)", () => {
+describe("CPMK panel", () => {
   it("chooses the period inside the panel and copies an empty period from another one", async () => {
     vi.mocked(rmService.copyResearchMethodCpmkTemplate).mockResolvedValue({ cpmk: 2, supervisorCriteria: 3, supervisorRubrics: 9, coordinatorCriteria: 1, coordinatorRubrics: 3 });
     wrap(<ResearchMethodCpmkManagementPanel />, "/kelola/metode-penelitian/cpmk");
@@ -108,7 +108,7 @@ describe("CPMK panel (Paket P8, 3.2)", () => {
   });
 });
 
-describe("Rubrik panel (Paket P8, 3.2)", () => {
+describe("Rubrik panel", () => {
   it("has its own period select, the preview, and the minimum passing score of the period", async () => {
     vi.mocked(rm.setMinimumScore).mockResolvedValue({ success: true } as never);
     wrap(<ResearchMethodRubricManagementPanel />, "/kelola/metode-penelitian/rubrik");

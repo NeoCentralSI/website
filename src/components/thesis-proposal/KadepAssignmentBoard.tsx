@@ -40,7 +40,7 @@ import { SupervisorRequestDetails } from './SupervisorRequestDetails';
 
 export const PAST_SEMESTER_REASON = 'Semester lampau hanya bisa dilihat.';
 
-/** The "Pengajuan" badges (Paket P9, 5). */
+/** The "Pengajuan" badges. */
 export const BOARD_SUBMISSION_LABELS: Record<Exclude<AssignmentBoardSubmission, 'other'>, string> = {
   department_waiting: 'Jalur Departemen · Menunggu Keputusan',
   over_quota_waiting: 'Di Atas Kuota · Menunggu Keputusan',
@@ -71,7 +71,7 @@ function submissionVariant(row: AssignmentBoardRow): ThesisBadgeVariant {
 export const assignmentLabel = (row: AssignmentBoardRow) =>
   row.assignment.assigned ? `Ditetapkan (versi ${row.assignment.version})` : ASSIGNMENT_LABELS.pending;
 
-/** Why the Head of Department cannot issue now (K14: the button stays, disabled, with this reason). */
+/** Why the Head of Department cannot issue now (the button stays, disabled, with this reason). */
 export function getIssueBlockReason(board: Pick<AssignmentBoard, 'counts' | 'upToDate' | 'academicYear'>, canIssue: boolean): string | null {
   if (!canIssue) return 'Hanya Ketua Departemen yang dapat menerbitkan Penetapan Pembimbing.';
   if (!board.academicYear.isOperational) return PAST_SEMESTER_REASON;
@@ -121,7 +121,7 @@ interface TableProps {
 }
 
 /**
- * Paket P9 (5): panel "Penetapan", one row per student of the chosen semester. It replaces the
+ * Panel "Penetapan", one row per student of the chosen semester. It replaces the
  * tabs Penetapan Semester Ini, Pengajuan Lewat Departemen, Pengajuan di Atas Kuota and Permintaan
  * Pembimbing 2. "Semua" lists what waits for a decision first. A past semester is read only.
  */
@@ -417,7 +417,7 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
   );
 }
 
-/** Paket P9 (5): panel "Riwayat Versi", one table. */
+/** Panel "Riwayat Versi", one table. */
 export function AssignmentVersionHistoryTable({ board, isKadepOrAdmin }: { board: AssignmentBoard; isKadepOrAdmin: boolean }) {
   const table = useLocalTable(board.batches, (batch, term) => haystack(String(batch.version), batch.generatedBy?.fullName).includes(term));
   const columns: Column<AssignmentBatch>[] = [

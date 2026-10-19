@@ -20,7 +20,7 @@ export async function submitFinalProposal(file: File) {
 // Head of Department (Sekdep and Admin read)
 export const getAssignmentOverview = (academicYearId?: string | null) =>
   getJson<AssignmentOverview>(`${BASE}/supervisor-assignments${query(academicYearId)}`, 'Gagal memuat Penetapan Pembimbing');
-/** Paket P9 (5): the merged "Penetapan" panel of one semester. */
+/** The merged "Penetapan" panel of one semester. */
 export const getAssignmentBoard = (academicYearId?: string | null) =>
   getJson<AssignmentBoard>(`${BASE}/supervisor-assignments/board${query(academicYearId)}`, 'Gagal memuat Penetapan Pembimbing');
 export const issueAssignment = (academicYearId: string) =>

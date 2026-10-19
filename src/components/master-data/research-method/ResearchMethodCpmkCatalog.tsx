@@ -55,7 +55,7 @@ interface ResearchMethodCpmkCatalogProps {
   isCreating: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
-  /** Paket P8: the period select and "Salin Template", before "Tambah". */
+  /** The period select and "Salin Template", before "Tambah". */
   extraActions?: ReactNode;
 }
 

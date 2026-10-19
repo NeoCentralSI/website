@@ -30,7 +30,7 @@ function open() {
   return screen.getByRole('dialog', { name: 'Impor Keikutsertaan' });
 }
 
-/** Paket P9 (K36): Impor Keikutsertaan in Data Master → Mahasiswa. */
+/** Impor Keikutsertaan in Data Master → Mahasiswa. */
 describe('Impor Keikutsertaan', () => {
   beforeEach(() => vi.clearAllMocks());
 

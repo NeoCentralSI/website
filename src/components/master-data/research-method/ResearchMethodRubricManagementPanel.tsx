@@ -32,10 +32,10 @@ const ASSESSOR_OPTIONS: { value: ResearchMethodAssessor; label: string }[] = [
 ];
 
 /**
- * Tab "Rubrik Penilaian" di Kelola > Metode Penelitian (Paket P8, 3.2), meniru rubrik sidang:
+ * Tab "Rubrik Penilaian" di Kelola > Metode Penelitian, meniru rubrik sidang:
  * pilihan periode di dalam panel, pratinjau form, dan nilai minimum lulus periode itu
  * (`academic_years.research_method_minimum_score`). Dua pihak penilai dengan ringkasan bobot
- * (total maksimal 100, K31). Hanya Sekretaris Departemen.
+ * (total maksimal 100). Hanya Sekretaris Departemen.
  */
 export function ResearchMethodRubricManagementPanel() {
   const period = useResearchMethodPeriod();

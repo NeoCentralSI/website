@@ -32,7 +32,7 @@ export const READINESS_COPY: Record<ReadinessKind, { title: string; noun: string
   },
 };
 
-/** Paket E4 (3.3): the defence card waits for the results seminar and shows only that requirement. */
+/** The defence card waits for the results seminar and shows only that requirement. */
 export function isWaitingForSeminar(kind: ReadinessKind, status: ReadinessStatusBase & { seminarPassed?: boolean }): boolean {
   return kind === "defence" && status.seminarPassed === false && !status.isPassed;
 }
@@ -133,7 +133,7 @@ export function ReadinessAttachmentLink({ attachment }: { attachment: ReadinessA
 }
 
 /**
- * Paket E4 (3.2): after the seminar (or defence) is passed the card is read-only: when it was
+ * After the seminar (or defence) is passed the card is read-only: when it was
  * passed and each supervisor's approval with its date. No buttons.
  */
 export function ReadinessPassedView({ kind, status }: { kind: ReadinessKind; status: ReadinessStatusBase }) {

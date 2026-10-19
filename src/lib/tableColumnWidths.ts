@@ -1,5 +1,5 @@
 /**
- * Paket E6 (1): no cell content may leave its cell. A column that holds a badge or a date is at
+ * No cell content may leave its cell. A column that holds a badge or a date is at
  * least as wide as the longest text it can show, and clips (`CLIP_CELL`) if it still does not
  * fit; free text (titles, summaries) is the column that narrows. Widths were measured in Inter:
  * a badge is its label at 12 px semibold plus `px-2.5` and the border (22 px), a cell adds
@@ -29,30 +29,30 @@ export const BADGE_COLUMN_WIDTH = {
   evaluationMiniStatus: 152,
   /** Tabel mini perubahan, jenis and status stacked, "Menunggu Persetujuan": 181. */
   changeMiniKindStatus: 188,
-  /** Paket P8. Penilaian Proposal (pembimbing, koordinator), "Menunggu Pembimbing": 184. */
+  /** Penilaian Proposal (pembimbing, koordinator), "Menunggu Pembimbing": 184. */
   proposalAssessmentStatus: 188,
-  /** Paket P8. Monitoring Kelas, "Belum Ada Pembimbing": 184. */
+  /** Monitoring Kelas, "Belum Ada Pembimbing": 184. */
   researchMethodStage: 188,
-  /** Paket P8. Susunan Penetapan Pembimbing, "Sudah Ditetapkan": 149. */
+  /** Susunan Penetapan Pembimbing, "Sudah Ditetapkan": 149. */
   assignmentEntryStatus: 152,
-  /** Paket P8. Riwayat versi penetapan, "Digantikan": 108. */
+  /** Riwayat versi penetapan, "Digantikan": 108. */
   assignmentBatchStatus: 112,
-  /** Paket P8. Beban dosen, "99/99 · Mendekati Batas": 188. */
+  /** Beban dosen, "99/99 · Mendekati Batas": 188. */
   supervisionLoad: 192,
-  /** Paket P8. Beban dosen, header "Pengajuan Baru" with its filter; "Ditutup Dosen": 128. */
+  /** Beban dosen, header "Pengajuan Baru" with its filter; "Ditutup Dosen": 128. */
   acceptingRequests: 150,
-  /** Paket P8. Proses Kelulusan, "Menunggu Periode Berikutnya": 222. */
+  /** Proses Kelulusan, "Menunggu Periode Berikutnya": 222. */
   promotionDecision: 228,
-  /** Paket P8. Presensi, "Di Bawah 75%": 129. */
+  /** Presensi, "Di Bawah 75%": 129. */
   attendanceStatus: 136,
-  /** Paket P8. Riwayat pengajuan mahasiswa (label pendek), "Menunggu Kadep": 149. */
+  /** Riwayat pengajuan mahasiswa (label pendek), "Menunggu Kadep": 149. */
   supervisorRequestShortStatus: 152,
-  /** Paket P8. Riwayat percobaan penilaian, "Tidak Lulus" / "Belum Final": 113. */
+  /** Riwayat percobaan penilaian, "Tidak Lulus" / "Belum Final": 113. */
   researchMethodResult: 120,
 } as const;
 
 /**
- * Paket P9 (6): Beban Dosen, one number column per stage; each fits its header (14 px semibold +
+ * Beban Dosen, one number column per stage; each fits its header (14 px semibold +
  * the cell padding): "Menunggu Penetapan" 173, "Proposal" 84, "Penelitian" 91, "BSS" 52,
  * "Pembimbing 2" 121.
  */
@@ -65,7 +65,7 @@ export const LOAD_COUNT_COLUMN_WIDTH = {
 } as const;
 
 /**
- * Paket P9 (5): Penetapan, one table. "Jalur Departemen · Menunggu Keputusan" 288 and
+ * Penetapan, one table. "Jalur Departemen · Menunggu Keputusan" 288 and
  * "Ditetapkan (versi 12)" 166 (badges, measured in Inter).
  */
 export const ASSIGNMENT_BOARD_WIDTH = {

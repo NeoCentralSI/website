@@ -11,7 +11,7 @@ export function academicYearOptionLabel(year: YearOption): string {
 }
 
 /**
- * Paket P8 (3.2): the period of one panel of Kelola > Metode Penelitian (CPMK or Rubrik), chosen
+ * The period of one panel of Kelola > Metode Penelitian (CPMK or Rubrik), chosen
  * inside the panel as on the thesis master data; the active period by default.
  */
 export function useResearchMethodPeriod() {

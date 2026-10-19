@@ -37,7 +37,7 @@ import { isShownAsCurrentThesis } from "./studentThesisTabs";
  * (Selesai, shown read-only without action buttons). A stopped thesis (Gagal) belongs to
  * the Riwayat tab; without a newer thesis this tab is empty and points there.
  *
- * Paket E4 (6): change requests and evaluations live in the Informasi Tugas Akhir card
+ * Change requests and evaluations live in the Informasi Tugas Akhir card
  * ("Ajukan Perubahan", history links, one status line); a running warning is a ribbon on
  * top; Kesiapan Seminar and Kesiapan Sidang stand side by side.
  */
@@ -134,7 +134,7 @@ export function StudentCurrentThesisPanel() {
           })}
         />
       )}
-      {/* 3.1: both always shown, side by side and equally tall; a passed event is read-only (3.2). */}
+      {/* Both always shown, side by side and equally tall; a passed event is read-only. */}
       <ReadinessCardsRow>
         <SeminarReadinessStatusCard thesisId={current.id} />
         <DefenceReadinessStatusCard thesisId={current.id} />

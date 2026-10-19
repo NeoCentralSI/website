@@ -11,7 +11,7 @@ interface TableStatusFilterProps<T extends string> {
 }
 
 /**
- * Filter status di toolbar tabel (Paket E4, 0.3): "Menunggu / Sedang Berjalan / Riwayat"
+ * Filter status di toolbar tabel: "Menunggu / Sedang Berjalan / Riwayat"
  * menjadi pilihan di sini, bukan tab di dalam kartu.
  */
 export function TableStatusFilter<T extends string>({ value, onChange, options, label = 'Filter status', className }: TableStatusFilterProps<T>) {

@@ -18,7 +18,7 @@ function bySupervisorRole(a: Supervisor, b: Supervisor) {
 
 export interface StudentThesisSummaryCardProps {
   thesis: MyThesisDetail;
-  /** Paket E4 (6): "Ajukan Perubahan" in the card header, and its reason under the header. */
+  /** "Ajukan Perubahan" in the card header, and its reason under the header. */
   headerAction?: ReactNode;
   headerNote?: ReactNode;
   /** "Riwayat perubahan judul (N)" under the title and topic. */

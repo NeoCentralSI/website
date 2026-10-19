@@ -247,7 +247,7 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
       expect(within(table).queryByText(raw)).not.toBeInTheDocument();
     }
 
-    // Paket E5 (1.1): the detail is an Eye icon to the same page of the seminar module.
+    // The detail is an Eye icon to the same page of the seminar module.
     fireEvent.click(within(rows[4]).getByRole("button", { name: "Lihat Detail" }));
     expect(navigate).toHaveBeenCalledWith("/tugas-akhir/seminar-hasil/sem-lulus");
   });
@@ -269,7 +269,7 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
     fireEvent.change(screen.getByPlaceholderText("Cari nama atau NIM..."), { target: { value: "" } });
     await waitFor(() => expect(bodyRows()).toHaveLength(8));
 
-    // Paket E5 (1.3): the status filter sits in the header of the Status column, "Semua" first.
+    // The status filter sits in the header of the Status column, "Semua" first.
     expect(screen.queryByRole("combobox", { name: "Filter status" })).not.toBeInTheDocument();
     openMenu(within(screen.getByRole("columnheader", { name: /Status/ })).getByRole("button"));
     // The options carry the labels of the shared badge.
@@ -288,7 +288,7 @@ describe("ThesisEventMonitoringTab — Seminar Hasil", () => {
     expect(await screen.findByText("Tidak ada seminar hasil yang cocok dengan pencarian atau filter.")).toBeInTheDocument();
   });
 
-  it("Paket E6 (1): the longest status and date stay inside their cells", async () => {
+  it("The longest status and date stay inside their cells", async () => {
     const data = seminarData();
     vi.mocked(getThesisEventMonitoring).mockResolvedValue({
       ...data,

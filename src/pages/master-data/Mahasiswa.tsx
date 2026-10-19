@@ -130,7 +130,7 @@ export default function Mahasiswa() {
   });
 
   const sia = useSiaAvailability(showSyncButton());
-  // Paket P9 (K36): Impor Keikutsertaan (Admin).
+  // Impor Keikutsertaan (Admin).
   const [importOpen, setImportOpen] = useState(false);
   const syncMutation = useMutation({
     mutationFn: triggerSiaSyncAPI,
@@ -267,7 +267,7 @@ export default function Mahasiswa() {
       render: (row: Student) => {
         const flags = row.student?.semesterFlags;
         if (!flags?.takingResearchMethod && !flags?.takingThesisCourse) return <span className="text-muted-foreground">—</span>;
-        // Paket P9 (K36): an Admin or DevTools value is named; otherwise it is SIA's.
+        // An Admin or DevTools value is named; otherwise it is SIA's.
         const manual = [flags.researchMethodSource, flags.thesisCourseSource, flags.source];
         const source = manual.includes('admin') ? ' (diisi Admin)' : manual.includes('devtools') ? ' (diubah lewat DevTools)' : '';
         return (

@@ -22,7 +22,7 @@ export function summarizeTopics(topics: string[]): { text: string; title: string
 const topicsOf = (lecturer: CatalogLecturer) => (lecturer.offeredTopics?.length ? lecturer.offeredTopics : lecturer.supervisedTopics);
 
 /**
- * Paket P9 (2): the lecturer catalog of the request page. Each lecturer shows the name, the
+ * The lecturer catalog of the request page. Each lecturer shows the name, the
  * kelompok keilmuan, the topics offered and the load, so a search by kelompok keilmuan or topic
  * matches without choosing a lecturer first. A lecturer who closed intake cannot be chosen.
  */

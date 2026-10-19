@@ -42,7 +42,7 @@ export interface MilestoneCardProps {
   draggable?: boolean;
   isProgressUpdating?: boolean;
   isStatusUpdating?: boolean;
-  /** Paket E4 (2.4): a milestone of the other phase shows its phase badge (read-only). */
+  /** A milestone of the other phase shows its phase badge (read-only). */
   phase?: ThesisPhase;
 }
 

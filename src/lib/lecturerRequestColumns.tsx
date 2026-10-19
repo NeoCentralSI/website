@@ -19,7 +19,7 @@ interface GetLecturerRequestColumnsOptions {
   onOpenDetail?: (guidance: GuidanceItem) => void;
   onViewDocument?: (fileName?: string | null, filePath?: string | null) => void;
   onCancel?: (guidanceId: string) => void;
-  /** K19: move an accepted session (lecturer). */
+  /** Move an accepted session (lecturer). */
   onReschedule?: (guidance: GuidanceItem) => void;
 }
 
@@ -97,7 +97,7 @@ export const getLecturerRequestColumns = (
       header: 'Aksi',
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (r) => {
-        // K19: legacy 'rescheduled' is a scheduled session like 'accepted'.
+        // Legacy 'rescheduled' is a scheduled session like 'accepted'.
         const isCancellable = r.status === 'accepted' || r.status === 'rescheduled';
         return (
           <div className="flex items-center gap-1">

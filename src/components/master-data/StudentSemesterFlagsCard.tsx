@@ -39,7 +39,7 @@ function FlagSelect({ id, label, value, onChange }: { id: string; label: string;
 }
 
 /**
- * Paket P9 (8, K36): Data Master → Mahasiswa → Keikutsertaan per Semester. The Admin sets
+ * Data Master → Mahasiswa → Keikutsertaan per Semester. The Admin sets
  * "Mengambil Metode Penelitian" and "Mengambil Tugas Akhir" of a semester (source Admin, kept by
  * the SIA sync) or hands them back to SIA with "Ikuti Data SIA".
  */

@@ -49,7 +49,7 @@ export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceB
   const clock = thesis.supervisionClock ?? null;
   const completedGuidances = thesis.stats.completedGuidances ?? 0;
   const required = requiredGuidances ?? DEFAULT_REQUIRED_GUIDANCES;
-  // 10.7: the meters follow the current phase; proposal sessions have no minimum (K27).
+  // The meters follow the current phase; proposal sessions have no minimum.
   const isProposalPhase = thesis.currentPhase === "proposal";
   const proposal = thesis.phases?.proposal;
   const phaseSummary = formatPhaseSessionSummary(thesis.phases);
@@ -93,7 +93,7 @@ export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceB
           )}
         </dl>
 
-        {/* Paket E4 (6): a running warning is the ribbon on top of the Overview, not repeated here. */}
+        {/* A running warning is the ribbon on top of the Overview, not repeated here. */}
         {isProposalPhase ? (
           <div className="grid gap-5 md:grid-cols-2">
             <div className="space-y-1.5">

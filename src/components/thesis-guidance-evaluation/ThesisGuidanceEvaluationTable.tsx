@@ -36,7 +36,7 @@ const STATUS_OPTIONS: { label: string; value: GuidanceEvaluationViewStatus | '' 
 ];
 
 /**
- * Fixed widths except "Keputusan Pembimbing" (Paket E6, 1): the badge and date columns fit their
+ * Fixed widths except "Keputusan Pembimbing": the badge and date columns fit their
  * longest text and the free-text column narrows instead; the masa bimbingan sits under the
  * stage. Below 1000 px the table scrolls.
  */
@@ -47,7 +47,7 @@ function ClampedText({ text }: { text: string }) {
 }
 
 /**
- * Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4): every Evaluasi Bimbingan with the
+ * Tugas Akhir > Evaluasi (Ketua Departemen): every Evaluasi Bimbingan with the
  * department's decision. "Semua" by default, sorted by the server (Menunggu Keputusan Anda
  * first); Status is filtered in the column header, the search matches name or NIM. Supervisors
  * fill evaluations from Mahasiswa Bimbingan and the student detail, not here.

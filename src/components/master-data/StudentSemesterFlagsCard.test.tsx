@@ -21,7 +21,7 @@ function wrap(rows: StudentSemesterFlags[]) {
   return render(<QueryClientProvider client={client}><StudentSemesterFlagsCard studentId="s1" semesterFlags={rows} canEdit /></QueryClientProvider>);
 }
 
-/** Paket P9 (8, K36): the Admin's semester flags in Data Master → Mahasiswa. */
+/** The Admin's semester flags in Data Master → Mahasiswa. */
 describe('Keikutsertaan per Semester', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -52,7 +52,7 @@ describe('Keikutsertaan per Semester', () => {
     await waitFor(() => expect(admin.setStudentPeriodFlagsAPI).toHaveBeenCalledWith('s1', 'ay-1', { eligibleResearchMethod: true, takingThesisCourse: null }));
   });
 
-  it('Paket P9: without SIA_BASE_URL, Ikuti Data SIA is disabled with "Sinkronisasi SIA belum tersedia."; Ubah still works', async () => {
+  it('Without SIA_BASE_URL, Ikuti Data SIA is disabled with "Sinkronisasi SIA belum tersedia."; Ubah still works', async () => {
     siaStatus.configured = false;
     wrap([flags({ researchMethodSource: 'admin' })]);
     const button = screen.getByRole('button', { name: 'Ikuti Data SIA' });

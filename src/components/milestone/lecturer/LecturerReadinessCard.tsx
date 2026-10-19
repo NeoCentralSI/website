@@ -38,7 +38,7 @@ export interface LecturerReadinessCardProps {
  * Supervisor view of seminar/defence readiness: system requirements, every supervisor's
  * approval, the latest guidance attachment, and Setujui / Batalkan Persetujuan. The two
  * kinds share this card so they stay symmetric; they stand side by side with equal height,
- * the actions at the bottom (Paket E4, 3.1). Once the event is passed the card is read-only
+ * the actions at the bottom. Once the event is passed the card is read-only
  * (3.2); the defence card first waits for the results seminar (3.3).
  */
 export function LecturerReadinessCard({ kind, thesisId, studentName, className }: LecturerReadinessCardProps & { kind: ReadinessKind }) {

@@ -19,7 +19,7 @@ export interface ThesisChangeRequestCardProps {
 }
 
 /**
- * Compact "Perubahan Tugas Akhir" on the lecturer's student detail (Paket E4, 5): the current
+ * Compact "Perubahan Tugas Akhir" on the lecturer's student detail: the current
  * state and "Ajukan Perubahan" (disabled with its reason), then a mini history table of this
  * student with Detail in a modal. A request waiting for the viewer's step is decided there.
  */

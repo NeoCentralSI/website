@@ -33,7 +33,7 @@ describe('Bimbingan dua fase (10.7)', () => {
     expect(formatPhaseSessionSummary(undefined)).toBeNull();
   });
 
-  it('milestones of the other phase continue the same list, read-only, each with its phase badge (Paket E4, 2.4)', () => {
+  it('milestones of the other phase continue the same list, read-only, each with its phase badge', () => {
     const milestone = (id: string, title: string, status: Milestone['status'], phase: Milestone['phase']): Milestone => ({
       id, thesisId: 't1', title, description: null, targetDate: null, startedAt: null, completedAt: null, status, phase,
       progressPercentage: status === 'completed' ? 100 : 40, orderIndex: 0, validatedBy: null, validatedAt: null,
@@ -91,7 +91,7 @@ describe('Proposal final (10.3)', () => {
     await waitFor(() => expect(assignments.submitFinalProposal).toHaveBeenCalledWith(file, expect.anything()));
   });
 
-  it('keeps the button with its reason in the tooltip when the attempt is locked (Paket P9: Button, no raw file input)', async () => {
+  it('keeps the button with its reason in the tooltip when the attempt is locked (Button, no raw file input)', async () => {
     const locked = overview({
       canSubmit: false,
       blockReason: 'Penilaian proposal periode ini sudah dimulai. Proposal final tidak dapat diganti.',

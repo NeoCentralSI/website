@@ -228,7 +228,7 @@ function App() {
                   </Route>
                 </Route>
 
-                {/* Paket P (K14): the student "Metode Penelitian" menu is gone; old addresses go to Tugas Akhir > Proposal. */}
+                {/* The student "Metode Penelitian" menu is gone; old addresses go to Tugas Akhir > Proposal. */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
                   <Route path="/metopel" element={<Navigate to="/tugas-akhir/proposal" replace />} />
                   <Route path="/metopel/*" element={<Navigate to="/tugas-akhir/proposal" replace />} />
@@ -255,9 +255,9 @@ function App() {
                     before redirect. */}
                 {/* Tugas Akhir Shared — seminar-hasil/sidang handled by top-level routes (thesis-seminar/, thesis-defence/) */}
                 <Route path="/tugas-akhir/bimbingan" element={<BimbinganEntry />} />
-                {/* Tugas Akhir > Proposal (Paket P): student page; the entry picks the view per role. */}
+                {/* Tugas Akhir > Proposal: student page; the entry picks the view per role. */}
                 <Route path="/tugas-akhir/proposal" element={<ThesisProposalEntryPage />} />
-                {/* Paket P9 (2): the student's request form on its own page */}
+                {/* The student's request form on its own page */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
                   <Route path="/tugas-akhir/proposal/pengajuan" element={<StudentSupervisorRequestPage />} />
                 </Route>
@@ -304,8 +304,8 @@ function App() {
                   <Route path="/tugas-akhir/bimbingan/lecturer/my-students/:thesisId" element={<LecturerMyStudentDetailPage />} />
                   {/* Seminar Hasil and Sidang lecturer-side handled by unified top-level routes */}
                   <Route path="/jadwal-ketersediaan" element={<LecturerAvailability />} />
-                  {/* Paket E4 (4.1-4.3): Permohonan, Perubahan and Evaluasi have their own pages. Paket E5
-                      (3.2, 3.4): Perubahan and Evaluasi are the Ketua Departemen's; the pages send other
+                  {/* Permohonan, Perubahan and Evaluasi have their own pages.
+                      Perubahan and Evaluasi are the Ketua Departemen's; the pages send other
                       lecturers to Permohonan and Mahasiswa Bimbingan. */}
                   <Route path="/tugas-akhir/permohonan" element={<LecturerSupervisorRequestsPage />} />
                   <Route path="/tugas-akhir/perubahan" element={<ThesisChangeRequestsPage />} />
@@ -347,7 +347,7 @@ function App() {
                   <Route path="/kelola/tugas-akhir/rubrik-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/syarat-seminar" element={<SecretaryKelolaTugasAkhirPage />} />
                   <Route path="/kelola/tugas-akhir/syarat-sidang" element={<SecretaryKelolaTugasAkhirPage />} />
-                  {/* Old bookmark: the Research Method rubrics live in Kelola > Metode Penelitian (K18). */}
+                  {/* Old bookmark: the Research Method rubrics live in Kelola > Metode Penelitian. */}
                   <Route path="/kelola/tugas-akhir/rubrik-metopen" element={<Navigate to="/kelola/metode-penelitian" replace />} />
                   <Route path="/kelola/tugas-akhir/master-data" element={<SecretaryKelolaTugasAkhirPage />} />
                 </Route>
@@ -359,26 +359,26 @@ function App() {
                   <Route path="/kelola/cpl/:curriculumId/:cplId" element={<CplDetailPage />} />
                 </Route>
 
-                {/* Metode Penelitian (Paket P): the coordinator runs the class; Kadep, Sekdep and Admin read. */}
+                {/* Metode Penelitian: the coordinator runs the class; Kadep, Sekdep and Admin read. */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METODE_PENELITIAN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
                   <Route path="/metode-penelitian/monitoring" element={<ResearchMethodMonitoringPage />} />
                   <Route path="/metode-penelitian/presensi" element={<ResearchMethodAttendancePage />} />
                   <Route path="/metode-penelitian/penilaian" element={<ResearchMethodAssessmentPage />} />
                   <Route path="/metode-penelitian" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
-                  {/* Old addresses of the former research-method module redirect to the new pages (Paket P) */}
+                  {/* Old addresses of the former research-method module redirect to the new pages */}
                   <Route path="/kelola/metopen" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
                   <Route path="/kelola/metopen/monitoring" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
                   <Route path="/kelola/metopen/ta03b" element={<Navigate to="/metode-penelitian/penilaian" replace />} />
                 </Route>
                 <Route path="/kelola/metopen/ta03a" element={<Navigate to="/tugas-akhir/proposal" replace />} />
                 <Route path="/kelola/metopen/cpmk-rubrik" element={<Navigate to="/kelola/metode-penelitian" replace />} />
-                {/* Batas Bimbingan (Paket P, 10.1): Kadep and Sekdep set the limits and see every lecturer's load. */}
+                {/* Batas Bimbingan: Kadep and Sekdep set the limits and see every lecturer's load. */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.KETUA_DEPARTEMEN, ROLES.SEKRETARIS_DEPARTEMEN]} />}>
                   <Route path="/kelola/tugas-akhir/batas-bimbingan" element={<SupervisionQuotaPage />} />
                   <Route path="/kelola/metopen/kuota-dosen" element={<Navigate to="/kelola/tugas-akhir/batas-bimbingan" replace />} />
                 </Route>
-                {/* Kelola > Metode Penelitian: Template Milestone, CPMK, Rubrik Penilaian (K18). Paket P8 (3): one
-                    address per tab, as Kelola Tugas Akhir. Lanjutan P8: the Sekretaris Departemen's only. */}
+                {/* Kelola > Metode Penelitian: Template Milestone, CPMK, Rubrik Penilaian. One
+                    address per tab, as Kelola Tugas Akhir. The Sekretaris Departemen's only. */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.SEKRETARIS_DEPARTEMEN]} />}>
                   <Route path="/kelola/metode-penelitian" element={<Navigate to="/kelola/metode-penelitian/milestone" replace />} />
                   <Route path="/kelola/metode-penelitian/:tab" element={<ResearchMethodPage />} />
@@ -414,7 +414,7 @@ function App() {
                   <Route path="/kelola/yudisium/exit-survey" element={<Navigate to="/yudisium" replace />} />
                 </Route>
 
-                {/* Tugas Akhir > Penetapan Pembimbing (Paket P): Kadep decides and issues; Sekdep reads. */}
+                {/* Tugas Akhir > Penetapan Pembimbing: Kadep decides and issues; Sekdep reads. */}
                 <Route element={<RoleGuard allowedRoles={[ROLES.KETUA_DEPARTEMEN, ROLES.SEKRETARIS_DEPARTEMEN]} />}>
                   <Route path="/kelola/tugas-akhir/kadep/penetapan-pembimbing" element={<KadepThesisSupervisorAssignmentPage />} />
                 </Route>
@@ -425,7 +425,7 @@ function App() {
                   <Route path="/kelola/tugas-akhir/kadep" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pembimbing" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pengesahan-judul" element={<Navigate to="/kelola/tugas-akhir/kadep/penetapan-pembimbing" replace />} />
-                  {/* Paket E4 (4.4): "Persetujuan Tugas Akhir" is gone; its addresses go to the Kadep's submenus. */}
+                  {/* "Persetujuan Tugas Akhir" is gone; its addresses go to the Kadep's submenus. */}
                   <Route path="/kelola/tugas-akhir/kadep/perubahan" element={<Navigate to="/tugas-akhir/perubahan" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/evaluasi" element={<Navigate to="/tugas-akhir/evaluasi" replace />} />
                   <Route path="/kelola/tugas-akhir/kadep/pergantian-pembimbing" element={<Navigate to="/tugas-akhir/perubahan" replace />} />
@@ -461,7 +461,7 @@ function App() {
                   <Route path="/master-data/user" element={<UserManagementPage />} />
                   <Route path="/master-data/tahun-ajaran" element={<AcademicYearPage />} />
                   <Route path="/master-data/ruangan" element={<RoomPage />} />
-                  {/* Paket P8 (2): Batas Bimbingan belongs to Kadep and Sekdep (K30); Admin has no page for it. */}
+                  {/* Batas Bimbingan belongs to Kadep and Sekdep; Admin has no page for it. */}
                   {/* DevTools simulator: only registered when explicitly enabled outside production. */}
                   {ENV.ENABLE_DEV_TOOLS && (
                     <>

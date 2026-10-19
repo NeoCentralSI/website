@@ -10,7 +10,7 @@ import { triggerSiaSync } from '@/services/sia.service';
 
 /**
  * Period tools. SIA is read only (plan 10.6): the sync stores the per-semester flags of the
- * running semester. There is no "close Research Method period" step any more (K2): an
+ * running semester. There is no "close Research Method period" step any more: an
  * attempt that did not pass stays on record and the student retakes next semester.
  */
 export function DevToolsPeriodPanel() {

@@ -15,7 +15,7 @@ vi.mock("@/hooks/shared", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/shared")>()),
   useAuth: () => ({ user: { id: "lecturer-1" } }),
 }));
-// Paket E5: the dialogs the row actions open have their own tests; here they show what they got.
+// The dialogs the row actions open have their own tests; here they show what they got.
 vi.mock("@/components/thesis-change-request/LecturerTransferStudentsDialog", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/components/thesis-change-request/LecturerTransferStudentsDialog")>()),
   LecturerTransferStudentsDialog: ({ open, students }: { open: boolean; students: { name: string }[] }) =>
@@ -77,16 +77,16 @@ describe("LecturerMyStudentsPage table", () => {
     vi.mocked(getMyStudents).mockResolvedValue({ success: true, count: 1, students: [row()] });
   });
 
-  it("has the columns of Paket E2 in a fixed layout, with the thesis title folded into Mahasiswa", async () => {
+  it("has its columns in a fixed layout, with the thesis title folded into Mahasiswa", async () => {
     renderPage();
     await screen.findByText("Ilham Nofaldi");
 
-    // Paket E5 (3.3): the tick column for "Alihkan" is back, first.
+    // The tick column for "Alihkan" is back, first.
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent?.trim());
     expect(headers).toEqual(["", "Mahasiswa", "Milestone", "Bimbingan", "Masa Bimbingan", "Aktivitas", "Aksi"]);
     // Only "Mahasiswa" has no width: it takes what the other columns leave.
     const widths = screen.getAllByRole("columnheader").map((header) => (header as HTMLElement).style.width);
-    // Paket E6 (1): Aksi fits four icons; the minimum width keeps Mahasiswa as wide as its
+    // Aksi fits four icons; the minimum width keeps Mahasiswa as wide as its
     // longest badge ("Berhenti Studi Sementara (BSS)", 229 px) beside the 782 px of fixed columns.
     expect(widths).toEqual(["44px", "", "140px", "140px", "170px", "124px", "164px"]);
     expect(screen.getByRole("table").className).toContain("table-fixed");
@@ -97,7 +97,7 @@ describe("LecturerMyStudentsPage table", () => {
     expect(screen.queryByText("Pengajuan Perubahan")).not.toBeInTheDocument();
   });
 
-  it("marks a replaced supervisor's student 'Tidak lagi membimbing', read-only (Paket E4, 1.1)", async () => {
+  it("marks a replaced supervisor's student 'Tidak lagi membimbing', read-only", async () => {
     vi.mocked(getMyStudents).mockResolvedValue({
       success: true,
       count: 1,
@@ -108,7 +108,7 @@ describe("LecturerMyStudentsPage table", () => {
     expect(within(tableRow).getByText("Tidak lagi membimbing")).toBeInTheDocument();
     expect(within(tableRow).queryByText("Kirim Peringatan")).not.toBeInTheDocument();
     expect(within(tableRow).getByText("Detail")).toBeInTheDocument();
-    // Paket E5: neither a change, an evaluation nor a hand-over from a released relation.
+    // Neither a change, an evaluation nor a hand-over from a released relation.
     expect(within(tableRow).queryByRole("button", { name: "Ajukan Perubahan" })).not.toBeInTheDocument();
     expect(within(tableRow).queryByRole("button", { name: "Isi Evaluasi" })).not.toBeInTheDocument();
   });
@@ -144,7 +144,7 @@ describe("LecturerMyStudentsPage table", () => {
     expect(within(actions).getByText("Detail")).toBeInTheDocument();
   });
 
-  it("Paket E6 (1): the longest status badge is clipped inside the Mahasiswa cell, never over the next one", async () => {
+  it("The longest status badge is clipped inside the Mahasiswa cell, never over the next one", async () => {
     vi.mocked(getMyStudents).mockResolvedValue({ success: true, count: 1, students: [row({ thesisStatus: "on_leave" })] });
     renderPage();
     const tableRow = (await screen.findByText("Ilham Nofaldi")).closest("tr")!;
@@ -174,7 +174,7 @@ describe("LecturerMyStudentsPage table", () => {
   });
 });
 
-describe("LecturerMyStudentsPage row actions (Paket E5, 3.2-3.4)", () => {
+describe("LecturerMyStudentsPage row actions", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("Pembimbing 1 with a due evaluation gets Isi Evaluasi and Ajukan Perubahan; each opens its form", async () => {

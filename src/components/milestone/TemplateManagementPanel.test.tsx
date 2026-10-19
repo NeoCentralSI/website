@@ -36,7 +36,7 @@ vi.mock("@/hooks/milestone/useMilestone", () => ({
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-// Paket P8 (3.1): the same panel for the general proposal templates (Kelola > Metode Penelitian).
+// The same panel for the general proposal templates (Kelola > Metode Penelitian).
 const proposal = vi.hoisted(() => ({
   query: { data: [] as unknown[], isLoading: false, isError: false, error: null, refetch: () => {} },
   create: { mutate: vi.fn(), isPending: false },
@@ -76,7 +76,7 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 } as unknown as typeof ResizeObserver;
 
-// Paket C (C1): topics are picked from one searchable combobox.
+// Topics are picked from one searchable combobox.
 function pickTopic(name: RegExp) {
   fireEvent.click(screen.getByRole("combobox", { name: /Pilih topik/ }));
   fireEvent.click(screen.getByRole("option", { name }));
@@ -188,7 +188,7 @@ describe("TemplateManagementPanel", () => {
   });
 });
 
-describe("TemplateManagementPanel phase=\"proposal\" (Paket P8, 3.1)", () => {
+describe("TemplateManagementPanel phase=\"proposal\"", () => {
   const proposalTemplate = (id: string, name: string, orderIndex: number, usedCount = 0, isActive = true) => ({
     id, name, description: `Deskripsi ${name}`, orderIndex, isActive, usedCount, updatedAt: "2026-10-01T00:00:00.000Z",
   });

@@ -64,7 +64,7 @@ interface ThesesTableProps {
 export function ThesesTable({ isSyncing = false, academicYear, initialActivity }: ThesesTableProps) {
   const navigate = useNavigate();
   const { isKadep, isSekdep, isGkm } = useRole();
-  // Backend rule (Paket E4, 8): the department roles (KaDep, Sekdep, GKM) may warn any thesis
+  // Backend rule: the department roles (KaDep, Sekdep, GKM) may warn any thesis
   // from monitoring; supervisors warn their own active students from the lecturer page.
   const canSendWarning = isKadep() || isSekdep() || isGkm();
   const queryClient = useQueryClient();

@@ -46,7 +46,7 @@ export function formatScoreSum(attempt: FinalProposalAttempt): string {
 const GRID_COLS = ['grid-cols-1', 'sm:grid-cols-2', 'sm:grid-cols-2 lg:grid-cols-3', 'sm:grid-cols-2 lg:grid-cols-4', 'sm:grid-cols-2 lg:grid-cols-5'];
 
 /**
- * Paket P9 (2): row 1 of the student Proposal page, in the form of
+ * Row 1 of the student Proposal page, in the form of
  * `StudentThesisSeminarIdentityCard`. Shown once the student has a request (or a thesis);
  * blocks without data are left out. A click opens the full request and the earlier attempts.
  */

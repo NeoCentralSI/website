@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import { MilestoneNotes } from "./MilestoneNotes";
 
-// Paket C (C9): decision notes and supervisor feedback are two labelled blocks.
+// Decision notes and supervisor feedback are two labelled blocks.
 describe("MilestoneNotes", () => {
   it("shows 'Catatan Persetujuan' and 'Feedback Pembimbing' side by side for a completed milestone", () => {
     render(

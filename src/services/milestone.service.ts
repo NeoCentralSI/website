@@ -84,7 +84,7 @@ const ENDPOINTS = {
 export interface TemplateListOptions {
   /** Template management (Sekdep) also needs deactivated templates. */
   includeInactive?: boolean;
-  /** `proposal` reads the general proposal templates (K18); default thesis-phase templates. */
+  /** `proposal` reads the general proposal templates; default thesis-phase templates. */
   phase?: ThesisPhase;
 }
 

@@ -56,7 +56,7 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
             "Aktivitas": getThesisActivityLabel(t.activityLevel),
             "Masa Bimbingan": t.supervisionClock?.elapsedLabel ?? "-",
             "Status": getThesisStatusLabel(t.status),
-            // K21: same columns as the import, so an exported file imports back
+            // Same columns as the import, so an exported file imports back
             "Alasan Penghentian": t.terminationReason ? getThesisTerminationReasonLabel(t.terminationReason) : "-",
             "Catatan Penghentian": t.terminationNote || "-",
             "Pembimbing 1": t.supervisors.find(s => s.roleName === "Pembimbing 1")?.name || "-",

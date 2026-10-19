@@ -124,7 +124,7 @@ const CHANGE_CONTEXT = {
 
 const ribbon = () => screen.queryByRole("region", { name: "Perlu tindakan Anda" });
 
-describe("LecturerMyStudentDetailPage (Paket E4, 5: one compact page)", () => {
+describe("LecturerMyStudentDetailPage (one compact page)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     Element.prototype.scrollIntoView = vi.fn();
@@ -132,7 +132,7 @@ describe("LecturerMyStudentDetailPage (Paket E4, 5: one compact page)", () => {
     mockQueries();
   });
 
-  it("has no tabs: a quiet header, one Informasi Tugas Akhir card, then every section in order (Paket E6, 5)", async () => {
+  it("has no tabs: a quiet header, one Informasi Tugas Akhir card, then every section in order", async () => {
     mockQueries({ change: CHANGE_CONTEXT });
     const { container } = renderPage();
 
@@ -163,7 +163,7 @@ describe("LecturerMyStudentDetailPage (Paket E4, 5: one compact page)", () => {
     const ids = [...container.querySelectorAll("section[id]")].map((section) => section.id);
     expect(ids).toEqual([DETAIL_SECTIONS.milestone, DETAIL_SECTIONS.readiness, DETAIL_SECTIONS.evaluation, DETAIL_SECTIONS.change]);
     expect(screen.getByText("Riwayat Bimbingan")).toBeInTheDocument();
-    // Paket E6 (5): Milestone and Riwayat Bimbingan stretch to the same height, each card fills
+    // Milestone and Riwayat Bimbingan stretch to the same height, each card fills
     // its column and scrolls its list inside at the same maximum height.
     const pair = container.querySelector(`#${DETAIL_SECTIONS.milestone}`)!.parentElement!;
     expect(pair.className).toContain("items-stretch");
@@ -255,7 +255,7 @@ describe("LecturerMyStudentDetailPage (Paket E4, 5: one compact page)", () => {
     expect(screen.getByTestId("defence-readiness")).toBeInTheDocument();
   });
 
-  it("a replaced supervisor reads the page only (Paket E4, 1.1)", async () => {
+  it("a replaced supervisor reads the page only", async () => {
     vi.mocked(getStudentDetail).mockResolvedValue({ success: true, data: detail({ noLongerSupervising: true }) });
     mockQueries({ seminar: readiness({ approveBlockedReason: null }) });
     renderPage();

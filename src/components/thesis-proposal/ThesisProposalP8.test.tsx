@@ -1,6 +1,6 @@
 /**
- * Paket P8 (5): the phase in "Buat dari Template". (Batas Bimbingan and the student Proposal page
- * moved to the Paket P9 tests.)
+ * The phase in "Buat dari Template". (Batas Bimbingan and the student Proposal page
+ * moved to ThesisProposalP9Staff.test.tsx and StudentThesisProposal.test.tsx.)
  */
 import { render, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -19,7 +19,7 @@ vi.mock('react-router-dom', async () => ({
 
 beforeEach(() => vi.clearAllMocks());
 
-describe('Buat dari Template: the phase is written out (Paket P8, 5)', () => {
+describe('Buat dari Template: the phase is written out', () => {
   const template = (id: string, topicId: string | null): MilestoneTemplate => ({
     id, name: `Template ${id}`, description: null, topicId, topic: null, orderIndex: 0, isActive: true, createdAt: '', updatedAt: '',
   });

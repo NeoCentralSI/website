@@ -20,7 +20,7 @@ const TABS = [
 ];
 
 /**
- * Tugas Akhir > Proposal (mahasiswa; Paket P9, 2), in the form of Seminar Hasil: title and
+ * Tugas Akhir > Proposal (mahasiswa), in the form of Seminar Hasil: title and
  * subtitle, then two panels. Ringkasan: Informasi Proposal (once there is a request), then the
  * stepper beside the Pengajuan Pembimbing and Proposal Final (or Proposal Revisi) cards. The
  * request form is its own page (/tugas-akhir/proposal/pengajuan).

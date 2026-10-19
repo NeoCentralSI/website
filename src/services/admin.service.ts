@@ -471,7 +471,7 @@ export interface StudentSemesterFlags {
   takingResearchMethod: boolean | null;
   takingThesisCourse: boolean | null;
   source: string | null;
-  /** Paket P9 (K36): the source of each flag ("sia", "admin", "devtools"); "admin" is kept by the sync. */
+  /** The source of each flag ("sia", "admin", "devtools"); "admin" is kept by the sync. */
   researchMethodSource?: string | null;
   thesisCourseSource?: string | null;
   capturedAt: string | null;
@@ -487,14 +487,14 @@ async function adminJson<T>(path: string, init: RequestInit, fallback: string): 
   return body;
 }
 
-/** Paket P9 (K36): the Admin sets one semester's flags (source "admin", kept by the SIA sync). null clears a flag. */
+/** The Admin sets one semester's flags (source "admin", kept by the SIA sync). null clears a flag. */
 export const setStudentPeriodFlagsAPI = (
   studentId: string,
   academicYearId: string,
   flags: { eligibleResearchMethod?: boolean | null; takingThesisCourse?: boolean | null },
 ) => adminJson<unknown>(`/adminfeatures/students/${studentId}/period-flags/${academicYearId}`, { method: 'PATCH', body: JSON.stringify(flags) }, 'Gagal menyimpan keikutsertaan semester');
 
-/** Paket P9 (K36): Impor Keikutsertaan, what the import would change (or changed). */
+/** Impor Keikutsertaan, what the import would change (or changed). */
 export interface PeriodFlagsImportPlan {
   academicYear: { id: string; label: string };
   totals: { rows: number; changed: number; unchanged: number; unknownNim: number; invalid: number };
@@ -529,7 +529,7 @@ async function periodFlagsImport(academicYearId: string, file: File, apply: bool
 export const previewPeriodFlagsImportAPI = (academicYearId: string, file: File) => periodFlagsImport(academicYearId, file, false);
 export const applyPeriodFlagsImportAPI = (academicYearId: string, file: File) => periodFlagsImport(academicYearId, file, true);
 
-/** Paket P9 (K36): "Ikuti Data SIA" for one semester. */
+/** "Ikuti Data SIA" for one semester. */
 export const followSiaPeriodFlagsAPI = (studentId: string, academicYearId: string) =>
   adminJson<{ fromSia: boolean }>(`/adminfeatures/students/${studentId}/period-flags/${academicYearId}/follow-sia`, { method: 'POST' }, 'Gagal mengikuti data SIA');
 

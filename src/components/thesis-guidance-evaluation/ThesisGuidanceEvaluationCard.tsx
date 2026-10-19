@@ -31,7 +31,7 @@ export interface ThesisGuidanceEvaluationCardProps {
 }
 
 /**
- * Compact "Evaluasi Bimbingan" on the lecturer's student detail (Paket E4, 5): the current
+ * Compact "Evaluasi Bimbingan" on the lecturer's student detail: the current
  * state (masa bimbingan, what is due, the running warning, the evaluation waiting for the
  * department) with "Isi Evaluasi" for Pembimbing 1, then a mini history table with Detail.
  */

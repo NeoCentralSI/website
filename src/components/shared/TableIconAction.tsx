@@ -10,7 +10,7 @@ const TONE_CLASS = {
 } as const;
 
 /**
- * Paket E5 (1.1): a row action as an icon with its tooltip, the style of
+ * A row action as an icon with its tooltip, the style of
  * `AdminThesisSeminarVerificationTable`. A disabled action keeps its reason in the tooltip.
  */
 export function TableIconAction({ icon: Icon, label, onClick, tone = 'default', disabled = false, disabledReason }: {

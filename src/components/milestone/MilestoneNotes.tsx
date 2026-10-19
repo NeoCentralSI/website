@@ -4,7 +4,7 @@ interface MilestoneNotesProps {
   status: string;
   /** Catatan keputusan Pembimbing 1 (setujui / minta revisi). */
   supervisorNotes?: string | null;
-  /** Feedback pembimbing (P1/P2); tidak mengubah status. */
+  /** Feedback pembimbing; tidak mengubah status. */
   feedback?: string | null;
   feedbackByName?: string | null;
   feedbackAt?: string | null;
@@ -12,7 +12,7 @@ interface MilestoneNotesProps {
 }
 
 /**
- * Paket C (C9): two clearly labelled blocks. "Catatan Persetujuan" (milestone selesai) or
+ * Two clearly labelled blocks. "Catatan Persetujuan" (milestone selesai) or
  * "Catatan Revisi" comes from `supervisorNotes`; "Feedback Pembimbing" comes from
  * `feedback` with the lecturer's name and time.
  */

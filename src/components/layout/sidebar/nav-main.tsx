@@ -20,7 +20,7 @@ export interface NavSubItem {
   title: string
   url: string
   isActive?: boolean
-  /** Count shown at the right of the sub-item (Paket E4, 4.1); hidden when absent or 0. */
+  /** Count shown at the right of the sub-item; hidden when absent or 0. */
   badge?: number
 }
 

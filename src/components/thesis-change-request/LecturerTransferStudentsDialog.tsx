@@ -39,7 +39,7 @@ export function toSupervisorPosition(roleName?: string | null): SupervisorPositi
 
 /**
  * "Alihkan Mahasiswa" hands over this lecturer's own active position on a research thesis
- * (Paket E5, 3.3: the rows the backend marks `changeRequest.canTransfer`, ticked in the table).
+ * (the rows the backend marks `changeRequest.canTransfer`, ticked in the table).
  */
 export function toTransferStudents(rows: MyStudentItem[]): TransferStudent[] {
   return rows
@@ -55,7 +55,7 @@ export function toTransferStudents(rows: MyStudentItem[]): TransferStudent[] {
 /**
  * "Alihkan Mahasiswa": hand the lecturer's own position on several theses over to one
  * lecturer. Each student becomes one change request with the same batch; the target
- * lecturer and the Ketua Departemen then decide. Paket E5 (3.3): opened by "Alihkan (N)" in
+ * lecturer and the Ketua Departemen then decide. Opened by "Alihkan (N)" in
  * the toolbar of Mahasiswa Bimbingan with the ticked students; here only the target lecturer
  * and the reason are chosen.
  */

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 
 /**
- * Paket P8: search and pages of a `CustomTable` whose rows are all loaded at once (the proposal
+ * Search and pages of a `CustomTable` whose rows are all loaded at once (the proposal
  * queues are per period and small). `rows` are already filtered and sorted by the page; the
  * search matches with `matches(row, term)` (term in lower case).
  */

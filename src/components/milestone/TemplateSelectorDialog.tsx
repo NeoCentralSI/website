@@ -30,18 +30,18 @@ interface TemplateSelectorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   templates: MilestoneTemplate[];
-  /** K20: templates follow the thesis topic (set by Admin/Sekdep in the data master). */
+  /** Templates follow the thesis topic (set by Admin/Sekdep in the data master). */
   thesisTopicId: string | null;
   thesisTopicName?: string | null;
   isLoading?: boolean;
   isSubmitting?: boolean;
   onSubmit: (templateIds: string[], topicId: string) => void;
-  /** Proposal phase (K18): general templates without a topic; the thesis topic is not needed. */
+  /** Proposal phase: general templates without a topic; the thesis topic is not needed. */
   generalOnly?: boolean;
 }
 
 /**
- * K20: the student applies active TA-phase templates of the thesis topic (plus general
+ * The student applies active TA-phase templates of the thesis topic (plus general
  * templates without a topic) while the milestones are still empty. The topic is never
  * chosen here; the backend uses the thesis topic.
  */
@@ -91,7 +91,7 @@ export function TemplateSelectorDialog({
   };
 
   const topicLabel = thesisTopicName || "topik tugas akhir Anda";
-  // Paket P8 (5): the phase is written out in the dialog.
+  // The phase is written out in the dialog.
   const phaseLabel = generalOnly
     ? "Template fase Proposal"
     : `Template fase Penelitian · topik ${thesisTopicName || "belum diisi"}`;

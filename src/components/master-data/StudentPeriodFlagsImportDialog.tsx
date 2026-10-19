@@ -27,7 +27,7 @@ export function getImportFileProblem(file: File | null): string | null {
 }
 
 /**
- * Paket P9 (K36): Data Master → Mahasiswa → Impor Keikutsertaan. Semester (default the active one),
+ * Data Master → Mahasiswa → Impor Keikutsertaan. Semester (default the active one),
  * template, file, Pratinjau, then Terapkan. Nothing is stored before Terapkan; problem rows are
  * reported and do not stop the rest. The result is the Admin's (kept by the SIA sync).
  */

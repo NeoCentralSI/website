@@ -171,7 +171,7 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.getByRole("link", { name: /Ajukan Bimbingan/ })).toHaveAttribute("href", "/tugas-akhir/bimbingan/student?action=create");
   });
 
-  it("shows both readiness cards side by side; no separate change request, evaluation or document card (Paket E4, 3.1, 6)", async () => {
+  it("shows both readiness cards side by side; no separate change request, evaluation or document card", async () => {
     renderAt("/tugas-akhir");
 
     const seminar = await screen.findByText("Kartu Kesiapan Seminar");
@@ -183,7 +183,7 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.queryByText("Belum ada dokumen")).not.toBeInTheDocument();
   });
 
-  it("keeps the seminar card after the results seminar is passed (Paket E4, 3.2)", async () => {
+  it("keeps the seminar card after the results seminar is passed", async () => {
     vi.mocked(useDefenceReadinessStatus).mockReturnValue({ data: { requirementsMet: true }, isLoading: false } as unknown as ReturnType<typeof useDefenceReadinessStatus>);
     vi.mocked(useSeminarReadinessStatus).mockReturnValue({ data: { guidanceProgress: { completed: 9, required: 8, isComplete: true }, isPassed: true }, isLoading: false } as unknown as ReturnType<typeof useSeminarReadinessStatus>);
     renderAt("/tugas-akhir");
@@ -192,7 +192,7 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.getByText("Kartu Kesiapan Seminar")).toBeInTheDocument();
   });
 
-  it("puts Ajukan Perubahan, the history links, the running request and the evaluation history in the info card; a running warning is a ribbon (Paket E4, 6)", async () => {
+  it("puts Ajukan Perubahan, the history links, the running request and the evaluation history in the info card; a running warning is a ribbon", async () => {
     const change = (overrides: Partial<ThesisChangeRequest>): ThesisChangeRequest => ({
       id: "c1", thesisId: "thesis-1", batchId: null, requestType: "title", status: "approved", reason: "Alasan.",
       student: null, thesisTitle: null, title: { previous: "Lama", next: "Baru", newTopic: null }, supervisor: null,
@@ -248,7 +248,7 @@ describe("TugasAkhirOverviewPage", () => {
     }));
     renderAt("/tugas-akhir");
 
-    // Paket E4 (6): one ribbon on top of the page.
+    // One ribbon on top of the page.
     expect(await screen.findByText("Peringatan akademik")).toBeInTheDocument();
     expect(screen.getAllByText("Peringatan akademik")).toHaveLength(1);
     expect(screen.getByText(/Perpanjangan masa bimbingan 1 bulan berlaku sampai 9 November 2026 10\.00 WIB/)).toBeInTheDocument();
@@ -298,7 +298,7 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.getByText("7 bulan 10 hari")).toBeInTheDocument();
     expect(screen.getByText("9 dari 8 sesi")).toBeInTheDocument();
     expect(screen.getByText("4 dari 4 milestone")).toBeInTheDocument();
-    // Read-only: no actions; the readiness cards stay, in their passed state (Paket E4, 3.1/3.2).
+    // Read-only: no actions; the readiness cards stay, in their passed state.
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
     expect(screen.queryByText(/Ajukan Bimbingan/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Ajukan Perubahan/)).not.toBeInTheDocument();

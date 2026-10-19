@@ -19,7 +19,7 @@ export function getRevisionNotesProblem(notes: string): string | null {
 }
 
 /**
- * Proposal Revisi di detail mahasiswa bimbingan (Lanjutan Paket P): TA yang mengulang proposal
+ * Proposal Revisi di detail mahasiswa bimbingan: TA yang mengulang proposal
  * lewat evaluasi bimbingan. Pembimbing 1 menyetujui (TA kembali ke Penelitian, masa bimbingan
  * mulai lagi) atau meminta revisi dengan catatan. Pembimbing 2 dan pembaca lain hanya melihat.
  */

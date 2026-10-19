@@ -85,7 +85,7 @@ interface ToolbarProps {
 export const PAST_SEMESTER_LIMIT_REASON = 'Batas hanya bisa diubah untuk semester aktif.';
 
 /**
- * Paket P9 (5, 6): "Batas lunak: n", "Batas keras: n" and one button above the Beban Dosen table.
+ * "Batas lunak: n", "Batas keras: n" and one button above the Beban Dosen table.
  * General scope shows and edits the general limit; period scope shows the limits in force for the
  * semester and edits that semester's own limits (prefilled with the values in force).
  */

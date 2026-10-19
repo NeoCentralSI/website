@@ -38,7 +38,7 @@ interface GetGuidanceTableColumnsOptions {
   onToggleSelectAll?: (ids: string[], selected: boolean) => void;
   /** IDs of exportable items (completed/summary_pending with sessionSummary) */
   exportableIds?: string[];
-  /** Paket E4 (2.2): phase filter in the "Jenis" column header; omitted = no filter. */
+  /** Phase filter in the "Jenis" column header; omitted = no filter. */
   phase?: PhaseFilterValue;
   setPhase?: (value: PhaseFilterValue) => void;
 }
@@ -124,7 +124,7 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       },
     },
     {
-      // K27: Jenis sesi (Proposal / Penelitian), tetap sejak dibuat
+      // Jenis sesi (Proposal / Penelitian), tetap sejak dibuat
       key: 'phase',
       header: 'Jenis',
       render: (r) => (r.phase ? <ThesisPhaseBadge phase={r.phase} /> : '-'),
@@ -167,7 +167,7 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       key: 'status',
       header: 'Status',
       render: (r) => {
-        // K19: a scheduled session (legacy "rescheduled" included) needs a summary, and a
+        // A scheduled session (legacy "rescheduled" included) needs a summary, and a
         // summary sent back by the lecturer (summary_rejected) needs a revision.
         const isScheduled = r.status === 'accepted' || r.status === 'rescheduled';
         const needsSummary = (isScheduled && !r.sessionSummary) || r.status === 'summary_rejected';
@@ -268,7 +268,7 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (r) => {
         const isRequested = r.status === 'requested';
-        // K19: legacy "rescheduled" is a scheduled session like "accepted".
+        // Legacy "rescheduled" is a scheduled session like "accepted".
         const isAccepted = r.status === 'accepted' || r.status === 'rescheduled';
         const isCancellable = isRequested || isAccepted;
 
@@ -315,7 +315,7 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
 };
 
 /**
- * K19 context shown under a session status: rejection reason + suggested time, lecturer
+ * Context shown under a session status: rejection reason + suggested time, lecturer
  * reschedule reason, cancellation (who + why), or the lecturer's summary revision notes.
  */
 export function getGuidanceStatusContext(r: GuidanceItem): string | null {

@@ -29,7 +29,7 @@ export interface Supervisor2Decision {
 
 /**
  * Keputusan Ketua Departemen atas permintaan Pembimbing 2 (dari tab lama "Permintaan Pembimbing
- * 2"; Paket P9: dipakai di tabel Penetapan). Setujui menetapkan Pembimbing 2; bila Penetapan
+ * 2"; dipakai di tabel Penetapan). Setujui menetapkan Pembimbing 2; bila Penetapan
  * Pembimbing periode itu sudah terbit, Kadep menerbitkan versi barunya.
  */
 export function Supervisor2KadepDecisionDialog({ decision, onClose, onDone }: {

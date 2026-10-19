@@ -174,7 +174,7 @@ describe('LecturerThesisGuidanceEvaluationCard', () => {
   });
 });
 
-describe('Student Overview: warning ribbon and "Riwayat evaluasi (N)" (Paket E4, 6)', () => {
+describe('Student Overview: warning ribbon and "Riwayat evaluasi (N)"', () => {
   it('shows the running warning as a ribbon and the evaluation history in a modal', async () => {
     const studentContext = context({
       viewerRole: 'student',
@@ -227,7 +227,7 @@ function openMenu(trigger: HTMLElement) {
   fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' });
 }
 
-describe('Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4)', () => {
+describe('Tugas Akhir > Evaluasi (Ketua Departemen)', () => {
   const meta = (total: number, page = 1, pageSize = 10) => ({ page, pageSize, total, totalPages: Math.max(Math.ceil(total / pageSize), 1) });
   const row = (overrides: Partial<EvaluationInboxRow> = {}): EvaluationInboxRow => ({ ...evaluation(), viewStatus: 'awaiting_decision', ...overrides });
   const inbox = (data: EvaluationInboxRow[]) => ({ data, meta: meta(data.length), counts: { awaitingDecision: data.filter((item) => item.viewStatus === 'awaiting_decision').length } });
@@ -242,7 +242,7 @@ describe('Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4)', () => {
     await screen.findAllByText('Ilham Nofaldi');
     expect(service.getEvaluationInbox).toHaveBeenCalledWith({ status: undefined, search: undefined, page: 1, pageSize: 10 });
     const table = screen.getByRole('table');
-    // Paket E6 (1): the masa bimbingan sits under the stage.
+    // The masa bimbingan sits under the stage.
     expect(within(table).getAllByRole('columnheader').map((header) => header.textContent?.trim())).toEqual([
       'Mahasiswa', 'Tahap', 'Keputusan Pembimbing', 'Tanggal', 'Status', 'Aksi',
     ]);
@@ -265,7 +265,7 @@ describe('Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4)', () => {
     await waitFor(() => expect(service.getEvaluationInbox).toHaveBeenLastCalledWith({ status: 'recorded', search: undefined, page: 1, pageSize: 10 }));
   });
 
-  it('Paket E6 (1): the longest status and the date stay inside their cells', async () => {
+  it('The longest status and the date stay inside their cells', async () => {
     vi.mocked(service.getEvaluationInbox).mockResolvedValue(inbox([row({ createdAt: '2026-09-11T03:00:00.000Z' })]));
     wrap(<ThesisGuidanceEvaluationTable />);
     await screen.findByText('Ilham Nofaldi');
@@ -277,7 +277,7 @@ describe('Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4)', () => {
     expect(within(cells[1]).getByText(/Masa bimbingan/)).toBeInTheDocument();
   });
 
-  it('Lanjutan Paket E6: the Detail modal has its effect on one line above Batal, Tolak, Setujui; a recorded one only Tutup', async () => {
+  it('The Detail modal has its effect on one line above Batal, Tolak, Setujui; a recorded one only Tutup', async () => {
     vi.mocked(service.getEvaluationInbox).mockResolvedValue(inbox([
       row({ recommendation: 'terminate_supervision', evaluationType: 'one_year', stage: 'one_year' }),
       row({ id: 'eval-2', student: person('stu-2', 'NABIL RIZKI'), status: 'approved', recommendation: 'continue', requiresKadep: false, viewStatus: 'recorded' }),
@@ -294,7 +294,7 @@ describe('Tugas Akhir > Evaluasi (Ketua Departemen, Paket E5, 3.4)', () => {
     expectFooter(detail, ['Tutup']);
   });
 
-  it('Lanjutan Paket E7: an evaluation closed because the thesis became Selesai stays Ditolak, and its detail shows the system reason', async () => {
+  it('An evaluation closed because the thesis became Selesai stays Ditolak, and its detail shows the system reason', async () => {
     vi.mocked(service.getEvaluationInbox).mockResolvedValue(inbox([
       row({
         status: 'rejected',

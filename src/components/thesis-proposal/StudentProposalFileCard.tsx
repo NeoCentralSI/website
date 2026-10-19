@@ -32,7 +32,7 @@ function FileLink({ name, url }: { name: string | null; url: string | null }) {
 }
 
 /**
- * Paket P9 (2): the right-hand card "Proposal Final" (or "Proposal Revisi" for a thesis repeating
+ * The right-hand card "Proposal Final" (or "Proposal Revisi" for a thesis repeating
  * its proposal): the current file, then Pilih Berkas (outline) and the main action. Why the
  * action is disabled is in its tooltip; earlier attempts are in the Informasi Proposal modal.
  */

@@ -8,8 +8,8 @@ import {
 } from '@/components/thesis-proposal/LecturerApprovalInboxTable';
 
 /**
- * Tugas Akhir > Permohonan (Paket E4, 4.1; Paket E5, 3.1): the lecturer's approval inbox, the
- * Pengajuan Pembimbing, the lecturer's own steps of a Perubahan TA and (Paket P9, 4) the
+ * Tugas Akhir > Permohonan: the lecturer's approval inbox, the
+ * Pengajuan Pembimbing, the lecturer's own steps of a Perubahan TA and the
  * Pembimbing 2 requests of the proposal phase, in one table.
  */
 export default function LecturerSupervisorRequestsPage() {

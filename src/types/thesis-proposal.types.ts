@@ -124,7 +124,7 @@ export interface CatalogLecturer extends SupervisorLoad {
   scienceGroup: { id: string; name: string } | null;
   acceptingRequests: boolean;
   supervisedTopics: string[];
-  /** Paket P9 (2): the topics the lecturer offers (published). */
+  /** The topics the lecturer offers (published). */
   offeredTopics?: string[];
 }
 
@@ -141,11 +141,11 @@ export interface LecturerInbox {
   history: SupervisorRequest[];
 }
 
-/** Paket E5 (3.1): a row of Tugas Akhir > Permohonan, the lecturer's approval inbox. */
+/** A row of Tugas Akhir > Permohonan, the lecturer's approval inbox. */
 export type LecturerApprovalRow =
   | { kind: 'supervisor_request'; id: string; viewStatus: SupervisorRequestStatus; createdAt: string; supervisorRequest: SupervisorRequest }
   | { kind: 'change_request'; id: string; viewStatus: ChangeRequestViewStatus; createdAt: string; changeRequest: ThesisChangeRequestRow }
-  // Paket P9 (4): a student asks the lecturer to be Pembimbing 2; always "Menunggu Persetujuan Anda".
+  // A student asks the lecturer to be Pembimbing 2; always "Menunggu Persetujuan Anda".
   | { kind: 'supervisor2_request'; id: string; viewStatus: 'awaiting_me'; createdAt: string; supervisor2Request: Supervisor2InboxItem };
 
 export interface Supervisor2InboxItem {
@@ -262,7 +262,7 @@ export interface AssignmentOverview {
   newCount: number;
 }
 
-/** Paket P9 (5): the "Pengajuan" column of the Penetapan panel. */
+/** The "Pengajuan" column of the Penetapan panel. */
 export type AssignmentBoardSubmission =
   | 'department_waiting'
   | 'over_quota_waiting'
@@ -281,7 +281,7 @@ export interface AssignmentBoardLecturer {
   acceptingRequests: boolean;
 }
 
-/** One student of the chosen semester (Paket P9, 5). */
+/** One student of the chosen semester. */
 export interface AssignmentBoardRow {
   studentId: string;
   thesisId: string | null;
@@ -334,7 +334,7 @@ export interface FinalProposalAttempt {
   file: { fileName: string | null; fileSize: number | null; url: string | null; submittedAt: string | null } | null;
   supervisorScored: boolean;
   coordinatorScored: boolean;
-  /** Paket P9 (2): the two parts of the final score, sent once it is final. */
+  /** The two parts of the final score, sent once it is final. */
   supervisorScore?: number | null;
   coordinatorScore?: number | null;
   isFinalized: boolean;
@@ -347,7 +347,7 @@ export interface FinalProposalAttempt {
 
 export interface FinalProposalState {
   academicYear: AcademicYearRef | null;
-  /** Attempt of the running period (one per semester, K2). */
+  /** Attempt of the running period (one per semester). */
   current: FinalProposalAttempt | null;
   canSubmit: boolean;
   blockReason: string | null;

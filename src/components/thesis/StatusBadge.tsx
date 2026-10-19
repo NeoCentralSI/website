@@ -7,7 +7,7 @@ export type StatusBadgeProps = {
 };
 
 // Session status colours; labels come from lib/thesisLabels (GUIDANCE_STATUS_LABELS).
-// Legacy "rescheduled" is treated exactly like "accepted" (K19).
+// Legacy "rescheduled" is treated exactly like "accepted".
 const colorByStatus: Record<string, string> = {
   requested: "bg-amber-100 text-amber-800 border-amber-200",
   accepted: "bg-blue-100 text-blue-800 border-blue-200",

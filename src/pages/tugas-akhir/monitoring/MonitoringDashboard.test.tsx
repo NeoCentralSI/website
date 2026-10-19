@@ -69,7 +69,7 @@ describe("MonitoringDashboard — semester filter", () => {
     expect(await screen.findByTestId("tab-bimbingan")).toHaveTextContent("ay-now");
 
     expect(screen.getByLabelText("Semester")).toHaveTextContent("Ganjil 2026/2027 (Berjalan)");
-    // Paket E3c: no scope sentence under the filter any more.
+    // No scope sentence under the filter any more.
     expect(screen.queryByText(/^Menampilkan /)).not.toBeInTheDocument();
     // The running semester needs no remark about "now".
     expect(screen.queryByText(NOTE)).not.toBeInTheDocument();

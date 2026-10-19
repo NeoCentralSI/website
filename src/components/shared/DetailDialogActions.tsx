@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 /**
- * Lanjutan Paket E6: the footer of a detail modal in Perubahan, Evaluasi and Permohonan. The note
+ * The footer of a detail modal in Perubahan, Evaluasi and Permohonan. The note
  * (e.g. "Langkah dosen belum selesai…") is one full line above the buttons, never beside them;
  * the buttons sit together at the right with the same gap: "Batal" (outline, closes), then the
  * actions in `children` (Tolak destructive, then Setujui). A read-only modal has only "Tutup".

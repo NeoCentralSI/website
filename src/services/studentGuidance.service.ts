@@ -2,12 +2,12 @@ import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus, ThesisPhase, ThesisPhaseSummary, ThesisTerminationReason } from '@/lib/thesisLabels';
 
-// K19: "rescheduled" is legacy data (treated as "accepted"); "summary_rejected" = summary needs a revision.
+// "rescheduled" is legacy data (treated as "accepted"); "summary_rejected" = summary needs a revision.
 export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending" | "rescheduled" | "summary_rejected";
 
 export interface GuidanceItem {
   id: string;
-  /** K27: Jenis sesi (Proposal / Penelitian), tetap sejak dibuat. */
+  /** Jenis sesi (Proposal / Penelitian), tetap sejak dibuat. */
   phase?: ThesisPhase;
   thesisId?: string;
   supervisorId?: string;
@@ -26,7 +26,7 @@ export interface GuidanceItem {
   notes?: string;
   supervisorFeedback?: string;
   rejectionReason?: string;
-  // K19: suggested time on rejection, lecturer reschedule, cancellation
+  // Suggested time on rejection, lecturer reschedule, cancellation
   suggestedDate?: string | null;
   suggestedDateFormatted?: string | null;
   rescheduleReason?: string | null;
@@ -415,17 +415,17 @@ export interface MyThesisDetail extends ThesisPhaseSummary {
   id: string;
   title: string;
   status: ThesisLifecycleStatus;
-  /** Nilai turunan (E3); null bila TA tidak berstatus Penelitian. */
+  /** Nilai turunan; null bila TA tidak berstatus Penelitian. */
   activityLevel?: ThesisActivityLevel | null;
   lastActivityAt?: string | null;
   daysSinceActivity?: number | null;
   supervisionClock?: SupervisionClock | null;
-  /** True while the thesis is back in proposal because of a guidance evaluation (E5). */
+  /** True while the thesis is back in proposal because of a guidance evaluation. */
   repeatingProposal?: boolean;
   startDate?: string | null;
-  /** When a failed thesis was stopped (Paket E4, 7); null otherwise. */
+  /** When a failed thesis was stopped; null otherwise. */
   terminatedAt?: string | null;
-  /** When a thesis became Selesai (Lanjutan Paket E4); null otherwise. */
+  /** When a thesis became Selesai; null otherwise. */
   completedAt?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -611,5 +611,5 @@ export const proposeThesisAPI = async (data: { title: string; topicId: string })
   return res.json();
 };
 
-/** Tahap permintaan P2: menunggu kesediaan dosen, lalu persetujuan akhir KaDep. */
+/** Tahap permintaan Pembimbing 2: menunggu kesediaan dosen, lalu persetujuan akhir KaDep. */
 export type Supervisor2RequestStage = 'lecturer' | 'kadep';

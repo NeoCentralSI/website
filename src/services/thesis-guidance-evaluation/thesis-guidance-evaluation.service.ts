@@ -38,7 +38,7 @@ export async function submitEvaluation(dto: SubmitEvaluationDto) {
   return parse<ThesisGuidanceEvaluation>(response, 'Gagal mengirim evaluasi bimbingan');
 }
 
-/** Tugas Akhir > Evaluasi (Ketua Departemen): one page sorted by status priority (Paket E5). */
+/** Tugas Akhir > Evaluasi (Ketua Departemen): one page sorted by status priority. */
 export async function getEvaluationInbox(params: { status?: GuidanceEvaluationViewStatus; search?: string; page: number; pageSize: number }): Promise<EvaluationInbox> {
   const query = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
   if (params.status) query.set('status', params.status);

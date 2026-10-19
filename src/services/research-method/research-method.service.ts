@@ -47,7 +47,7 @@ export const submitScore = (id: string, party: AssessorParty, scores: ScoreInput
 export const setMinimumScore = (academicYearId: string, minimumScore: number) =>
   send<{ academicYearId: string; researchMethodMinimumScore: number }>('PATCH', `${BASE}/academic-years/${academicYearId}/minimum-score`, { minimumScore }, 'Gagal menyimpan nilai minimum');
 
-// Kelulusan (K13), monitoring, ekspor
+// Kelulusan, monitoring, ekspor
 export const getPromotionPreview = () => getJson<PromotionPreview>(`${BASE}/promotions`, 'Gagal memuat proses kelulusan');
 export const runPromotion = () => send<PromotionRunResult>('POST', `${BASE}/promotions/run`, undefined, 'Gagal menjalankan proses kelulusan');
 export const getMonitoring = (academicYearId?: string | null) =>

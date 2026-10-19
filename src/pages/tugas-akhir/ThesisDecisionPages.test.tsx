@@ -35,7 +35,7 @@ function renderAt(path: string) {
   );
 }
 
-describe('Tugas Akhir > Perubahan and Evaluasi are the Ketua Departemen\'s (Paket E5, 3.2 and 3.4)', () => {
+describe('Tugas Akhir > Perubahan and Evaluasi are the Ketua Departemen\'s', () => {
   beforeEach(() => { role.kadep = false; });
 
   it('sends a supervisor from Perubahan to Permohonan and from Evaluasi to Mahasiswa Bimbingan', () => {

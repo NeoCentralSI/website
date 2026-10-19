@@ -13,7 +13,7 @@ import { useMySupervisorRequests } from '@/hooks/thesis-proposal/useSupervisorRe
 const PROPOSAL_PATH = '/tugas-akhir/proposal';
 
 /**
- * Tugas Akhir › Proposal › Pengajuan Pembimbing (Paket P9, 2): the request form on its own page,
+ * Tugas Akhir › Proposal › Pengajuan Pembimbing: the request form on its own page,
  * because the form is long and the lecturer catalog does not fit in a modal. A student with an
  * active request goes back to the Proposal page.
  */

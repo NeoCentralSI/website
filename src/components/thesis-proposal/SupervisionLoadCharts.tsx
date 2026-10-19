@@ -17,7 +17,7 @@ const STAGE_LABELS: Record<string, string> = Object.fromEntries(STAGES.map((s) =
 const STAGE_COLORS: Record<string, string> = Object.fromEntries(STAGES.map((s) => [s.value, s.color]));
 
 /**
- * Paket P9 (6): the three charts of Kelola → Batas Bimbingan, drawn with the Monitoring charts:
+ * The three charts of Kelola → Batas Bimbingan, drawn with the Monitoring charts:
  * lecturers per load level, supervisions per kelompok keilmuan, and supervisions per stage.
  */
 export function SupervisionLoadCharts({ lecturers, isLoading }: { lecturers: LecturerLoadRow[] | undefined; isLoading: boolean }) {

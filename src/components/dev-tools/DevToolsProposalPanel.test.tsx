@@ -53,7 +53,7 @@ describe('DevTools tab Proposal (rencana 10.8)', () => {
     expect(before - new Date(iso).getTime()).toBeGreaterThanOrEqual(72 * 60 * 60 * 1000);
   });
 
-  it('Paket P9 (8): two cards only; the semester flags moved to Data Master → Mahasiswa', () => {
+  it('Two cards only; the semester flags moved to Data Master → Mahasiswa', () => {
     render(<MemoryRouter><DevToolsProposalPanel /></MemoryRouter>);
     expect(screen.getByText('Waktu Pengajuan Pembimbing')).toBeInTheDocument();
     expect(screen.getByText('Proses Kelulusan')).toBeInTheDocument();

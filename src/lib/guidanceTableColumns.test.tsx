@@ -48,7 +48,7 @@ function openMenu(trigger: HTMLElement) {
   fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' });
 }
 
-describe('Bimbingan: phase filter in the "Jenis" column header (Paket E4, 2.2)', () => {
+describe('Bimbingan: phase filter in the "Jenis" column header', () => {
   it('defaults to Semua and narrows the rows to Proposal or Penelitian; the count is the pagination text', async () => {
     const onPage = vi.fn();
     render(<MemoryRouter><GuidanceTable onPage={onPage} /></MemoryRouter>);

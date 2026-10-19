@@ -12,10 +12,10 @@ import { useCoordinatorQueue } from '@/hooks/research-method/useResearchMethod';
 import { useRole } from '@/hooks/shared/useRole';
 
 /**
- * Metode Penelitian > Penilaian Proposal (koordinator; Paket P8): setiap percobaan periode yang
+ * Metode Penelitian > Penilaian Proposal (koordinator): setiap percobaan periode yang
  * sudah berproposal final, nilai pembimbing dan koordinator, hasil, serta ekspor rekap nilai
  * (format templat SIA) dan daftar judul TA yang lulus. Kadep, Sekdep, dan Admin membaca.
- * Paket P9 (9): the period select beside the title; the minimum score in the toolbar.
+ * The period select beside the title; the minimum score in the toolbar.
  */
 export default function ProposalAssessment() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();

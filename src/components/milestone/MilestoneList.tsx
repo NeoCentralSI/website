@@ -67,17 +67,17 @@ export interface MilestoneListProps {
   isSupervisor?: boolean;
   onCreateNew?: () => void;
   onCreateFromTemplates?: () => void;
-  /** K14: when set, create buttons stay visible but disabled with this reason. */
+  /** When set, create buttons stay visible but disabled with this reason. */
   createDisabledReason?: string | null;
   /**
-   * Paket E4 (2.4): milestones of the other phase, listed after the current phase in the same
+   * Milestones of the other phase, listed after the current phase in the same
    * list, read-only, each with its phase badge.
    */
   readOnlyMilestones?: Milestone[];
   readOnlyPhase?: ThesisPhase;
-  /** Paket P8 (5): the running phase, for the template hint (proposal: general; research: topic). */
+  /** The running phase, for the template hint (proposal: general; research: topic). */
   currentPhase?: ThesisPhase;
-  /** K20: "Buat dari Template" only (e.g. the thesis has no topic yet). */
+  /** "Buat dari Template" only (e.g. the thesis has no topic yet). */
   templateDisabledReason?: string | null;
   onEdit?: (milestone: Milestone) => void;
   onDelete?: (milestone: Milestone) => void;
@@ -331,7 +331,7 @@ export function MilestoneList({
             </Button>
           </div>
 
-          {/* A disabled button gets no pointer events, so its reason sits on the wrapper (Paket P8). */}
+          {/* A disabled button gets no pointer events, so its reason sits on the wrapper. */}
           {isOwner && milestones.length === 0 && (
             <span className="inline-flex" title={(createDisabledReason || templateDisabledReason) ?? undefined}>
               <Button onClick={onCreateFromTemplates} disabled={!!(createDisabledReason || templateDisabledReason)}>

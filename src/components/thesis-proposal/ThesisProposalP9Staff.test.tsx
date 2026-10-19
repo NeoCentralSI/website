@@ -1,5 +1,5 @@
 /**
- * Paket P9 (5, 6): Tugas Akhir → Penetapan (one table per panel, a semester for the page) and
+ * Tugas Akhir → Penetapan (one table per panel, a semester for the page) and
  * Kelola → Batas Bimbingan (three charts, the Beban Dosen table, the limit toolbar).
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -137,7 +137,7 @@ beforeEach(() => {
 
 const tableRows = () => within(screen.getByRole('table')).getAllByRole('row').slice(1);
 
-describe('Penetapan Pembimbing (Paket P9, 5)', () => {
+describe('Penetapan Pembimbing', () => {
   it('three panels; one table, one row per student, waiting decisions first', async () => {
     wrap(<KadepThesisSupervisorAssignment />);
     expect(await screen.findByText('Depa Departemen')).toBeInTheDocument();
@@ -159,7 +159,7 @@ describe('Penetapan Pembimbing (Paket P9, 5)', () => {
     const table = screen.getByRole('table');
     expectColumnFits(within(table).getByRole('columnheader', { name: /Pengajuan/ }), within(rows[0]).getAllByRole('cell')[3], 'Jalur Departemen · Menunggu Keputusan');
     expectColumnFits(within(table).getByRole('columnheader', { name: /Penetapan/ }), within(rows[4]).getAllByRole('cell')[4], 'Ditetapkan (versi 12)');
-    // P1 and P2 stacked; the candidate of a waiting decision under them.
+    // Pembimbing 1 and Pembimbing 2 stacked; the candidate of a waiting decision under them.
     expect(within(rows[4]).getAllByRole('cell')[2]).toHaveTextContent('1. Aina Hubby Aziira, M.Eng2. Husnil Kamil, MT');
     expect(within(rows[2]).getByText(/Calon Pembimbing 2: Dosen Tutup/)).toBeInTheDocument();
 
@@ -295,7 +295,7 @@ describe('Penetapan Pembimbing (Paket P9, 5)', () => {
   });
 });
 
-describe('Batas Bimbingan (Paket P9, 6)', () => {
+describe('Batas Bimbingan', () => {
   it('three charts, then the Beban Dosen table with the general limit in its toolbar', async () => {
     vi.mocked(quota.getLoadOverview).mockResolvedValue(loads({ general: { softLimit: 8, hardLimit: 99 }, applicable: { softLimit: 8, hardLimit: 99, source: 'general' } }));
     wrap(<SupervisionQuotaPage />);

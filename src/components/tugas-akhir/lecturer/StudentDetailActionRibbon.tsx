@@ -8,7 +8,7 @@ function scrollToSection(id: string) {
 }
 
 /**
- * "Perlu tindakan Anda" (Paket E4, 5): one ribbon under the header listing what waits for the
+ * "Perlu tindakan Anda": one ribbon under the header listing what waits for the
  * signed-in supervisor; each item scrolls to its section. Nothing is shown when nothing waits.
  */
 export function StudentDetailActionRibbon({ items }: { items: DetailActionItem[] }) {
