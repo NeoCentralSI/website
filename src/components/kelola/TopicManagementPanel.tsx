@@ -6,6 +6,7 @@ import * as topicService from "@/services/topic.service";
 import { getScienceGroupsAPI } from "@/services/admin.service";
 
 import type { Topic, CreateTopicDto, UpdateTopicDto } from "@/types/topic.types";
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -391,6 +392,7 @@ export function TopicManagementPanel() {
               <Plus className="mr-2 h-4 w-4" />
               Tambah Topik
             </Button>
+            <RefreshButton onClick={() => void topicsQuery.refetch()} isRefreshing={topicsQuery.isFetching && !topicsQuery.isLoading} />
           </div>
         }
       />

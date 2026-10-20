@@ -37,10 +37,12 @@ describe('Keikutsertaan per Semester', () => {
     ]);
 
     const [sia, byAdmin] = within(screen.getByRole('list', { name: 'Keikutsertaan per semester' })).getAllByRole('listitem');
-    expect(within(sia).getByText('Metode Penelitian: Ya · SIA')).toBeInTheDocument();
-    expect(within(sia).getByText('Tugas Akhir: Belum diketahui · -')).toBeInTheDocument();
-    expect(within(sia).getByRole('button', { name: 'Ikuti Data SIA' })).toBeDisabled();
-    expect(within(byAdmin).getByText('Metode Penelitian: Tidak · Admin')).toBeInTheDocument();
+    expect(within(sia).getByText('Metode Penelitian: Mengambil · SIA')).toBeInTheDocument();
+    // No source, no " · -".
+    expect(within(sia).getByText('Tugas Akhir: Belum Diketahui')).toBeInTheDocument();
+    // Ikuti Data SIA is only there for a value the Admin set.
+    expect(within(sia).queryByRole('button', { name: 'Ikuti Data SIA' })).not.toBeInTheDocument();
+    expect(within(byAdmin).getByText('Metode Penelitian: Tidak Mengambil · Admin')).toBeInTheDocument();
 
     fireEvent.click(within(byAdmin).getByRole('button', { name: 'Ikuti Data SIA' }));
     await waitFor(() => expect(admin.followSiaPeriodFlagsAPI).toHaveBeenCalledWith('s1', 'ay-0'));
@@ -48,6 +50,9 @@ describe('Keikutsertaan per Semester', () => {
     fireEvent.click(within(sia).getByRole('button', { name: 'Ubah' }));
     const dialog = await screen.findByRole('dialog', { name: 'Ubah Keikutsertaan Semester' });
     expect(within(dialog).getByText(/Isian Admin tidak ditimpa sinkronisasi SIA/)).toBeInTheDocument();
+    // Short labels, so the two dropdowns line up.
+    expect(within(dialog).getByRole('combobox', { name: 'Metode Penelitian' })).toHaveTextContent('Mengambil');
+    expect(within(dialog).getByRole('combobox', { name: 'Tugas Akhir' })).toHaveTextContent('Belum Diketahui');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Simpan' }));
     await waitFor(() => expect(admin.setStudentPeriodFlagsAPI).toHaveBeenCalledWith('s1', 'ay-1', { eligibleResearchMethod: true, takingThesisCourse: null }));
   });

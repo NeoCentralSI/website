@@ -46,7 +46,12 @@ export default function StudentThesisProposal() {
       <LocalTabsNav tabs={TABS} activeTab={tab} onTabChange={(value) => setSearchParams(value === 'ringkasan' ? {} : { tab: value }, { replace: true })} />
 
       {tab === 'riwayat-pengajuan' ? (
-        <StudentSupervisorRequestHistoryTable requests={requests.data?.requests ?? []} isLoading={requests.isLoading} />
+        <StudentSupervisorRequestHistoryTable
+          requests={requests.data?.requests ?? []}
+          isLoading={requests.isLoading}
+          onRefresh={() => void requests.refetch()}
+          isFetching={requests.isFetching && !requests.isLoading}
+        />
       ) : requests.isLoading || overview.isLoading ? (
         <div className="space-y-[14px]">
           <Skeleton className="h-[120px] w-full" />
@@ -65,7 +70,7 @@ export default function StudentThesisProposal() {
               <StudentProposalStatusCard steps={buildProposalSteps(overview.data, requests.data)} />
             </div>
             <div className="flex flex-col gap-[14px]">
-              <StudentSupervisorRequestCard data={requests.data} />
+              <StudentSupervisorRequestCard data={requests.data} overview={overview.data} />
               {overview.data && <StudentProposalFileCard overview={overview.data} kind={repeating ? 'revision' : 'final'} />}
             </div>
           </div>

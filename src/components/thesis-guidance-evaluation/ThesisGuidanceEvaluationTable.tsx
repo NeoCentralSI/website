@@ -121,7 +121,7 @@ export function ThesisGuidanceEvaluationTable() {
           <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setDetail(row)} />
           {awaiting(row) && (
             <>
-              <TableIconAction icon={Check} label="Setujui" tone="approve" onClick={() => setDecision({ evaluation: row, approve: true })} />
+              <TableIconAction icon={Check} label="Setujui" onClick={() => setDecision({ evaluation: row, approve: true })} />
               <TableIconAction icon={X} label="Tolak" onClick={() => setDecision({ evaluation: row, approve: false })} />
             </>
           )}

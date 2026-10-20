@@ -5,7 +5,7 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { PeriodSelect } from '@/components/research-method/PeriodSelect';
 import { PageHeading } from '@/components/shared/PageHeading';
 import { AssignmentVersionHistoryTable, KadepAssignmentBoardTable } from '@/components/thesis-proposal/KadepAssignmentBoard';
-import { PAST_SEMESTER_LIMIT_REASON, SupervisionLimitToolbar } from '@/components/thesis-proposal/SupervisionLimitControls';
+import { SupervisionLimitToolbar } from '@/components/thesis-proposal/SupervisionLimitControls';
 import { SupervisionLoadTable } from '@/components/thesis-proposal/SupervisionLoadTable';
 import { Spinner } from '@/components/ui/spinner';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
@@ -26,10 +26,12 @@ function Loading() {
 }
 
 /**
- * Tugas Akhir > Penetapan: one semester for the whole page (default the running
- * one; a past semester is read only), three panels. Ketua Departemen decides, issues, and sets the
- * semester's limits in Beban Dosen; Sekretaris Departemen reads every panel (the
- * general limit stays in Kelola → Batas Bimbingan for both).
+ * Tugas Akhir > Penetapan, three panels. Penetapan and Riwayat Versi share one semester
+ * (`?semester=`, default the running one; a past semester is read only), picked in the toolbar
+ * of each table, so switching panels keeps the choice. Beban Dosen has no semester picker: it
+ * shows the loads now and the limits of the running semester. Ketua Departemen decides, issues
+ * and sets the running semester's limits; Sekretaris Departemen reads every panel (the general
+ * limit stays in Kelola → Batas Bimbingan for both).
  */
 export default function KadepThesisSupervisorAssignment() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -40,7 +42,7 @@ export default function KadepThesisSupervisorAssignment() {
   const tab: TabValue = TABS.some((t) => t.value === requestedTab) ? (requestedTab as TabValue) : DEFAULT_TAB;
   const semesterId = searchParams.get('semester') || undefined;
   const board = useAssignmentBoard(semesterId);
-  const loads = useSupervisionLoadOverview(semesterId);
+  const loads = useSupervisionLoadOverview(undefined);
 
   useEffect(() => {
     setBreadcrumbs([{ label: 'Tugas Akhir' }, { label: 'Penetapan Pembimbing' }]);
@@ -57,13 +59,11 @@ export default function KadepThesisSupervisorAssignment() {
   };
 
   const data = board.data;
-  const isOperational = data?.academicYear.isOperational ?? true;
+  const semesterSelect = <PeriodSelect value={semesterId ?? data?.academicYear.id} onChange={(id) => update({ semester: id })} />;
 
   return (
     <div className="space-y-6 p-6">
-      <PageHeading title="Penetapan Pembimbing" subtitle="Keputusan pengajuan pembimbing dan penerbitan penetapan per semester">
-        <PeriodSelect value={semesterId ?? data?.academicYear.id} onChange={(id) => update({ semester: id })} />
-      </PageHeading>
+      <PageHeading title="Penetapan Pembimbing" subtitle="Keputusan pengajuan pembimbing dan penerbitan penetapan per semester" />
       <LocalTabsNav
         tabs={TABS.map((t) => ({ value: t.value, label: t.label, badge: t.value === 'penetapan' && kadep && data?.counts.waiting ? data.counts.waiting : undefined }))}
         activeTab={tab}
@@ -79,9 +79,16 @@ export default function KadepThesisSupervisorAssignment() {
           onRefresh={() => void board.refetch()}
           isKadep={kadep}
           isKadepOrAdmin={kadep || isAdmin()}
+          semesterSelect={semesterSelect}
         />
       ) : (
-        <AssignmentVersionHistoryTable board={data} isKadepOrAdmin={kadep || isAdmin()} />
+        <AssignmentVersionHistoryTable
+          board={data}
+          isKadepOrAdmin={kadep || isAdmin()}
+          semesterSelect={semesterSelect}
+          onRefresh={() => void board.refetch()}
+          isFetching={board.isFetching}
+        />
       ))}
 
       {tab === 'beban-dosen' && (loads.isLoading && !loads.data ? <Loading /> : loads.error || !loads.data ? (
@@ -90,14 +97,8 @@ export default function KadepThesisSupervisorAssignment() {
         <SupervisionLoadTable
           overview={loads.data}
           isFetching={loads.isFetching}
-          toolbar={(
-            <SupervisionLimitToolbar
-              overview={loads.data}
-              scope="period"
-              canEdit={kadep}
-              disabledReason={isOperational ? null : PAST_SEMESTER_LIMIT_REASON}
-            />
-          )}
+          onRefresh={() => void loads.refetch()}
+          toolbar={<SupervisionLimitToolbar overview={loads.data} scope="period" canEdit={kadep} disabledReason={null} />}
         />
       ))}
     </div>

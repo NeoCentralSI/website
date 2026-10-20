@@ -2,15 +2,14 @@ import { useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import {
-  LecturerApprovalInboxTable,
-  LecturerSupervisionLoadControls,
-} from '@/components/thesis-proposal/LecturerApprovalInboxTable';
+import { PageHeading } from '@/components/shared/PageHeading';
+import { LecturerApprovalInboxTable } from '@/components/thesis-proposal/LecturerApprovalInboxTable';
 
 /**
  * Tugas Akhir > Permohonan: the lecturer's approval inbox, the
  * Pengajuan Pembimbing, the lecturer's own steps of a Perubahan TA and the
- * Pembimbing 2 requests of the proposal phase, in one table.
+ * Pembimbing 2 requests of the proposal phase, in one table. The supervision load and
+ * "Menerima pengajuan baru" are in the table's toolbar.
  */
 export default function LecturerSupervisorRequestsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -23,13 +22,7 @@ export default function LecturerSupervisorRequestsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      <div className="space-y-3">
-        <div>
-          <h1 className="text-2xl font-bold">Permohonan</h1>
-          <p className="text-muted-foreground">Pengajuan pembimbing, Pembimbing 2, dan perubahan tugas akhir yang memerlukan persetujuan Anda</p>
-        </div>
-        <LecturerSupervisionLoadControls />
-      </div>
+      <PageHeading title="Permohonan" subtitle="Pengajuan pembimbing, Pembimbing 2, dan perubahan tugas akhir yang memerlukan persetujuan Anda" />
 
       <LecturerApprovalInboxTable />
     </div>

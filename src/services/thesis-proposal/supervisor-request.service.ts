@@ -39,8 +39,11 @@ export async function getLecturerApprovalInbox(params: {
   search?: string;
   page: number;
   pageSize: number;
+  /** Every row in the server's priority order, without paging (the Permohonan table). */
+  all?: boolean;
 }): Promise<LecturerApprovalInbox> {
   const query = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+  if (params.all) query.set('all', '1');
   if (params.kind) query.set('kind', params.kind);
   if (params.status) query.set('status', params.status);
   if (params.search) query.set('search', params.search);

@@ -3,6 +3,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { SupervisionLoadBadge } from '@/components/shared/SupervisionLoadBadge';
 import { Badge } from '@/components/ui/badge';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { BADGE_COLUMN_WIDTH, CLIP_CELL, LOAD_COUNT_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
 import { formatLecturerName } from '@/lib/text';
@@ -32,6 +33,8 @@ interface Props {
   isFetching?: boolean;
   /** "Batas lunak", "Batas keras" and the edit button. */
   toolbar?: ReactNode;
+  /** Muat Ulang, at the right end of the toolbar. */
+  onRefresh?: () => void;
 }
 
 /**
@@ -39,7 +42,7 @@ interface Props {
  * current load against the limits in force for the overview's semester. A lecturer who closed
  * intake shows "Ditutup Dosen" under the name.
  */
-export function SupervisionLoadTable({ overview, isFetching, toolbar }: Props) {
+export function SupervisionLoadTable({ overview, isFetching, toolbar, onRefresh }: Props) {
   const [level, setLevel] = useState<SupervisionLoadLevel | ''>('');
   const rows = useMemo(() => {
     const rank = (row: LecturerLoadRow) => LEVEL_ORDER.indexOf(row.level);
@@ -92,7 +95,12 @@ export function SupervisionLoadTable({ overview, isFetching, toolbar }: Props) {
       searchPlaceholder="Cari nama dosen atau kelompok keilmuan..."
       emptyText={table.search || level ? 'Tidak ditemukan' : 'Belum ada data dosen.'}
       rowKey={(row) => row.lecturerId}
-      actions={toolbar}
+      actions={(toolbar || onRefresh) ? (
+        <>
+          {toolbar}
+          {onRefresh && <RefreshButton onClick={onRefresh} isRefreshing={Boolean(isFetching)} />}
+        </>
+      ) : undefined}
     />
   );
 }

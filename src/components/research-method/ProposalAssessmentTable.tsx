@@ -9,10 +9,11 @@ import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
 import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { ThesisStudentInfoCell } from '@/components/shared/ThesisTableCells';
+import AuthenticatedDocumentPreviewDialog from '@/components/thesis/AuthenticatedDocumentPreviewDialog';
+import { ProposalFileChip } from '@/components/thesis-proposal/ProposalFileChip';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
-import { openAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
 import { TruncatedText } from '@/lib/guidanceCells';
 import {
   ASSESSMENT_VIEW_STATUS_ORDER,
@@ -85,6 +86,7 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
   const [status, setStatus] = useState<AssessmentViewStatus | ''>('');
   const [detail, setDetail] = useState<AssessmentView | null>(null);
   const [scoring, setScoring] = useState<AssessmentView | null>(null);
+  const [viewer, setViewer] = useState<{ name: string; url: string } | null>(null);
 
   const rows = useMemo(() => {
     const all = sortRows(queue?.rows ?? [], party);
@@ -188,13 +190,13 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
         return (
           <div className="flex items-center justify-center gap-1">
             <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setDetail(row)} />
-            <TableIconAction icon={ClipboardCheck} label="Nilai Proposal" tone="approve" disabled={Boolean(block)} disabledReason={block} onClick={() => setScoring(row)} />
+            <TableIconAction icon={ClipboardCheck} label="Nilai Proposal" disabled={Boolean(block)} disabledReason={block} onClick={() => setScoring(row)} />
             <TableIconAction
               icon={FileText}
               label="Buka Proposal Final"
               disabled={!row.proposal?.url}
               disabledReason={NO_PROPOSAL}
-              onClick={() => openAuthenticatedFileOrToast(row.proposal?.url)}
+              onClick={() => row.proposal?.url && setViewer({ name: row.proposal.fileName ?? 'Proposal final.pdf', url: row.proposal.url })}
             />
           </div>
         );
@@ -246,10 +248,7 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
             <DetailRow label="Pembimbing">{supervisorsLine(detail) || '-'}</DetailRow>
             <DetailRow label="Proposal final">
               {detail.proposal?.url ? (
-                <Button variant="link" className="h-auto p-0 text-left" onClick={() => openAuthenticatedFileOrToast(detail.proposal?.url)}>
-                  <FileText className="mr-1 h-4 w-4 shrink-0" />
-                  <span className="break-all">{detail.proposal.fileName ?? 'Proposal final'}</span>
-                </Button>
+                <ProposalFileChip url={detail.proposal.url} fileName={detail.proposal.fileName ?? 'Proposal final'} className="max-w-[280px]" />
               ) : <span className="text-muted-foreground">Belum diajukan</span>}
               {detail.proposal?.submittedAt && <span className="text-muted-foreground"> · {formatDateTimeWib(detail.proposal.submittedAt)}</span>}
             </DetailRow>
@@ -267,6 +266,12 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
       </RecordDetailDialog>
 
       <ScoreFormDialog row={scoring} party={party} onOpenChange={(open) => !open && setScoring(null)} />
+      <AuthenticatedDocumentPreviewDialog
+        open={Boolean(viewer)}
+        onOpenChange={(value) => { if (!value) setViewer(null); }}
+        fileName={viewer?.name}
+        filePath={viewer?.url}
+      />
     </>
   );
 }

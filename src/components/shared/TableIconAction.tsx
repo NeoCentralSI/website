@@ -3,30 +3,26 @@ import type { LucideIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-const TONE_CLASS = {
-  default: '',
-  /** Setujui / Terima, as on the seminar verification table. */
-  approve: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50',
-} as const;
-
 /**
  * A row action as an icon with its tooltip, the style of
- * `AdminThesisSeminarVerificationTable`. A disabled action keeps its reason in the tooltip.
+ * `AdminThesisSeminarVerificationTable`. Every action is neutral: the text colour, orange on
+ * hover (green is for status indicators only, e.g. a completed step or a "Lulus" badge). A
+ * disabled action keeps its reason in the tooltip.
  */
-export function TableIconAction({ icon: Icon, label, onClick, tone = 'default', disabled = false, disabledReason }: {
+export function TableIconAction({ icon: Icon, label, onClick, disabled = false, disabledReason, className }: {
   icon: LucideIcon;
   label: string;
   onClick?: () => void;
-  tone?: keyof typeof TONE_CLASS;
   disabled?: boolean;
   disabledReason?: string | null;
+  className?: string;
 }) {
   const button = (
     <Button
       type="button"
       variant="ghost"
       size="icon"
-      className={cn('h-8 w-8', TONE_CLASS[tone])}
+      className={cn('h-8 w-8', className)}
       onClick={onClick}
       disabled={disabled}
       title={disabled ? undefined : label}

@@ -83,11 +83,13 @@ describe('Proposal final (10.3)', () => {
     vi.mocked(assignments.submitFinalProposal).mockResolvedValue({ success: true, message: 'Proposal final diajukan', data: { attempt: {} as never, replaced: false } });
     wrap(<StudentProposalFileCard kind="final" overview={overview()} />);
 
-    const button = await screen.findByRole('button', { name: 'Ajukan Proposal Final' });
-    expect(button).toBeDisabled();
+    // Nothing to send before a file is chosen; choosing one does not send it yet.
+    expect(await screen.findByRole('button', { name: /Pilih Berkas/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ajukan' })).not.toBeInTheDocument();
     const file = new File(['%PDF-1.7'], 'proposal.pdf', { type: 'application/pdf' });
     fireEvent.change(screen.getByLabelText('Berkas proposal final'), { target: { files: [file] } });
-    fireEvent.click(button);
+    expect(assignments.submitFinalProposal).not.toHaveBeenCalled();
+    fireEvent.click(await screen.findByRole('button', { name: 'Ajukan' }));
     await waitFor(() => expect(assignments.submitFinalProposal).toHaveBeenCalledWith(file, expect.anything()));
   });
 
@@ -108,11 +110,12 @@ describe('Proposal final (10.3)', () => {
     });
     wrap(<StudentProposalFileCard kind="final" overview={locked} />);
 
-    const replace = await screen.findByRole('button', { name: 'Ganti Proposal Final' });
+    const replace = await screen.findByRole('button', { name: /Ganti Berkas/ });
     expect(replace).toBeDisabled();
     expect(replace.parentElement).toHaveAttribute('title', expect.stringMatching(/sudah dimulai/));
-    expect(screen.getByRole('button', { name: 'Pilih Berkas' }).className).toContain('border-primary/30');
+    expect(screen.getByText(/sudah dimulai/, { selector: 'span' })).toBeInTheDocument();
     expect(screen.getByLabelText('Berkas proposal final')).toHaveClass('hidden');
-    expect(screen.getByText('proposal.pdf')).toBeInTheDocument();
+    expect(screen.getByText('proposal.pdf')).toHaveAttribute('title', 'proposal.pdf');
+    expect(screen.getByText('Menunggu nilai koordinator')).toBeInTheDocument();
   });
 });

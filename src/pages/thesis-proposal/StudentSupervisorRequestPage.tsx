@@ -3,6 +3,7 @@ import { Navigate, useNavigate, useOutletContext } from 'react-router-dom';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { PageHeading } from '@/components/shared/PageHeading';
+import { SoftWarning } from '@/components/shared/SoftWarning';
 import { StudentSupervisorRequestForm } from '@/components/thesis-proposal/StudentSupervisorRequestForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -32,14 +33,22 @@ export default function StudentSupervisorRequestPage() {
   if (data.activeRequest) return <Navigate to={PROPOSAL_PATH} replace />;
 
   const { submission, draft } = data;
+  const kadepNotes = submission.revisionRequested ? data.requests[0]?.kadepNotes ?? null : null;
   return (
     <div className="space-y-6 p-6">
-      <PageHeading title="Pengajuan Pembimbing" subtitle={submission.academicYear ? `Semester ${submission.academicYear.label}` : undefined} />
+      <PageHeading
+        title="Pengajuan Pembimbing"
+        subtitle={submission.academicYear ? `Semester ${submission.academicYear.label}` : undefined}
+        backTo={PROPOSAL_PATH}
+        backLabel="Kembali ke Proposal"
+      />
       {submission.canSubmit ? (
         <Card>
           <CardContent className="space-y-4 pt-6">
             {submission.revisionRequested && (
-              <Alert><AlertDescription>Ketua Departemen meminta revisi. Perbarui isian sesuai catatan lalu ajukan ulang.</AlertDescription></Alert>
+              <SoftWarning title="Ketua Departemen meminta revisi">
+                {kadepNotes ? `Catatan Ketua Departemen: ${kadepNotes}` : 'Perbarui isian sesuai catatan lalu ajukan ulang.'}
+              </SoftWarning>
             )}
             <StudentSupervisorRequestForm draft={draft} onClose={() => navigate(PROPOSAL_PATH)} onSubmitted={() => navigate(PROPOSAL_PATH)} />
           </CardContent>

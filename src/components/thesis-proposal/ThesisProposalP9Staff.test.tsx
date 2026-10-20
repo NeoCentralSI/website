@@ -180,13 +180,20 @@ describe('Penetapan Pembimbing', () => {
     expect(within(within(table).getByRole('columnheader', { name: /Penetapan/ })).getByRole('button')).toBeInTheDocument();
   });
 
-  it('the toolbar: search, Muat Ulang, Pratinjau PDF and the issue button with the count', async () => {
+  it('the toolbar: search, then the semester, Pratinjau PDF, the issue button with the count, and Muat Ulang at the end', async () => {
     vi.mocked(assignments.issueAssignment).mockResolvedValue({ success: true, data: { alreadyIssued: false } as never });
     wrap(<KadepThesisSupervisorAssignment />);
     await screen.findByText('Depa Departemen');
     expect(screen.getByPlaceholderText('Cari nama, NIM, judul, atau dosen...')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Muat Ulang' })).toHaveClass('border');
-    expect(screen.getByRole('button', { name: 'Pratinjau PDF' })).toBeEnabled();
+    // The semester picker is never beside the page title.
+    expect(within(screen.getByRole('heading', { name: 'Penetapan Pembimbing' }).parentElement!.parentElement!).queryByRole('combobox')).not.toBeInTheDocument();
+    const semester = screen.getByRole('combobox', { name: /Semester|Periode/ });
+    const preview = screen.getByRole('button', { name: 'Pratinjau PDF' });
+    const issueButton = screen.getByRole('button', { name: 'Terbitkan Penetapan (1 baru)' });
+    const refresh = screen.getByRole('button', { name: 'Muat Ulang' });
+    const follows = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(semester, preview) && follows(preview, issueButton) && follows(issueButton, refresh)).toBe(true);
+    expect(preview).toBeEnabled();
     fireEvent.click(screen.getByRole('button', { name: 'Terbitkan Penetapan (1 baru)' }));
     expect(screen.getByText(/Versi 2 digantikan oleh versi 3 yang memuat 3 mahasiswa/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Terbitkan' }));
@@ -286,12 +293,26 @@ describe('Penetapan Pembimbing', () => {
     expect(await screen.findByRole('button', { name: 'Ubah Batas Umum' })).toBeEnabled();
   });
 
-  it('Beban Dosen of a past semester: the limits cannot be changed', async () => {
+  it('Beban Dosen has no semester picker: always the loads now and the running semester\'s limits', async () => {
     vi.mocked(assignments.getAssignmentBoard).mockResolvedValue(board({ academicYear: { id: 'ay-0', label: '2025/2026 Genap', isOperational: false } }));
     wrap(<KadepThesisSupervisorAssignment />, '/?tab=beban-dosen&semester=ay-0');
     await screen.findByText('Batas lunak: 8');
-    await waitFor(() => expect(screen.getByRole('button', { name: 'Ubah Batas Semester Ini' })).toBeDisabled());
-    expect(screen.getByRole('button', { name: 'Ubah Batas Semester Ini' }).parentElement).toHaveAttribute('title', 'Batas hanya bisa diubah untuk semester aktif.');
+    expect(quota.getLoadOverview).toHaveBeenCalledWith(undefined);
+    expect(screen.queryByRole('combobox', { name: /Semester|Periode/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ubah Batas Semester Ini' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Muat Ulang' })).toBeInTheDocument();
+  });
+
+  it('Penetapan and Riwayat Versi share one semester through ?semester=', async () => {
+    vi.mocked(assignments.getAssignmentBoard).mockResolvedValue(board({ academicYear: { id: 'ay-0', label: '2025/2026 Genap', isOperational: false } }));
+    wrap(<KadepThesisSupervisorAssignment />, '/?semester=ay-0');
+    await screen.findByText('Depa Departemen');
+    fireEvent.click(screen.getByRole('button', { name: 'Riwayat Versi' }));
+    await screen.findByRole('columnheader', { name: 'Versi' });
+    expect(assignments.getAssignmentBoard).toHaveBeenLastCalledWith('ay-0');
+    expect(vi.mocked(assignments.getAssignmentBoard).mock.calls.every(([id]) => id === 'ay-0')).toBe(true);
+    expect(screen.getByRole('combobox', { name: /Semester|Periode/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Muat Ulang' })).toBeInTheDocument();
   });
 });
 

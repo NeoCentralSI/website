@@ -480,6 +480,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity }
         data={paginatedData}
         loading={isLoadingAny}
         isRefreshing={isFetching && !isLoading}
+        subtleRefresh
         total={searchFilteredData.length}
         page={page}
         pageSize={pageSize}

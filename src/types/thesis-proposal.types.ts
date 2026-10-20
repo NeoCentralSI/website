@@ -157,6 +157,8 @@ export interface Supervisor2InboxItem {
   studentNim: string | null;
   thesisTitle: string;
   requestedAt: string;
+  /** What the student proposed (the accepted Pengajuan Pembimbing of the thesis). */
+  supervisorRequest?: SupervisorRequest | null;
 }
 
 /**

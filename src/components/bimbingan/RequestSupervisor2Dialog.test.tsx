@@ -37,9 +37,14 @@ describe('Ajukan Pembimbing 2', () => {
     const closed = screen.getByRole('option', { name: 'Dosen Tutup, M.Kom' });
     expect(closed).toHaveAttribute('aria-disabled', 'true');
     fireEvent.click(closed);
-    expect(screen.getByRole('button', { name: 'Kirim Permintaan' })).toBeDisabled();
+    // Never disabled for a missing choice: the click says what is missing and sends nothing.
+    fireEvent.click(screen.getByRole('button', { name: 'Kirim Permintaan' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Pilih dosen Pembimbing 2 terlebih dahulu.');
+    expect(studentGuidance.requestSupervisor2).not.toHaveBeenCalled();
 
     fireEvent.click(full);
+    // The full lecturer's warning is the soft yellow box.
+    expect(screen.getByRole('note')).toHaveTextContent('Dosen ini sudah penuh');
     fireEvent.click(screen.getByRole('button', { name: 'Kirim Permintaan' }));
     await waitFor(() => expect(studentGuidance.requestSupervisor2).toHaveBeenCalledWith('l1'));
   });

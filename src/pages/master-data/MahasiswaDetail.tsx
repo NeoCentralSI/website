@@ -4,13 +4,12 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useRole } from '@/hooks/shared/useRole';
 import { getStudentDetailAPI } from '@/services/admin.service';
 import { useQuery } from '@tanstack/react-query';
-import { toTitleCaseName, formatRoleName, formatDateId } from '@/lib/text';
+import { toTitleCaseName, formatRoleName, formatDateId, formatDateShortId } from '@/lib/text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Spinner } from '@/components/ui/spinner';
-import EmptyState from '@/components/ui/empty-state';
 import {
   ArrowLeft,
   User,
@@ -29,6 +28,9 @@ import {
   Award
 } from 'lucide-react';
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
+import { PageHeading } from '@/components/shared/PageHeading';
+import { getThesisEventStatusLabel, type ThesisEventStatus } from '@/components/shared/ThesisEventStatusBadge';
+import { getStudentStatusLabel } from '@/lib/thesisLabels';
 import { StudentSemesterFlagsCard } from '@/components/master-data/StudentSemesterFlagsCard';
 
 const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
@@ -111,35 +113,31 @@ export default function MahasiswaDetail() {
   }
 
   const activeThesis = data.theses.find((t) => t.status !== 'completed' && t.status !== 'failed');
-  const completedTheses = data.theses.filter((t) => t.status === 'completed');
+  const currentThesis = activeThesis ?? data.theses.find((t) => t.status === 'completed') ?? data.theses[0] ?? null;
+  const otherTheses = data.theses.filter((t) => t.id !== currentThesis?.id);
   const semesterFlags = data.student.semesterFlags ?? [];
+  /** "Lulus · 14 Oktober 2026", or "—" before the first registration. */
+  const eventLine = (event?: { status: string; date: string | null }) =>
+    event ? [getThesisEventStatusLabel(event.status as ThesisEventStatus), event.date ? formatDateShortId(event.date) : null].filter(Boolean).join(' · ') : '—';
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" asChild className="shrink-0">
-            <Link to="/master-data/mahasiswa">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-base font-semibold tracking-tight sm:text-lg">{toTitleCaseName(data.fullName)}</h1>
-            <p className="text-xs text-muted-foreground sm:text-sm">
-              {data.identityNumber} • {data.email}
-            </p>
-          </div>
-        </div>
+      {/* Header: the size of every page heading, with the back button. */}
+      <PageHeading
+        title={toTitleCaseName(data.fullName)}
+        subtitle={[data.identityNumber, data.email].filter(Boolean).join(' · ')}
+        backTo="/master-data/mahasiswa"
+        backLabel="Kembali ke Data Mahasiswa"
+      >
         <div className="flex items-center gap-2">
           <Badge variant={data.isVerified ? 'default' : 'secondary'}>
             {data.isVerified ? 'Terverifikasi' : 'Belum Verifikasi'}
           </Badge>
-          <Badge variant="outline" className={data.student.status === 'Aktif' ? 'border-green-500 text-green-600' : ''}>
-            {data.student.status || 'Tidak diketahui'}
+          <Badge variant="outline" className={data.student.status === 'active' ? 'border-green-500 text-green-600' : ''}>
+            {getStudentStatusLabel(data.student.status)}
           </Badge>
         </div>
-      </div>
+      </PageHeading>
 
       {/* Info Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -339,202 +337,114 @@ export default function MahasiswaDetail() {
         <div className="lg:col-span-2 space-y-6">
           <StudentSemesterFlagsCard studentId={data.id} semesterFlags={semesterFlags} canEdit={isAdmin()} />
 
-          {/* Active Thesis */}
-          {activeThesis && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <BookOpen className="h-4 w-4" />
-                  Skripsi Aktif
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    {activeThesis.title || <span className="italic text-muted-foreground">Judul belum ditentukan</span>}
-                  </h3>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    <ThesisStatusBadge status={activeThesis.status} />
-                    {activeThesis.topic && (
-                      <Badge variant="outline">{activeThesis.topic}</Badge>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress */}
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Progress Alur Proposal</span>
-                    <span className="font-bold text-primary">{activeThesis.milestones.progress}%</span>
-                  </div>
-                  <Progress value={activeThesis.milestones.progress} className="h-2" />
-                  <p className="text-xs text-muted-foreground">
-                    {activeThesis.milestones.completed} dari {activeThesis.milestones.total} langkah selesai
-                  </p>
-                </div>
-
-                {/* Dates */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
+          {/* Tugas Akhir: the running thesis, else the latest one. */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <BookOpen className="h-4 w-4" />
+                Tugas Akhir
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!currentThesis ? (
+                <p className="text-sm text-muted-foreground">Mahasiswa ini belum memiliki tugas akhir.</p>
+              ) : (
+                <>
                   <div>
-                    <p className="text-muted-foreground">Mulai</p>
-                    <p className="font-medium">{activeThesis.startDate ? formatDateId(activeThesis.startDate) : '-'}</p>
-                  </div>
-                </div>
-
-                {/* Supervisors */}
-                {activeThesis.supervisors.length > 0 && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Pembimbing
-                    </p>
-                    <div className="space-y-2">
-                      {activeThesis.supervisors.map((sup, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                          <div>
-                            <p className="text-sm font-medium">{toTitleCaseName(sup.fullName)}</p>
-                            <p className="text-xs text-muted-foreground">{sup.email}</p>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {formatRoleName(sup.role)}
-                          </Badge>
-                        </div>
-                      ))}
+                    <h3 className="font-semibold text-lg">
+                      {currentThesis.title || <span className="italic text-muted-foreground">Judul belum ditentukan</span>}
+                    </h3>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      <ThesisStatusBadge status={currentThesis.status} />
+                      {currentThesis.topic && <Badge variant="outline">{currentThesis.topic}</Badge>}
                     </div>
                   </div>
-                )}
 
-                {/* Examiners */}
-                {activeThesis.examiners.length > 0 && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Penguji
-                    </p>
-                    <div className="space-y-2">
-                      {activeThesis.examiners.map((ex, idx) => (
-                        <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                          <div>
-                            <p className="text-sm font-medium">{toTitleCaseName(ex.fullName)}</p>
-                            <p className="text-xs text-muted-foreground">{ex.email}</p>
-                          </div>
-                          <Badge variant="outline" className="text-xs">
-                            {formatRoleName(ex.role)}
-                          </Badge>
-                        </div>
-                      ))}
+                  {/* Progress */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Progres Milestone</span>
+                      <span className="font-bold text-primary">{currentThesis.milestones.progress}%</span>
                     </div>
-                  </div>
-                )}
-
-                {/* Milestones */}
-                {activeThesis.milestones.items.length > 0 && (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                      <Target className="h-4 w-4" />
-                      Milestone ({activeThesis.milestones.completed}/{activeThesis.milestones.total})
+                    <Progress value={currentThesis.milestones.progress} className="h-2" />
+                    <p className="text-xs text-muted-foreground">
+                      {currentThesis.milestones.completed} dari {currentThesis.milestones.total} milestone selesai
                     </p>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {activeThesis.milestones.items.map((m) => (
-                        <div key={m.id} className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
-                          {MILESTONE_STATUS_ICONS[m.status] || <Clock className="h-4 w-4 text-muted-foreground" />}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{m.title}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {m.completedAt ? `Selesai ${formatDateId(m.completedAt)}` : m.targetDate ? `Target ${formatDateId(m.targetDate)}` : 'Belum ada target'}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
                   </div>
-                )}
 
-                {/* Seminars & Defences */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Seminar</p>
-                    {activeThesis.seminars.length > 0 ? (
-                      <div className="space-y-1">
-                        {activeThesis.seminars.map((s) => (
-                          <div key={s.id} className="p-2 bg-muted rounded-md">
-                            <p className="text-sm font-medium capitalize">{s.type}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {s.result || s.status} {s.score ? `- Nilai: ${s.score}` : ''}
-                            </p>
+                  <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-[9rem_1fr]">
+                    <dt className="text-muted-foreground">Mulai</dt>
+                    <dd className="font-medium">{currentThesis.startDate ? formatDateShortId(currentThesis.startDate) : '—'}</dd>
+                    <dt className="text-muted-foreground">Seminar Hasil</dt>
+                    <dd className="font-medium">{eventLine(currentThesis.seminars[0])}</dd>
+                    <dt className="text-muted-foreground">Sidang TA</dt>
+                    <dd className="font-medium">{eventLine(currentThesis.defences[0])}</dd>
+                  </dl>
+
+                  {/* Supervisors */}
+                  {currentThesis.supervisors.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Pembimbing
+                      </p>
+                      <div className="space-y-2">
+                        {currentThesis.supervisors.map((sup, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded-md">
+                            <div>
+                              <p className="text-sm font-medium">{toTitleCaseName(sup.fullName)}</p>
+                              <p className="text-xs text-muted-foreground">{sup.email}</p>
+                            </div>
+                            <Badge variant="outline" className="text-xs">
+                              {formatRoleName(sup.role)}
+                            </Badge>
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <EmptyState
-                        size="sm"
-                        title="Belum Ada Seminar"
-                        description="Belum ada seminar terdaftar"
-                      />
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">Sidang</p>
-                    {activeThesis.defences.length > 0 ? (
-                      <div className="space-y-1">
-                        {activeThesis.defences.map((d) => (
-                          <div key={d.id} className="p-2 bg-muted rounded-md">
-                            <p className="text-sm font-medium">{d.result || d.status}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {d.score ? `Nilai: ${d.score}` : 'Belum ada nilai'}
-                            </p>
+                    </div>
+                  )}
+
+                  {/* Milestones */}
+                  {currentThesis.milestones.items.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                        <Target className="h-4 w-4" />
+                        Milestone ({currentThesis.milestones.completed}/{currentThesis.milestones.total})
+                      </p>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {currentThesis.milestones.items.map((m) => (
+                          <div key={m.id} className="flex items-center gap-3 p-2 bg-muted/50 rounded-md">
+                            {MILESTONE_STATUS_ICONS[m.status] || <Clock className="h-4 w-4 text-muted-foreground" />}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{m.title}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {m.completedAt ? `Selesai ${formatDateId(m.completedAt)}` : m.targetDate ? `Target ${formatDateId(m.targetDate)}` : 'Belum ada target'}
+                              </p>
+                            </div>
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      <EmptyState
-                        size="sm"
-                        title="Belum Ada Sidang"
-                        description="Belum ada sidang terdaftar"
-                      />
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* No Active Thesis */}
-          {!activeThesis && (
-            <Card>
-              <CardContent className="py-12">
-                <EmptyState
-                  title="Tidak Ada Skripsi Aktif"
-                  description="Mahasiswa ini belum memiliki skripsi yang sedang berjalan"
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Completed Theses */}
-          {completedTheses.length > 0 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  Skripsi Selesai ({completedTheses.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {completedTheses.map((thesis) => (
-                    <div key={thesis.id} className="p-3 border rounded-lg">
-                      <h4 className="font-medium">{thesis.title || 'Judul tidak tersedia'}</h4>
-                      <div className="flex items-center gap-2 mt-2">
-                        <Badge className="bg-green-100 text-green-700">Selesai</Badge>
-                        {thesis.topic && <Badge variant="outline">{thesis.topic}</Badge>}
-                      </div>
                     </div>
-                  ))}
+                  )}
+                </>
+              )}
+
+              {/* Earlier theses, one line each. */}
+              {otherTheses.length > 0 && (
+                <div className="border-t pt-3">
+                  <p className="text-sm text-muted-foreground mb-2">Tugas Akhir Sebelumnya</p>
+                  <ul className="space-y-1.5">
+                    {otherTheses.map((thesis) => (
+                      <li key={thesis.id} className="flex flex-wrap items-center gap-2 text-sm">
+                        <ThesisStatusBadge status={thesis.status} />
+                        <span className="min-w-0 truncate">{thesis.title || 'Judul tidak tersedia'}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

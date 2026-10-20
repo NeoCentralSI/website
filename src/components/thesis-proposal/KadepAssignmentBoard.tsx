@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { ArrowRightLeft, Check, Download, Eye, FileText, Loader2, RefreshCw, UserCheck, X } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { ArrowRightLeft, Check, Download, Eye, FileText, Loader2, UserCheck, X } from 'lucide-react';
 
 import { SUPERVISOR2_CLOSED_INTAKE, SUPERVISOR2_FULL_NOTE, Supervisor2KadepDecisionDialog, type Supervisor2Decision } from '@/components/bimbingan/Supervisor2KadepDecisionDialog';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { useIssueAssignment } from '@/hooks/thesis-proposal/useSupervisorAssignment';
 import { downloadAuthenticatedFileOrToast, openAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
@@ -36,6 +37,7 @@ import {
 import { assignmentPreviewUrl } from '@/services/thesis-proposal/supervisor-assignment.service';
 import type { AssignmentBatch, AssignmentBoard, AssignmentBoardRow, AssignmentBoardSubmission } from '@/types/thesis-proposal.types';
 import { KadepSupervisorRequestDecisionDialog, type KadepAction } from './KadepSupervisorRequestDecisionDialog';
+import { ProposalFileChip } from './ProposalFileChip';
 import { SupervisorRequestDetails } from './SupervisorRequestDetails';
 
 export const PAST_SEMESTER_REASON = 'Semester lampau hanya bisa dilihat.';
@@ -118,6 +120,8 @@ interface TableProps {
   isKadep: boolean;
   /** Kadep and Admin may preview the PDF. */
   isKadepOrAdmin: boolean;
+  /** The semester picker, in the toolbar (shared with Riwayat Versi through `?semester=`). */
+  semesterSelect?: ReactNode;
 }
 
 /**
@@ -125,7 +129,7 @@ interface TableProps {
  * tabs Penetapan Semester Ini, Pengajuan Lewat Departemen, Pengajuan di Atas Kuota and Permintaan
  * Pembimbing 2. "Semua" lists what waits for a decision first. A past semester is read only.
  */
-export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKadep, isKadepOrAdmin }: TableProps) {
+export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKadep, isKadepOrAdmin, semesterSelect }: TableProps) {
   const issue = useIssueAssignment();
   const [submission, setSubmission] = useState('');
   const [assignment, setAssignment] = useState('');
@@ -239,13 +243,13 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
           <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setDetail(row)} />
           {canDecide && row.submission === 'department_waiting' && (
             <>
-              <TableIconAction icon={UserCheck} label="Tetapkan Pembimbing" tone="approve" onClick={() => openDecision(row, 'approve')} />
+              <TableIconAction icon={UserCheck} label="Tetapkan Pembimbing" onClick={() => openDecision(row, 'approve')} />
               <TableIconAction icon={X} label="Tolak" onClick={() => openDecision(row, 'reject')} />
             </>
           )}
           {canDecide && row.submission === 'over_quota_waiting' && (
             <>
-              <TableIconAction icon={Check} label="Setujui" tone="approve" onClick={() => openDecision(row, 'approve')} />
+              <TableIconAction icon={Check} label="Setujui" onClick={() => openDecision(row, 'approve')} />
               <TableIconAction icon={ArrowRightLeft} label="Alihkan ke Dosen Lain" onClick={() => openDecision(row, 'redirect')} />
             </>
           )}
@@ -254,7 +258,6 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
               <TableIconAction
                 icon={Check}
                 label="Setujui"
-                tone="approve"
                 disabled={supervisor2Closed(row)}
                 disabledReason={supervisor2Closed(row) ? SUPERVISOR2_CLOSED_INTAKE : null}
                 onClick={() => openDecision(row, 'supervisor2_approve')}
@@ -267,11 +270,10 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
     },
   ];
 
+  // Search on the left; the semester, Pratinjau PDF and Terbitkan, then Muat Ulang at the end.
   const toolbar = (
     <>
-      <Button size="sm" variant="outline" onClick={onRefresh} disabled={isFetching}>
-        <RefreshCw className={isFetching ? 'mr-2 h-4 w-4 animate-spin' : 'mr-2 h-4 w-4'} />Muat Ulang
-      </Button>
+      {semesterSelect}
       {isKadepOrAdmin && (
         <span title={previewReason ?? undefined} className="inline-flex">
           <Button size="sm" variant="outline" disabled={Boolean(previewReason)} onClick={() => openAuthenticatedFileOrToast(assignmentPreviewUrl(board.academicYear.id))}>
@@ -284,6 +286,7 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
           {issue.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{issueButtonLabel(board)}
         </Button>
       </span>
+      <RefreshButton onClick={onRefresh} isRefreshing={isFetching} />
     </>
   );
 
@@ -360,9 +363,7 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
               ))}
               {detail.proposal && (
                 <DetailLine label="Proposal final">
-                  <Button variant="link" size="sm" className="h-auto p-0" onClick={() => openAuthenticatedFileOrToast(detail.proposal?.url)}>
-                    {detail.proposal.fileName ?? 'Proposal'}
-                  </Button>
+                  <ProposalFileChip url={detail.proposal.url} fileName={detail.proposal.fileName ?? 'Proposal'} className="max-w-[260px]" />
                   {detail.proposal.submittedAt && <span className="text-muted-foreground"> · {formatDateTimeWib(detail.proposal.submittedAt)}</span>}
                 </DetailLine>
               )}
@@ -418,7 +419,13 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
 }
 
 /** Panel "Riwayat Versi", one table. */
-export function AssignmentVersionHistoryTable({ board, isKadepOrAdmin }: { board: AssignmentBoard; isKadepOrAdmin: boolean }) {
+export function AssignmentVersionHistoryTable({ board, isKadepOrAdmin, semesterSelect, onRefresh, isFetching = false }: {
+  board: AssignmentBoard;
+  isKadepOrAdmin: boolean;
+  semesterSelect?: ReactNode;
+  onRefresh?: () => void;
+  isFetching?: boolean;
+}) {
   const table = useLocalTable(board.batches, (batch, term) => haystack(String(batch.version), batch.generatedBy?.fullName).includes(term));
   const columns: Column<AssignmentBatch>[] = [
     { key: 'version', header: 'Versi', width: 80, className: 'text-center', render: (batch) => batch.version },
@@ -454,6 +461,12 @@ export function AssignmentVersionHistoryTable({ board, isKadepOrAdmin }: { board
       tableClassName="table-fixed"
       emptyText="Penetapan Pembimbing semester ini belum pernah diterbitkan."
       rowKey={(batch) => batch.id}
+      actions={(
+        <>
+          {semesterSelect}
+          {onRefresh && <RefreshButton onClick={onRefresh} isRefreshing={isFetching} />}
+        </>
+      )}
     />
   );
 }

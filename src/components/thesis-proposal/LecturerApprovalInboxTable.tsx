@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ArrowRight, Check, Eye, X } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Switch } from '@/components/ui/switch';
-import { usePagedSearch } from '@/hooks/shared/usePagedSearch';
+import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { useLecturerDecision } from '@/hooks/thesis-change-request/useThesisChangeRequest';
 import { useSetAcceptingRequests } from '@/hooks/thesis-proposal/useSupervisionQuota';
 import {
@@ -84,7 +84,21 @@ const studentOf = (row: LecturerApprovalRow) => {
   return { name: row.changeRequest.student?.name ?? '', nim: row.changeRequest.student?.identityNumber ?? '' };
 };
 
-/** Supervision load and "Menerima pengajuan baru", shown in the page header (as on the old card). */
+/** Text the search matches: the student's name and NIM and the proposal (title or change). */
+const searchTextOf = (row: LecturerApprovalRow) => {
+  const student = studentOf(row);
+  const proposal = row.kind === 'supervisor_request'
+    ? row.supervisorRequest.proposedTitle
+    : row.kind === 'supervisor2_request'
+      ? row.supervisor2Request.thesisTitle
+      : summarizeChange(row.changeRequest, formatLecturerName);
+  return haystack(student.name, student.nim, proposal);
+};
+
+/**
+ * Supervision load and "Menerima pengajuan baru", in the toolbar of the Permohonan table (no
+ * row of controls under the page title).
+ */
 export function LecturerSupervisionLoadControls() {
   const { data } = useLecturerSupervisorInbox();
   const accepting = useSetAcceptingRequests();
@@ -115,20 +129,20 @@ export function LecturerSupervisionLoadControls() {
  * are filtered in the column header. Terima / Tolak (an arrow to forward to the Ketua Departemen when the
  * lecturer is full) and Setujui / Tolak are icons in the row, everything else in the modal.
  * The Pembimbing 2 requests are the Jenis "Pembimbing 2" (Lihat, Bersedia, Tolak),
- * first among what waits; the page has this one table.
+ * first among what waits; the page has this one table. A lecturer's inbox is small, so it is
+ * loaded once in the server's order and filtered, searched and paged in the browser: the
+ * search is instant and the order stays the server's.
  */
 export function LecturerApprovalInboxTable() {
-  const { search, setSearch, debouncedSearch, page, setPage } = usePagedSearch();
-  const [pageSize, setPageSize] = useState(10);
   const [kind, setKind] = useState<LecturerInboxJenis | ''>('');
   const [status, setStatus] = useState('');
-  const inbox = useLecturerApprovalInbox({
-    kind: kind || undefined,
-    status: status || undefined,
-    search: debouncedSearch || undefined,
-    page,
-    pageSize,
-  });
+  const inbox = useLecturerApprovalInbox({ all: true, page: 1, pageSize: 100 });
+  const rows = useMemo(
+    () => (inbox.data?.data ?? []).filter((row) => (!kind || lecturerInboxJenisOf(row) === kind) && (!status || row.viewStatus === status)),
+    [inbox.data, kind, status],
+  );
+  const matches = useCallback((row: LecturerApprovalRow, term: string) => searchTextOf(row).includes(term), []);
+  const table = useLocalTable(rows, matches);
   const { data: supervisorInbox } = useLecturerSupervisorInbox();
   const markReview = useMarkSupervisorRequestUnderReview();
   const lecturerDecision = useLecturerDecision();
@@ -168,7 +182,7 @@ export function LecturerApprovalInboxTable() {
           const next = value as LecturerInboxJenis | '';
           setKind(next);
           if (status && !statusOptionsFor(next).includes(status)) setStatus('');
-          setPage(1);
+          table.resetPage();
         },
         options: KIND_OPTIONS,
       },
@@ -210,7 +224,7 @@ export function LecturerApprovalInboxTable() {
       filter: {
         type: 'select',
         value: status,
-        onChange: (value) => { setStatus(value); setPage(1); },
+        onChange: (value) => { setStatus(value); table.resetPage(); },
         options: [{ label: 'Semua', value: '' }, ...statusOptionsFor(kind).map((value) => ({ label: statusLabel(value), value }))],
       },
     },
@@ -229,7 +243,6 @@ export function LecturerApprovalInboxTable() {
                   <TableIconAction
                     icon={isFull ? ArrowRight : Check}
                     label={acceptLabel}
-                    tone="approve"
                     onClick={() => setResponse({ request: row.supervisorRequest, action: 'accept' })}
                   />
                   <TableIconAction icon={X} label="Tolak" onClick={() => setResponse({ request: row.supervisorRequest, action: 'reject' })} />
@@ -239,7 +252,7 @@ export function LecturerApprovalInboxTable() {
           ) : row.kind === 'supervisor2_request' ? (
             <>
               <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setSupervisor2Detail(row.supervisor2Request)} />
-              <TableIconAction icon={Check} label="Bersedia" tone="approve" onClick={() => setSupervisor2Decision({ mode: 'approve', item: row.supervisor2Request })} />
+              <TableIconAction icon={Check} label="Bersedia" onClick={() => setSupervisor2Decision({ mode: 'approve', item: row.supervisor2Request })} />
               <TableIconAction icon={X} label="Tolak" onClick={() => setSupervisor2Decision({ mode: 'reject', item: row.supervisor2Request })} />
             </>
           ) : (
@@ -250,7 +263,6 @@ export function LecturerApprovalInboxTable() {
                   <TableIconAction
                     icon={Check}
                     label="Setujui"
-                    tone="approve"
                     disabled={!!row.changeRequest.applyBlockReason}
                     disabledReason={row.changeRequest.applyBlockReason}
                     onClick={() => setChangeDecision({ request: row.changeRequest, state: lecturerDecisionDialogState(row.changeRequest, true) })}
@@ -273,23 +285,21 @@ export function LecturerApprovalInboxTable() {
     <>
       <CustomTable
         columns={columns}
-        data={inbox.data?.data ?? []}
+        {...table.tableProps}
         loading={isLoading}
         isRefreshing={isFetching && !isLoading}
         subtleRefresh
         enableColumnFilters
         tableClassName={TABLE_CLASS}
-        total={inbox.data?.meta.total ?? 0}
-        page={page}
-        pageSize={pageSize}
-        onPageChange={setPage}
-        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
-        searchValue={search}
-        onSearchChange={setSearch}
         searchPlaceholder="Cari nama, NIM, atau judul..."
-        emptyText={debouncedSearch || kind || status ? 'Tidak ditemukan' : 'Belum ada permohonan.'}
+        emptyText={table.search || kind || status ? 'Tidak ditemukan' : 'Belum ada permohonan.'}
         rowKey={(row) => `${row.kind}:${row.id}`}
-        actions={<RefreshButton onClick={() => void inbox.refetch()} isRefreshing={isFetching && !isLoading} />}
+        actions={(
+          <>
+            <LecturerSupervisionLoadControls />
+            <RefreshButton onClick={() => void inbox.refetch()} isRefreshing={isFetching && !isLoading} />
+          </>
+        )}
       />
 
       <RecordDetailDialog

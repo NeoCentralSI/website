@@ -12,7 +12,8 @@ import { useSupervisorQueue } from '@/hooks/research-method/useResearchMethod';
 /**
  * Tugas Akhir > Proposal (dosen pembimbing): mahasiswa bimbingan fase
  * proposal per periode, proposal final, presensi, dan "Nilai Proposal". Pembimbing 1 normalnya
- * mengisi; Pembimbing 2 boleh mengisi sebagai cadangan. Nilai terkunci setelah dikirim.
+ * mengisi; Pembimbing 2 boleh mengisi sebagai cadangan. Nilai terkunci setelah dikirim. Toolbar:
+ * cari, nilai minimum, semester, lalu Muat Ulang.
  */
 export default function LecturerThesisProposal() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -26,9 +27,7 @@ export default function LecturerThesisProposal() {
 
   return (
     <div className="space-y-6 p-6">
-      <PageHeading title="Proposal" subtitle="Penilaian proposal mahasiswa bimbingan">
-        <PeriodSelect value={academicYearId ?? queue.data?.academicYear.id} onChange={setAcademicYearId} />
-      </PageHeading>
+      <PageHeading title="Proposal" subtitle="Penilaian proposal mahasiswa bimbingan" />
 
       {queue.error ? (
         <p className="text-sm text-destructive">{queue.error instanceof Error ? queue.error.message : 'Gagal memuat data.'}</p>
@@ -48,6 +47,7 @@ export default function LecturerThesisProposal() {
                   Nilai minimum: {queue.data.minimumScore}
                 </Badge>
               )}
+              <PeriodSelect value={academicYearId ?? queue.data?.academicYear.id} onChange={setAcademicYearId} />
               <RefreshButton onClick={() => void queue.refetch()} isRefreshing={queue.isFetching && !queue.isLoading} />
             </>
           }

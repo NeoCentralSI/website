@@ -111,7 +111,7 @@ export const useSidebarMenu = () => {
     const proposalItems: SidebarLeafItem[] = role.pembimbing ? [{ title: "Proposal", url: "/tugas-akhir/proposal" }] : [];
 
     /**
-     * A supervisor's Tugas Akhir order is Permohonan, Proposal, Bimbingan,
+     * A supervisor's Tugas Akhir order is Permohonan, Bimbingan, Proposal,
      * Seminar Hasil, Sidang TA. Supervisors have no Perubahan or Evaluasi page (they act from
      * Permohonan and Mahasiswa Bimbingan). Permohonan and Proposal are for supervisors; a
      * lecturer without the supervisor role keeps Bimbingan, Seminar Hasil and Sidang TA.
@@ -120,8 +120,8 @@ export const useSidebarMenu = () => {
       ...(role.pembimbing
         ? [{ title: "Permohonan", url: "/tugas-akhir/permohonan", ...(waitingRequestCount > 0 ? { badge: waitingRequestCount } : {}) }]
         : []),
-      ...proposalItems,
       { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+      ...proposalItems,
       { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
       { title: "Sidang TA", url: "/tugas-akhir/sidang" },
     ];
@@ -155,7 +155,7 @@ export const useSidebarMenu = () => {
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
-        // Tugas Akhir is always shown (Overview, Proposal, Bimbingan, Seminar Hasil, Sidang);
+        // Tugas Akhir is always shown (Overview, Bimbingan, Proposal, Seminar Hasil, Sidang);
         // without a thesis its pages show an empty state or actions disabled with a reason.
         // The separate "Metode Penelitian" menu for students is gone.
         {
@@ -164,8 +164,8 @@ export const useSidebarMenu = () => {
           icon: FileText,
           items: [
             { title: "Overview", url: "/tugas-akhir" },
-            { title: "Proposal", url: "/tugas-akhir/proposal" },
             { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+            { title: "Proposal", url: "/tugas-akhir/proposal" },
             { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
             { title: "Sidang TA", url: "/tugas-akhir/sidang" },
           ],

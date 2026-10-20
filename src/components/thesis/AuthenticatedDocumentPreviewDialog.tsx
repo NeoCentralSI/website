@@ -9,6 +9,7 @@ import type { DocumentPreviewDialogProps } from "./DocumentPreviewDialog";
 /** Same path rules as DocumentPreviewDialog, without the token. */
 function toUploadPath(filePath?: string | null): string | null {
   if (!filePath) return null;
+  if (filePath.startsWith("blob:")) return null;
   const normalized = filePath.replace(/\\/g, "/");
   if (normalized.startsWith("http")) return normalized;
   if (normalized.startsWith("/uploads/")) return normalized;
@@ -17,15 +18,21 @@ function toUploadPath(filePath?: string | null): string | null {
 }
 
 /**
- * DocumentPreviewDialog for protected thesis files, same props.
+ * DocumentPreviewDialog for protected thesis files, same props. A `blob:` path is a file chosen
+ * on this device and not sent yet (e.g. a proposal under review before "Ajukan"); it is shown as
+ * it is, without a request to the server.
  * The file is fetched with the Authorization header and shown from a blob URL, so the JWT
  * never appears in a URL (iframe, "Buka tab", "Unduh"). The blob URL is revoked when the
  * dialog closes.
  */
 export default function AuthenticatedDocumentPreviewDialog({ open, onOpenChange, fileName, filePath, mode = "fullscreen" }: DocumentPreviewDialogProps) {
   const isDocx = fileName?.toLowerCase().endsWith(".docx") || filePath?.toLowerCase().endsWith(".docx");
+  const localUrl = filePath?.startsWith("blob:") ? filePath : null;
   const url = toUploadPath(filePath);
-  const { blobUrl, error, isLoading } = useAuthenticatedBlobUrl(url, open);
+  const remote = useAuthenticatedBlobUrl(url, open);
+  const blobUrl = localUrl ?? remote.blobUrl;
+  const error = localUrl ? null : remote.error;
+  const isLoading = localUrl ? false : remote.isLoading;
 
   const contentClass =
     mode === "fullscreen"
@@ -48,7 +55,7 @@ export default function AuthenticatedDocumentPreviewDialog({ open, onOpenChange,
               {url && (
                 <>
                   <Button variant="secondary" size="sm" onClick={() => openAuthenticatedFileOrToast(url)}>
-                    <ExternalLinkIcon className="mr-2 size-4" /> Buka tab
+                    <ExternalLinkIcon className="mr-2 size-4" /> Buka di tab baru
                   </Button>
                   <Button variant="secondary" size="sm" onClick={() => downloadAuthenticatedFileOrToast(url, fileName || "document")}>
                     <DownloadIcon className="mr-2 size-4" /> Unduh
@@ -64,7 +71,7 @@ export default function AuthenticatedDocumentPreviewDialog({ open, onOpenChange,
           </div>
         </DialogHeader>
         <div className="flex-1 w-full border-t bg-gray-100 overflow-auto relative">
-          {!url ? (
+          {!url && !localUrl ? (
             <div className="p-6 text-sm text-muted-foreground">Dokumen tidak tersedia.</div>
           ) : error ? (
             <div className="flex h-full flex-col items-center justify-center gap-2 p-6 text-sm text-muted-foreground" role="alert">

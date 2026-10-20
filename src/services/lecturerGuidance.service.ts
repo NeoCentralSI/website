@@ -11,6 +11,8 @@ export interface MyStudentItem {
   supervisorStatus?: string | null;
   /** This lecturer was replaced; shown under "Semua" only, read-only. */
   noLongerSupervising?: boolean;
+  /** A proposal revision waits for this lecturer as Pembimbing 1 ("Tinjau Proposal Revisi"). */
+  proposalRevisionPending?: boolean;
   studentId: string;
   fullName: string;
   email?: string;

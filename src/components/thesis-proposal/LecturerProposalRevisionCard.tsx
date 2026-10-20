@@ -52,34 +52,43 @@ export function LecturerProposalRevisionCard({ thesisId }: { thesisId: string })
     );
   };
 
+  const actions = (
+    <>
+      <span title={data.reviewBlockReason ?? undefined}>
+        <Button size="sm" variant="outline" disabled={!data.canReview || review.isPending} onClick={() => setDialog('request_revision')}>
+          Minta Revisi
+        </Button>
+      </span>
+      <span title={data.reviewBlockReason ?? undefined}>
+        <Button size="sm" disabled={!data.canReview || review.isPending} onClick={() => setDialog('approve')}>
+          <CheckCircle2 className="mr-2 h-4 w-4" />Setujui
+        </Button>
+      </span>
+    </>
+  );
+
   return (
-    <Card className="border-amber-200">
-      <CardHeader>
+    <Card className="gap-3 py-4">
+      <CardHeader className="px-4">
         <CardTitle className="flex items-center gap-2 text-base">
           <FilePen className="h-4 w-4" />
           Proposal Revisi (Mengulang Proposal)
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 text-sm">
-        {current ? <RevisionRow revision={current} /> : <p className="text-muted-foreground">Mahasiswa belum mengunggah proposal revisi.</p>}
-
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          {!data.canReview && data.reviewBlockReason && <p className="mr-auto text-xs text-muted-foreground">{data.reviewBlockReason}</p>}
-          <span title={data.reviewBlockReason ?? undefined}>
-            <Button size="sm" variant="outline" disabled={!data.canReview || review.isPending} onClick={() => setDialog('request_revision')}>
-              Minta Revisi
-            </Button>
-          </span>
-          <span title={data.reviewBlockReason ?? undefined}>
-            <Button size="sm" disabled={!data.canReview || review.isPending} onClick={() => setDialog('approve')}>
-              <CheckCircle2 className="mr-2 h-4 w-4" />Setujui
-            </Button>
-          </span>
-        </div>
+      <CardContent className="space-y-3 px-4 text-sm">
+        {current ? (
+          <RevisionRow revision={current} actions={actions} />
+        ) : (
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-muted-foreground">Mahasiswa belum mengunggah proposal revisi.</p>
+            <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>
+          </div>
+        )}
+        {!data.canReview && data.reviewBlockReason && <p className="text-xs text-muted-foreground">{data.reviewBlockReason}</p>}
 
         {data.history.length > 0 && (
-          <div className="space-y-2">
-            <p className="font-medium">Unggahan Sebelumnya</p>
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Unggahan Sebelumnya</p>
             <ul className="divide-y rounded-lg border">
               {data.history.map((revision) => (
                 <li key={revision.id} className="px-3 py-2">

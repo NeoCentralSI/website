@@ -21,6 +21,13 @@ import type {
 import StudentSupervisorRequestPage from './StudentSupervisorRequestPage';
 import StudentThesisProposal from './StudentThesisProposal';
 
+// cmdk (the lecturer dropdown) needs ResizeObserver, which jsdom does not provide.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+} as unknown as typeof ResizeObserver;
+
 vi.mock('lottie-react', () => ({ default: () => null }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/services/thesis-proposal/supervisor-request.service');
@@ -117,10 +124,48 @@ describe('Proposal mahasiswa', () => {
     expect(screen.queryByText(/SIA/)).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: /^(Ringkasan|Riwayat Pengajuan Pembimbing)$/ })).toHaveLength(2);
     expect(steps().map((s) => s.textContent)).toEqual([
-      'Pengajuan PembimbingBelum diajukan', 'Penetapan PembimbingMenunggu', 'Proposal FinalMenunggu', 'Penilaian ProposalMenunggu', 'Naik ke PenelitianMenunggu',
+      'Pengajuan PembimbingBelum diajukan', 'Penetapan PembimbingMenunggu', 'Proposal FinalMenunggu', 'Penilaian ProposalMenunggu', 'Mulai PenelitianMenunggu',
     ]);
     expect(screen.queryByRole('button', { name: 'Ajukan Pembimbing' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ajukan Proposal Final' }).parentElement).toHaveAttribute('title', expect.stringMatching(/belum memiliki tugas akhir/));
+    // Before the supervisor assignment the Proposal Final card is one line.
+    expect(screen.getByText('Terbuka setelah penetapan pembimbing')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Pilih Berkas/ })).not.toBeInTheDocument();
+  });
+
+  it('allowed, no draft: Semester and Metode Penelitian rows; a draft: when it was saved, its title and its lecturer', async () => {
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine());
+    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(noThesis());
+    const view = wrap(<StudentThesisProposal />);
+    const grid = await screen.findByLabelText('Isi pengajuan pembimbing');
+    expect(grid).toHaveTextContent('Semester2026/2027 Ganjil');
+    expect(grid).toHaveTextContent('Metode PenelitianTerdaftar');
+    view.unmount();
+
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({
+      draft: {
+        lecturerId: 'l1', topicId: 'topic-1', proposedTitle: 'Draf Judul Sistem Pemantauan', backgroundSummary: null, problemStatement: null,
+        proposedSolution: null, researchObject: null, researchPermitStatus: null, studentJustification: null, topic: null,
+        lecturer: { id: 'l1', fullName: 'AINA HUBBY AZIIRA, M.Eng' }, lastSubmittedAt: null, updatedAt: '2026-10-12T03:00:00.000Z',
+      } as never,
+    }));
+    wrap(<StudentThesisProposal />);
+    const draft = await screen.findByLabelText('Isi pengajuan pembimbing');
+    expect(draft).toHaveTextContent('Draf disimpan12 Oktober 2026 10.00 WIB');
+    expect(draft).toHaveTextContent('Judul drafDraf Judul Sistem Pemantauan');
+    expect(draft).toHaveTextContent('Dosen di drafAina Hubby Aziira, M.Eng');
+    expect(screen.getByRole('button', { name: 'Lanjutkan Draf' })).toBeInTheDocument();
+  });
+
+  it('revision requested: route, status and the Ketua Departemen note in the yellow box; Revisi Pengajuan', async () => {
+    const asked = request({ status: 'revision_requested', route: 'department', lecturer: null, supervisor: null, kadepNotes: 'Perjelas rumusan masalah.' });
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({ requests: [asked] }, { revisionRequested: true }));
+    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(noThesis());
+    wrap(<StudentThesisProposal />);
+    const note = await screen.findByRole('note');
+    expect(note).toHaveTextContent('Catatan Ketua Departemen');
+    expect(note).toHaveTextContent('Perjelas rumusan masalah.');
+    expect(screen.getByLabelText('Isi pengajuan pembimbing')).toHaveTextContent('StatusPerlu Revisi');
+    expect(screen.getByRole('button', { name: 'Revisi Pengajuan' })).toBeInTheDocument();
   });
 
   it('without a request but allowed: Ajukan Pembimbing opens the request page', async () => {
@@ -138,10 +183,15 @@ describe('Proposal mahasiswa', () => {
     wrap(<StudentThesisProposal />);
 
     expect(await screen.findByText('Informasi Proposal')).toBeInTheDocument();
-    expect(screen.getByText('Pilih Dosen Sendiri')).toBeInTheDocument();
-    const pull = screen.getByRole('button', { name: 'Tarik Pengajuan' });
+    const grid = screen.getByLabelText('Isi pengajuan pembimbing');
+    expect(grid).toHaveTextContent('JalurPilih Dosen Sendiri');
+    expect(grid).toHaveTextContent('Dosen tujuanAina Hubby Aziira, M.Eng');
+    expect(grid).toHaveTextContent('Dikirim13 Oktober 2026 10.00 WIB');
+    expect(grid).toHaveTextContent('Bisa ditarik mulai');
+    const pull = screen.getByRole('button', { name: 'Tarik' });
     expect(pull).toBeDisabled();
     expect(pull.parentElement).toHaveAttribute('title', expect.stringMatching(/bisa ditarik mulai/));
+    expect(screen.getByRole('button', { name: 'Lihat Detail' })).toBeInTheDocument();
     expect(steps()[0]).toHaveTextContent('Menunggu Dosen');
 
     fireEvent.click(screen.getByText('Informasi Proposal'));
@@ -156,14 +206,59 @@ describe('Proposal mahasiswa', () => {
     vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(proposal());
     wrap(<StudentThesisProposal />);
 
-    expect(await screen.findByText('Ditetapkan (versi 2)')).toBeInTheDocument();
-    expect(screen.getByText('Aina Hubby Aziira, M.Eng')).toBeInTheDocument();
+    expect(await screen.findByText('Ditetapkan pada 14 Oktober 2026')).toBeInTheDocument();
+    expect(screen.queryByText(/versi 2/)).not.toBeInTheDocument();
+    expect(screen.getByText('1. Aina Hubby Aziira, M.Eng')).toBeInTheDocument();
     expect(await screen.findByRole('button', { name: /Ajukan Pembimbing 2/ })).toBeInTheDocument();
+    expect(screen.getByLabelText('Isi pengajuan pembimbing')).toHaveTextContent('Ditetapkan tanggal14 Oktober 2026 10.00 WIB');
     expect(screen.getByRole('button', { name: 'Lihat Detail' })).toBeInTheDocument();
     expect(steps().map((s) => s.getAttribute('data-state'))).toEqual(['done', 'done', 'waiting', 'waiting', 'waiting']);
-    // The stepper label and the card title.
-    expect(screen.getAllByText('Proposal Final')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: /Pilih Berkas/ })).toBeInTheDocument();
     expect(screen.getByText('40%')).toBeInTheDocument();
+  });
+
+  it('in research: the page is a record; no Ajukan Pembimbing 2 here (it is asked from the Overview)', async () => {
+    const assigned = request({ status: 'assigned' });
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({ activeRequest: assigned, requests: [assigned] }, { canSubmit: false }));
+    const base = proposal();
+    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(proposal({ thesis: { ...base.thesis!, status: 'research' } }));
+    wrap(<StudentThesisProposal />);
+    expect(await screen.findByText('1. Aina Hubby Aziira, M.Eng')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Ajukan Pembimbing 2/ })).not.toBeInTheDocument();
+    expect(steps()[4]).toHaveTextContent('Mulai Penelitian');
+  });
+
+  it('Proposal Final in two steps: a chosen file is reviewed first and only "Ajukan" sends it', async () => {
+    const assigned = request({ status: 'assigned' });
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({ activeRequest: assigned, requests: [assigned] }, { canSubmit: false }));
+    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(proposal());
+    vi.mocked(assignments.submitFinalProposal).mockResolvedValue({ success: true, message: 'ok', data: null as never });
+    wrap(<StudentThesisProposal />);
+
+    await screen.findByRole('button', { name: /Pilih Berkas/ });
+    const pdf = new File(['%PDF'], 'Proposal Budi.pdf', { type: 'application/pdf' });
+    fireEvent.change(screen.getByLabelText('Berkas proposal final'), { target: { files: [pdf] } });
+    expect(await screen.findByText('Berkas yang akan diajukan')).toBeInTheDocument();
+    expect(screen.getByText('Proposal Budi.pdf')).toHaveAttribute('title', 'Proposal Budi.pdf');
+    expect(screen.getByText('1 KB')).toBeInTheDocument();
+    expect(assignments.submitFinalProposal).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ajukan' }));
+    await waitFor(() => expect(vi.mocked(assignments.submitFinalProposal).mock.calls[0]?.[0]).toBe(pdf));
+  });
+
+  it('Proposal Final shows the file sent and the assessment status; the file opens in the viewer', async () => {
+    const assigned = request({ status: 'assigned' });
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({ activeRequest: assigned, requests: [assigned] }, { canSubmit: false }));
+    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(proposal({
+      finalProposal: { academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' }, canSubmit: true, blockReason: null, history: [], current: attempt({ supervisorScored: true }) },
+    }));
+    wrap(<StudentThesisProposal />);
+    expect(await screen.findByText('Menunggu nilai koordinator')).toBeInTheDocument();
+    expect(screen.getByText('proposal.pdf')).toHaveAttribute('title', 'proposal.pdf');
+    expect(screen.getByRole('button', { name: /Ganti Berkas/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Lihat' }));
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Buka di tab baru');
   });
 
   it('passed: the score as supervisor + coordinator = final, and the next step waits for the thesis course', async () => {
@@ -204,7 +299,8 @@ describe('Proposal mahasiswa', () => {
       proposalRevision: { applicable: true, evaluation: { id: 'ev', approvedAt: null }, current: null, history: [], canSubmit: true, blockReason: null, replacesCurrent: false },
     }));
     wrap(<StudentThesisProposal />);
-    expect(await screen.findByRole('button', { name: 'Ajukan Proposal Revisi' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Pilih Berkas/ })).toBeInTheDocument();
+    expect(screen.getAllByText('Proposal Revisi').length).toBeGreaterThan(0);
     expect(screen.queryByText('Proposal Final')).not.toBeInTheDocument();
     expect(steps().map((s) => s.textContent)).toEqual(['Pengajuan Pembimbing', 'Penetapan Pembimbing', 'Proposal Revisi', 'Persetujuan Pembimbing 1', 'Kembali ke Penelitian']
       .map((label) => expect.stringMatching(new RegExp(`^${label}`))));
@@ -218,12 +314,18 @@ describe('Proposal mahasiswa', () => {
     view.unmount();
 
     vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({
-      requests: [request({ id: 'old', status: 'rejected_by_lecturer', proposedTitle: 'Judul Lama yang Ditolak', rejectionReason: 'Topik di luar keahlian.' })],
+      requests: [
+        request({ id: 'old', status: 'rejected_by_lecturer', proposedTitle: 'Judul Lama yang Ditolak', rejectionReason: 'Topik di luar keahlian.' }),
+        request({ id: 'older', status: 'rejected_by_kadep', route: 'department', proposedTitle: 'Judul Lewat Departemen', kadepNotes: 'Topik belum sesuai kelompok keilmuan.' }),
+      ],
     }));
     wrap(<StudentThesisProposal />, '/tugas-akhir/proposal?tab=riwayat-pengajuan');
     const row = (await screen.findByText('Judul Lama yang Ditolak')).closest('tr')!;
     expect(screen.getAllByRole('table')).toHaveLength(1);
     expect(within(row).getByText('Ditolak Dosen')).toBeInTheDocument();
+    // The Ketua Departemen's note is in the table, not only in a notification.
+    const byKadep = screen.getByText('Judul Lewat Departemen').closest('tr')!;
+    expect(within(byKadep).getByText('Topik belum sesuai kelompok keilmuan.')).toBeInTheDocument();
     fireEvent.click(within(row).getByRole('button', { name: 'Lihat Detail' }));
     const detail = await screen.findByRole('dialog', { name: 'Detail Pengajuan Pembimbing' });
     expect(within(detail).getByText('Topik di luar keahlian.')).toBeInTheDocument();
@@ -237,7 +339,7 @@ describe('Pengajuan Pembimbing page', () => {
     activeCount: 3, softLimit: 8, hardLimit: 10, level: 'available', supervisedTopics: [], offeredTopics,
   });
 
-  it('the catalog shows kelompok keilmuan, offered topics and load; searching a topic finds the lecturer', async () => {
+  it('the lecturer dropdown shows kelompok keilmuan, offered topics and load; it searches topics; a closed lecturer is disabled', async () => {
     vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({ draft: null }));
     vi.mocked(requests.getCatalog).mockResolvedValue([
       lecturer('l1', 'AINA HUBBY AZIIRA, M.Eng', 'Sistem Enterprise', ['ERP', 'Data Warehouse', 'Business Intelligence']),
@@ -246,24 +348,48 @@ describe('Pengajuan Pembimbing page', () => {
     vi.mocked(requests.saveDraft).mockResolvedValue({ success: true, message: 'Draf pengajuan disimpan', data: null as never });
     wrap(<div />, '/tugas-akhir/proposal/pengajuan');
 
-    const row = (await screen.findByText('Aina Hubby Aziira, M.Eng')).closest('tr')!;
-    expect(within(row).getByText('Sistem Enterprise')).toBeInTheDocument();
-    const topics = within(row).getByText('ERP, Data Warehouse +1');
-    expect(topics).toHaveAttribute('title', 'ERP, Data Warehouse, Business Intelligence');
-    expect(within(row).getByText('3/10 · Tersedia')).toBeInTheDocument();
-    const closed = screen.getByText('Dosen Tutup, M.Kom').closest('tr')!;
-    expect(within(closed).getByRole('button', { name: /Pilih Dosen Tutup/ })).toBeDisabled();
+    expect(await screen.findByRole('link', { name: 'Kembali ke Proposal' })).toHaveAttribute('href', '/tugas-akhir/proposal');
+    const trigger = await screen.findByRole('combobox', { name: 'Dosen pembimbing' });
+    await waitFor(() => expect(trigger).not.toBeDisabled());
+    fireEvent.click(trigger);
+    const aina = await screen.findByRole('option', { name: /^Aina Hubby/ });
+    expect(within(aina).getByText('Sistem Enterprise · ERP, Data Warehouse +1')).toHaveAttribute('title', 'Sistem Enterprise · ERP, Data Warehouse, Business Intelligence');
+    expect(within(aina).getByText('3/10 · Tersedia')).toBeInTheDocument();
+    const closed = screen.getByRole('option', { name: /^Dosen Tutup/ });
+    expect(closed).toHaveAttribute('aria-disabled', 'true');
+    expect(within(closed).getByText('Dosen sedang menutup penerimaan pengajuan.')).toBeInTheDocument();
 
     fireEvent.change(screen.getByPlaceholderText('Cari nama, kelompok keilmuan, atau topik...'), { target: { value: 'iot' } });
-    await waitFor(() => expect(screen.queryByText('Aina Hubby Aziira, M.Eng')).not.toBeInTheDocument());
-    expect(screen.getByText('Dosen Tutup, M.Kom')).toBeInTheDocument();
-    fireEvent.change(screen.getByPlaceholderText('Cari nama, kelompok keilmuan, atau topik...'), { target: { value: 'enterprise' } });
-    fireEvent.click(await screen.findByRole('button', { name: /Pilih Aina/ }));
-    expect(screen.getByRole('button', { name: /Pilih Aina/ })).toHaveTextContent('Dipilih');
+    await waitFor(() => expect(screen.getAllByRole('option')).toHaveLength(1));
+    fireEvent.change(screen.getByPlaceholderText('Cari nama, kelompok keilmuan, atau topik...'), { target: { value: 'warehouse' } });
+    fireEvent.click(await screen.findByRole('option', { name: /^Aina Hubby/ }));
+    expect(screen.getByRole('combobox', { name: 'Dosen pembimbing' })).toHaveTextContent('Aina Hubby Aziira, M.Eng');
+    // The chosen lecturer stays in view.
+    expect(screen.getByText('Topik: ERP, Data Warehouse +1')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Simpan Draf' }));
     await waitFor(() => expect(requests.saveDraft).toHaveBeenCalledWith(expect.objectContaining({ lecturerId: 'l1' })));
     expect(screen.getByRole('button', { name: 'Batal' })).toBeInTheDocument();
+  });
+
+  it('required fields: red asterisks; Ajukan is not disabled; a click marks what is missing and sends nothing', async () => {
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({ draft: null }));
+    vi.mocked(requests.getCatalog).mockResolvedValue([lecturer('l1', 'AINA HUBBY AZIIRA, M.Eng', 'Sistem Enterprise', ['ERP'])]);
+    wrap(<div />, '/tugas-akhir/proposal/pengajuan');
+
+    expect(await screen.findByText('Judul rencana tugas akhir')).toBeInTheDocument();
+    expect(screen.getByText('Judul rencana tugas akhir').parentElement?.querySelector('[aria-hidden="true"]')).toHaveTextContent('*');
+    const send = screen.getByRole('button', { name: 'Ajukan' });
+    expect(send).not.toBeDisabled();
+    fireEvent.click(send);
+    const alerts = await screen.findAllByRole('alert');
+    expect(alerts.map((alert) => alert.textContent)).toEqual(expect.arrayContaining([
+      'Pilih dosen pembimbing, atau gunakan jalur Ditetapkan Departemen.',
+      'Pilih topik penelitian.',
+      'Judul minimal 12 karakter.',
+      'Isi rumusan masalah.',
+    ]));
+    expect(requests.submitRequest).not.toHaveBeenCalled();
   });
 
   it('a student with an active request goes back to the Proposal page', async () => {

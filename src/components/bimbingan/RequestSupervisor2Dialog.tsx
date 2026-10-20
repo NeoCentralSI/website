@@ -24,6 +24,8 @@ import {
 } from "@/services/studentGuidance.service";
 import { UserPlus, Search, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { FieldError } from "@/components/shared/RequiredField";
+import { SoftWarning } from "@/components/shared/SoftWarning";
 
 interface RequestSupervisor2DialogProps {
   hasPembimbing2: boolean;
@@ -47,6 +49,7 @@ export function RequestSupervisor2Dialog({
   const [open, setOpen] = useState(false);
   const [selectedLecturer, setSelectedLecturer] = useState<AvailableSupervisor2Item | null>(null);
   const [search, setSearch] = useState("");
+  const [missing, setMissing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: lecturers, isPending: isLoadingLecturers } = useQuery({
@@ -85,8 +88,12 @@ export function RequestSupervisor2Dialog({
     );
   });
 
+  // The button is never disabled for a missing choice: the click says what is missing.
   const handleSubmit = () => {
-    if (!selectedLecturer) return;
+    if (!selectedLecturer) {
+      setMissing(true);
+      return;
+    }
     requestMutation.mutate(selectedLecturer.id);
   };
 
@@ -94,7 +101,7 @@ export function RequestSupervisor2Dialog({
   if (hasPembimbing2 || hasPendingRequest) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedLecturer(null); setSearch(""); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedLecturer(null); setSearch(""); setMissing(false); } }}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2">
           <UserPlus className="h-4 w-4" />
@@ -162,6 +169,7 @@ export function RequestSupervisor2Dialog({
                   onClick={() => {
                     if (isClosed) return;
                     setSelectedLecturer(lecturer);
+                    setMissing(false);
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -215,13 +223,18 @@ export function RequestSupervisor2Dialog({
           )}
         </div>
 
+        {selectedLecturer?.trafficLight === "red" && (
+          <SoftWarning title="Dosen ini sudah penuh">{SUPERVISOR2_FULL_NOTE}</SoftWarning>
+        )}
+        <FieldError message={missing ? "Pilih dosen Pembimbing 2 terlebih dahulu." : null} />
+
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Batal
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!selectedLecturer || requestMutation.isPending}
+            disabled={requestMutation.isPending}
           >
             {requestMutation.isPending ? (
               <>

@@ -4,7 +4,8 @@ import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useRole } from '@/hooks/shared/useRole';
 import { getLecturerDetailAPI } from '@/services/admin.service';
 import { useQuery } from '@tanstack/react-query';
-import { toTitleCaseName, formatRoleName, formatDateId } from '@/lib/text';
+import { toTitleCaseName, formatRoleName, formatDateId, formatDateShortId } from '@/lib/text';
+import { ThesisEventStatusBadge, type ThesisEventStatus } from '@/components/shared/ThesisEventStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -290,41 +291,35 @@ export default function DosenDetail() {
             </CardContent>
           </Card>
 
-          {/* Examining */}
+          {/* Seminar and defence examiners (read from the seminar and defence modules). */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
                 <GraduationCap className="h-4 w-4" />
-                Penguji Skripsi ({data.examining.length})
+                Penguji Seminar dan Sidang ({data.examining.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
               {data.examining.length > 0 ? (
-                <div className="space-y-3 max-h-60 overflow-y-auto">
+                <ul className="space-y-2 max-h-72 overflow-y-auto" aria-label="Penguji seminar dan sidang">
                   {data.examining.map((item) => (
-                    <div key={item.thesisId} className="p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <h4 className="font-medium text-sm truncate">
-                            {item.title || <span className="italic text-muted-foreground">Judul belum ditentukan</span>}
-                          </h4>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {toTitleCaseName(item.student.fullName)} ({item.student.nim})
-                          </p>
+                    <li key={item.id} className="flex items-start justify-between gap-2 rounded-lg border p-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="outline" className="text-xs">{item.kind === 'seminar' ? 'Seminar Hasil' : 'Sidang TA'}</Badge>
+                          <span className="text-xs text-muted-foreground">{item.date ? formatDateShortId(item.date) : '—'}</span>
                         </div>
-                        <Badge variant="outline" className="text-xs shrink-0">
-                          {formatRoleName(item.role)}
-                        </Badge>
+                        <p className="mt-1 truncate text-sm font-medium" title={item.title ?? undefined}>
+                          {item.title || <span className="italic text-muted-foreground">Judul belum ditentukan</span>}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{toTitleCaseName(item.student.fullName ?? '')} ({item.student.nim ?? '-'})</p>
                       </div>
-                    </div>
+                      <ThesisEventStatusBadge status={item.status as ThesisEventStatus} className="shrink-0 text-xs" />
+                    </li>
                   ))}
-                </div>
+                </ul>
               ) : (
-                <EmptyState
-                  size="sm"
-                  title="Tidak Ada Penguji"
-                  description="Tidak menjadi penguji skripsi manapun"
-                />
+                <p className="text-sm text-muted-foreground">Belum pernah menjadi penguji seminar atau sidang.</p>
               )}
             </CardContent>
           </Card>

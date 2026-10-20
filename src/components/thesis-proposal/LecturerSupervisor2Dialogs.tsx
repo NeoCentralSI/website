@@ -18,22 +18,39 @@ import { DateTimeCell } from '@/lib/guidanceCells';
 import { toTitleCaseName } from '@/lib/text';
 import { approveSupervisor2Request, rejectSupervisor2Request } from '@/services/lecturerGuidance.service';
 import type { Supervisor2InboxItem } from '@/types/thesis-proposal.types';
+import { SupervisorRequestDetails } from './SupervisorRequestDetails';
 
-/** The body of "Detail Permintaan Pembimbing 2" in Permohonan. */
+/**
+ * The body of "Detail Permintaan Pembimbing 2" in Permohonan: who asks and when, then what the
+ * student proposed (title, topic, background, problem and so on) in the same component as the
+ * Pengajuan Pembimbing detail, so the lecturer knows what they would supervise.
+ */
 export function Supervisor2InboxDetails({ item }: { item: Supervisor2InboxItem }) {
   return (
-    <dl className="grid gap-3 text-sm sm:grid-cols-[10rem_1fr]">
-      <dt className="text-muted-foreground">Mahasiswa</dt>
-      <dd className="[overflow-wrap:anywhere]">{toTitleCaseName(item.studentName)}</dd>
-      <dt className="text-muted-foreground">NIM</dt>
-      <dd>{item.studentNim || '-'}</dd>
-      <dt className="text-muted-foreground">Email</dt>
-      <dd className="[overflow-wrap:anywhere]">{item.studentEmail || '-'}</dd>
-      <dt className="text-muted-foreground">Judul</dt>
-      <dd className="[overflow-wrap:anywhere]">{item.thesisTitle || '-'}</dd>
-      <dt className="text-muted-foreground">Tanggal masuk</dt>
-      <dd><DateTimeCell date={item.requestedAt} /></dd>
-    </dl>
+    <div className="space-y-4">
+      <dl className="grid gap-3 text-sm sm:grid-cols-[10rem_1fr]">
+        <dt className="text-muted-foreground">Mahasiswa</dt>
+        <dd className="[overflow-wrap:anywhere]">{toTitleCaseName(item.studentName)}</dd>
+        <dt className="text-muted-foreground">NIM</dt>
+        <dd>{item.studentNim || '-'}</dd>
+        <dt className="text-muted-foreground">Email</dt>
+        <dd className="[overflow-wrap:anywhere]">{item.studentEmail || '-'}</dd>
+        {!item.supervisorRequest && (
+          <>
+            <dt className="text-muted-foreground">Judul</dt>
+            <dd className="[overflow-wrap:anywhere]">{item.thesisTitle || '-'}</dd>
+          </>
+        )}
+        <dt className="text-muted-foreground">Tanggal masuk</dt>
+        <dd><DateTimeCell date={item.requestedAt} /></dd>
+      </dl>
+      {item.supervisorRequest && (
+        <div className="border-t pt-3">
+          <p className="mb-2 text-sm font-medium">Isi Pengajuan Pembimbing</p>
+          <SupervisorRequestDetails request={item.supervisorRequest} />
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -1,4 +1,7 @@
-import { Clock, Download, FileText } from "lucide-react";
+import { useState } from "react";
+import { Clock, Download, Eye, FileText } from "lucide-react";
+
+import AuthenticatedDocumentPreviewDialog from "@/components/thesis/AuthenticatedDocumentPreviewDialog";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +12,7 @@ import { formatDateTimeWib } from "@/lib/text";
 import type { StudentDetail } from "@/services/lecturerGuidance.service";
 
 // Backend paths already carry the /uploads/ prefix; absolute URLs are used as they are.
-// C10: no JWT in the URL; files are fetched with the Authorization header.
+// No JWT in the URL; files are fetched with the Authorization header.
 function openDocument(path: string | null | undefined) {
     if (!path) return;
     const url = path.startsWith("http://") || path.startsWith("https://") ? path : getApiUrl(path);
@@ -23,6 +26,7 @@ function toUploadPath(filePath: string): string {
     return filePath.startsWith("/") || filePath.startsWith("\\") ? filePath : `/${filePath}`;
 }
 
+/** A document tile; the file opens in the full-screen viewer (with "Buka di tab baru"). */
 function DocumentTile({ label, tone, caption, emptyText, file }: {
     label: string;
     tone: "blue" | "green";
@@ -32,6 +36,7 @@ function DocumentTile({ label, tone, caption, emptyText, file }: {
 }) {
     const toneClass = tone === "blue" ? "bg-blue-50 border-blue-200 text-blue-600" : "bg-green-50 border-green-200 text-green-600";
     const iconClass = tone === "blue" ? "text-blue-500" : "text-green-500";
+    const [viewing, setViewing] = useState(false);
     return (
         <div className="rounded-xl border bg-background/50 p-3">
             <Badge variant="outline" className={`mb-2 text-xs ${toneClass}`}>{label}</Badge>
@@ -42,9 +47,10 @@ function DocumentTile({ label, tone, caption, emptyText, file }: {
                         <p className="truncate text-sm font-medium" title={file.fileName}>{file.fileName}</p>
                         <p className="text-xs text-muted-foreground">{caption}</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="shrink-0" title="Buka berkas" onClick={() => openDocument(file.url)}>
-                        <Download className="h-4 w-4" />
+                    <Button variant="ghost" size="icon" className="shrink-0" title="Lihat berkas" aria-label={`Lihat ${file.fileName}`} onClick={() => setViewing(true)}>
+                        <Eye className="h-4 w-4" />
                     </Button>
+                    <AuthenticatedDocumentPreviewDialog open={viewing} onOpenChange={setViewing} fileName={file.fileName} filePath={file.url} />
                 </div>
             ) : (
                 <p className="text-sm italic text-muted-foreground">{emptyText}</p>

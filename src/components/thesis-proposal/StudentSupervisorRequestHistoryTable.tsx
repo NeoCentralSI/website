@@ -6,6 +6,7 @@ import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
 import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { Badge } from '@/components/ui/badge';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { DateTimeCell, TruncatedText } from '@/lib/guidanceCells';
 import { BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
@@ -21,9 +22,15 @@ import { SupervisorRequestDetails } from './SupervisorRequestDetails';
 
 /**
  * Panel "Riwayat Pengajuan Pembimbing", one table like Riwayat Kehadiran Seminar
- * (every request the student sent, newest first). The detail modal has only Tutup.
+ * (every request the student sent, newest first), with the Ketua Departemen's note (revision,
+ * rejection or redirect). The detail modal has only Tutup.
  */
-export function StudentSupervisorRequestHistoryTable({ requests, isLoading }: { requests: SupervisorRequest[]; isLoading?: boolean }) {
+export function StudentSupervisorRequestHistoryTable({ requests, isLoading, onRefresh, isFetching = false }: {
+  requests: SupervisorRequest[];
+  isLoading?: boolean;
+  onRefresh?: () => void;
+  isFetching?: boolean;
+}) {
   const [detail, setDetail] = useState<SupervisorRequest | null>(null);
   const table = useLocalTable(requests, (r, term) => haystack(r.proposedTitle, r.supervisor?.fullName, r.lecturer?.fullName).includes(term));
   const columns: Column<SupervisorRequest>[] = [
@@ -56,6 +63,13 @@ export function StudentSupervisorRequestHistoryTable({ requests, isLoading }: { 
       ),
     },
     {
+      key: 'kadepNotes',
+      header: 'Catatan Ketua Departemen',
+      width: 220,
+      className: CLIP_CELL,
+      render: (r) => <TruncatedText text={r.kadepNotes} className="max-w-full" />,
+    },
+    {
       key: 'actions',
       header: 'Aksi',
       width: 80,
@@ -74,6 +88,9 @@ export function StudentSupervisorRequestHistoryTable({ requests, isLoading }: { 
         emptyText={table.search ? 'Tidak ditemukan' : 'Belum ada pengajuan pembimbing.'}
         rowKey={(r) => r.id}
         searchPlaceholder="Cari judul atau dosen..."
+        isRefreshing={isFetching}
+        subtleRefresh
+        actions={onRefresh ? <RefreshButton onClick={onRefresh} isRefreshing={isFetching} /> : undefined}
       />
       <RecordDetailDialog
         open={!!detail}

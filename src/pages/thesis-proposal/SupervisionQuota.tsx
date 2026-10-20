@@ -35,6 +35,7 @@ export default function SupervisionQuotaPage() {
         <SupervisionLoadTable
           overview={overview.data}
           isFetching={overview.isFetching}
+          onRefresh={() => void overview.refetch()}
           toolbar={<SupervisionLimitToolbar overview={overview.data} scope="general" canEdit />}
         />
       )}

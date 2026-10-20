@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,15 @@ export interface ComboboxOption {
   keywords?: string[];
   /** Short muted text at the right of the option (e.g. a lecturer's supervision load). */
   detail?: string;
+  /** A second line under the label (e.g. a lecturer's kelompok keilmuan and topics). */
+  description?: string;
+  /** Full text of `description` for its tooltip, when the line is cut. */
+  descriptionTitle?: string;
+  /** Shown at the right instead of `detail` (e.g. a load badge). */
+  badge?: ReactNode;
+  /** The option is listed but cannot be chosen; `disabledReason` says why. */
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 interface SearchableComboboxProps {
@@ -87,15 +96,32 @@ export function SearchableCombobox({
                   key={option.value}
                   value={option.value}
                   keywords={[option.label, ...(option.keywords ?? [])]}
+                  disabled={option.disabled}
                   onSelect={() => {
+                    if (option.disabled) return;
                     onChange(option.value);
                     setOpen(false);
                   }}
                   className="flex items-center gap-2"
+                  title={option.disabled ? option.disabledReason : undefined}
                 >
                   <Check className={cn("h-4 w-4 shrink-0", option.value === value ? "opacity-100" : "opacity-0")} />
-                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                  {option.detail && <span className="shrink-0 text-xs text-muted-foreground">{option.detail}</span>}
+                  {option.description || option.disabledReason ? (
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{option.label}</span>
+                      {option.description && (
+                        <span className="block truncate text-xs text-muted-foreground" title={option.descriptionTitle ?? option.description}>
+                          {option.description}
+                        </span>
+                      )}
+                      {option.disabled && option.disabledReason && (
+                        <span className="block truncate text-xs text-muted-foreground">{option.disabledReason}</span>
+                      )}
+                    </span>
+                  ) : (
+                    <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                  )}
+                  {option.badge ?? (option.detail && <span className="shrink-0 text-xs text-muted-foreground">{option.detail}</span>)}
                 </CommandItem>
               ))}
             </CommandGroup>

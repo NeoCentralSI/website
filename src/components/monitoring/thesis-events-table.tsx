@@ -10,6 +10,7 @@ import {
   type ThesisEventStatus,
 } from "@/components/shared/ThesisEventStatusBadge";
 import { ThesisStudentInfoCell } from "@/components/shared/ThesisTableCells";
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { BADGE_COLUMN_WIDTH, CLIP_CELL } from "@/lib/tableColumnWidths";
 import { formatDateShortId } from "@/lib/text";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,9 @@ interface ThesisEventsTableProps {
   isLoading: boolean;
   /** The viewer's role may open the seminar/defence detail page. */
   canOpenDetail: boolean;
+  /** Muat Ulang at the right end of the toolbar. */
+  onRefresh?: () => void;
+  isFetching?: boolean;
 }
 
 /**
@@ -52,7 +56,7 @@ interface ThesisEventsTableProps {
  * seminar and defence modules (status priority, then the latest); the status filter sits in
  * the column header and the detail is an icon.
  */
-export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: ThesisEventsTableProps) {
+export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail, onRefresh, isFetching = false }: ThesisEventsTableProps) {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -165,6 +169,9 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail }: Th
       searchPlaceholder="Cari nama atau NIM..."
       enableColumnFilters
       tableClassName="table-fixed min-w-[900px]"
+      isRefreshing={isFetching}
+      subtleRefresh
+      actions={onRefresh ? <RefreshButton onClick={onRefresh} isRefreshing={isFetching} /> : undefined}
       emptyText={hasFilters ? `Tidak ada ${copy.noun} yang cocok dengan pencarian atau filter.` : `Belum ada ${copy.noun} pada semester ini.`}
       rowKey={(event) => event.id}
     />

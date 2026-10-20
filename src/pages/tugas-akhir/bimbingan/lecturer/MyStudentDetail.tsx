@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useOutletContext, useParams } from "react-router-dom";
+import { useLocation, useOutletContext, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, Info } from "lucide-react";
 
@@ -100,6 +100,15 @@ export default function LecturerMyStudentDetailPage() {
         const role = detailData.userRole.toLowerCase();
         return role === "pembimbing 1" || role === "pembimbing1";
     }, [detailData?.userRole, noLongerSupervising]);
+
+    // A link with "#bagian-…" (e.g. "Tinjau Proposal Revisi" in Mahasiswa Bimbingan) opens at
+    // that section once the page has its data.
+    const { hash } = useLocation();
+    const loaded = Boolean(detailData);
+    useEffect(() => {
+        if (!hash || !loaded) return;
+        document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [hash, loaded]);
 
     useEffect(() => {
         if (detailData?.student.fullName) {

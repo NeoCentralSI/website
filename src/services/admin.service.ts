@@ -497,7 +497,7 @@ export const setStudentPeriodFlagsAPI = (
 /** Impor Keikutsertaan, what the import would change (or changed). */
 export interface PeriodFlagsImportPlan {
   academicYear: { id: string; label: string };
-  totals: { rows: number; changed: number; unchanged: number; unknownNim: number; invalid: number };
+  totals: { rows: number; changed: number; unchanged: number; unknownNim: number; invalid: number; nameMismatch: number };
   changes: Array<{
     row: number;
     nim: string;
@@ -508,26 +508,26 @@ export interface PeriodFlagsImportPlan {
   }>;
   unknown: Array<{ row: number; nim: string }>;
   invalid: Array<{ row: number; nim: string | null; reason: string }>;
+  /** Rows whose "Nama" does not match the NIM: skipped. */
+  nameMismatch: Array<{ row: number; nim: string; name: string; expected: string | null }>;
   applied?: number;
 }
 
 export const PERIOD_FLAGS_TEMPLATE_URL = '/adminfeatures/student-period-flags/template';
 
-async function periodFlagsImport(academicYearId: string, file: File, apply: boolean): Promise<{ data: PeriodFlagsImportPlan; message?: string }> {
+/** Imports the file at once (no separate preview step) and returns what changed and what was skipped. */
+export async function applyPeriodFlagsImportAPI(academicYearId: string, file: File): Promise<{ data: PeriodFlagsImportPlan; message?: string }> {
   const body = new FormData();
   body.append('file', file);
-  const response = await fetch(getApiUrl(`/adminfeatures/student-period-flags/${academicYearId}/import${apply ? '' : '/preview'}`), {
+  const response = await fetch(getApiUrl(`/adminfeatures/student-period-flags/${academicYearId}/import`), {
     method: 'POST',
     headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
     body,
   });
   const json = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(json.message || (apply ? 'Gagal mengimpor keikutsertaan' : 'Gagal membuat pratinjau impor'));
+  if (!response.ok) throw new Error(json.message || 'Gagal mengimpor keikutsertaan');
   return json;
 }
-
-export const previewPeriodFlagsImportAPI = (academicYearId: string, file: File) => periodFlagsImport(academicYearId, file, false);
-export const applyPeriodFlagsImportAPI = (academicYearId: string, file: File) => periodFlagsImport(academicYearId, file, true);
 
 /** "Ikuti Data SIA" for one semester. */
 export const followSiaPeriodFlagsAPI = (studentId: string, academicYearId: string) =>
@@ -754,20 +754,18 @@ export interface StudentDetail {
         completedAt: string | null;
       }>;
     };
+    /** Newest first (read only); `date` is the event day, or the registration when not scheduled. */
     seminars: Array<{
       id: string;
-      type: string;
       status: string;
-      scheduledAt: string | null;
-      result: string | null;
-      score: number | null;
+      date: string | null;
+      createdAt: string;
     }>;
     defences: Array<{
       id: string;
       status: string;
-      scheduledAt: string | null;
-      result: string | null;
-      score: number | null;
+      date: string | null;
+      createdAt: string;
     }>;
   }>;
 }
@@ -818,15 +816,20 @@ export interface LecturerDetail {
       nim: string;
     };
   }>;
+  /** Seminar and defence examiner assignments (read only), newest first. */
   examining: Array<{
+    id: string;
+    kind: 'seminar' | 'defence';
+    eventId: string;
+    /** The seminar's or defence's own status. */
+    status: string;
+    date: string | null;
     thesisId: string;
-    title: string;
-    status: string | null;
-    role: string;
+    title: string | null;
     student: {
-      id: string;
-      fullName: string;
-      nim: string;
+      id: string | null;
+      fullName: string | null;
+      nim: string | null;
     };
   }>;
   recentGuidances: Array<{

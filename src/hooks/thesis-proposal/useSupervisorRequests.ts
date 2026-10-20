@@ -33,7 +33,7 @@ export function useLecturerSupervisorInbox(enabled = true) {
  * sorted by status priority; the old page stays while the next loads.
  */
 export function useLecturerApprovalInbox(
-  params: { kind?: LecturerInboxJenis; status?: string; search?: string; page: number; pageSize: number },
+  params: { kind?: LecturerInboxJenis; status?: string; search?: string; page: number; pageSize: number; all?: boolean },
   enabled = true,
 ) {
   return useQuery({

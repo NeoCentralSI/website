@@ -16,9 +16,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Eye, RefreshCw, Pencil, Check, X, FileUp } from 'lucide-react';
+import { Eye, RefreshCw, Pencil, Check, X, Upload } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { SEARCH_DEBOUNCE_MS, useDebounce } from '@/hooks/useDebounce';
 import { adminUpdateStudentAPI } from '@/services/admin.service';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -27,6 +28,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { getStudentStatusLabel } from '@/lib/thesisLabels';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
@@ -39,6 +41,8 @@ export default function Mahasiswa() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
+  // The server is asked after the typing pause; the input itself stays instant.
+  const debouncedSearch = useDebounce(searchValue.trim(), SEARCH_DEBOUNCE_MS);
   const [programFilter, setProgramFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [enrollmentYearFilter] = useState('');
@@ -91,11 +95,11 @@ export default function Mahasiswa() {
 
   // Use TanStack Query for server state management
   const { data, isLoading, isFetching, refetch, error } = useQuery({
-    queryKey: ['students', { page, pageSize, search: searchValue, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder }],
+    queryKey: ['students', { page, pageSize, search: debouncedSearch, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder }],
     queryFn: () => getStudentsAPI({
       page,
       pageSize,
-      search: searchValue,
+      search: debouncedSearch,
       programFilter: programFilter || undefined,
       statusFilter: statusFilter || undefined,
       enrollmentYearFilter: enrollmentYearFilter || undefined,
@@ -160,7 +164,7 @@ export default function Mahasiswa() {
   // Reset to page 1 when search changes
   useEffect(() => {
     setPage(1);
-  }, [searchValue, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder]);
+  }, [debouncedSearch, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder]);
 
   const columns: Column<Student>[] = [
     {
@@ -298,7 +302,7 @@ export default function Mahasiswa() {
           { value: '', label: 'Semua' },
           { value: 'active', label: 'Aktif' },
           { value: 'lulus', label: 'Lulus' },
-          { value: 'bss', label: 'Cuti' },
+          { value: 'bss', label: 'Cuti (BSS)' },
           { value: 'dropout', label: 'Drop Out' },
           { value: 'mengundurkan_diri', label: 'Mengundurkan Diri' },
         ],
@@ -306,12 +310,7 @@ export default function Mahasiswa() {
       },
       render: (row: Student) => {
         const rawStatus = row.student?.status || '-';
-        const displayStatus = rawStatus === 'active' ? 'Aktif'
-          : rawStatus === 'lulus' ? 'Lulus'
-            : rawStatus === 'bss' ? 'Cuti (BSS)'
-              : rawStatus === 'dropout' ? 'Drop Out'
-                : rawStatus === 'mengundurkan_diri' ? 'Mengundurkan Diri'
-                  : rawStatus;
+        const displayStatus = rawStatus === '-' ? '-' : getStudentStatusLabel(rawStatus);
         return (
           <Badge variant={rawStatus === 'active' ? 'default' : 'secondary'}>
             {displayStatus}
@@ -426,6 +425,7 @@ export default function Mahasiswa() {
         columns={columns}
         data={students}
         loading={isLoading}
+        subtleRefresh
         isRefreshing={(isFetching && !isLoading) || (showSyncButton() && syncMutation.isPending)}
         total={total}
         page={page}
@@ -484,8 +484,9 @@ export default function Mahasiswa() {
               </Select>
             </div>
             {isAdmin() && (
-              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
-                <FileUp className="mr-2 h-4 w-4" />Impor Keikutsertaan
+              // The opener of the Data TA import: the same icon and label.
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} title="Impor Keikutsertaan per semester">
+                <Upload className="mr-2 h-4 w-4" /> Import Excel
               </Button>
             )}
             <RefreshButton

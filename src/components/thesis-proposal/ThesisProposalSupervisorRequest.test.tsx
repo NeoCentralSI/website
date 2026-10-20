@@ -168,8 +168,9 @@ describe('Tugas Akhir > Permohonan (the lecturer approval inbox)', () => {
     wrap(<LecturerApprovalInboxTable />);
 
     const accept = await screen.findByRole('button', { name: 'Terima' });
-    // Accept is a green icon, as on the reference table (1.1).
-    expect(accept.className).toContain('text-emerald-600');
+    // Accept is a neutral icon: the text colour, orange on hover.
+    expect(accept.className).not.toMatch(/emerald|green/);
+    expect(accept.className).toContain('hover:text-primary');
     fireEvent.click(accept);
     fireEvent.click(screen.getAllByRole('button', { name: 'Terima' }).at(-1)!);
     await waitFor(() => expect(requests.respondAsLecturer).toHaveBeenCalledWith('req-1', expect.objectContaining({ action: 'accept', lecturerOverquotaReason: null })));
@@ -189,7 +190,7 @@ describe('Tugas Akhir > Permohonan (the lecturer approval inbox)', () => {
     await waitFor(() => expect(requests.respondAsLecturer).toHaveBeenCalledWith('req-1', expect.objectContaining({ lecturerOverquotaReason: 'Dua mahasiswa lulus bulan depan.' })));
   });
 
-  it('one table of both kinds in the server order, Jenis and Status filtered in the column header', async () => {
+  it('one table of both kinds in the server order, loaded once; Jenis, Status and the search work in the browser', async () => {
     vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([
       supervisorRow(request()),
       changeRow(),
@@ -198,7 +199,7 @@ describe('Tugas Akhir > Permohonan (the lecturer approval inbox)', () => {
     wrap(<LecturerApprovalInboxTable />);
 
     expect(await screen.findAllByText('Budi Santoso')).toHaveLength(2);
-    expect(requests.getLecturerApprovalInbox).toHaveBeenCalledWith({ kind: undefined, status: undefined, search: undefined, page: 1, pageSize: 10 });
+    expect(requests.getLecturerApprovalInbox).toHaveBeenCalledWith({ all: true, page: 1, pageSize: 100 });
     const table = screen.getByRole('table');
     expect(within(table).getAllByRole('columnheader').map((header) => header.textContent?.trim())).toEqual([
       'Mahasiswa', 'Jenis', 'Usulan', 'Tanggal Masuk', 'Status', 'Aksi',
@@ -220,14 +221,41 @@ describe('Tugas Akhir > Permohonan (the lecturer approval inbox)', () => {
       'Semua', 'Pengajuan Pembimbing', 'Perubahan Judul', 'Perubahan Pembimbing', 'Perubahan Judul & Pembimbing', 'Pembimbing 2',
     ]);
     fireEvent.click(screen.getByRole('menuitem', { name: 'Perubahan Pembimbing' }));
-    await waitFor(() => expect(requests.getLecturerApprovalInbox).toHaveBeenLastCalledWith({ kind: 'change_supervisor', status: undefined, search: undefined, page: 1, pageSize: 10 }));
+    await waitFor(() => expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(2));
+    expect(screen.getByText('Pembimbing 1: Husnil Kamil → Aina Hubby')).toBeInTheDocument();
 
     openMenu(within(screen.getByRole('columnheader', { name: /Status/ })).getByRole('button'));
     expect((await screen.findAllByRole('menuitem')).map((item) => item.textContent)).toEqual([
       'Semua', 'Menunggu Persetujuan Anda', 'Sedang Berjalan', 'Disetujui', 'Ditolak', 'Dibatalkan',
     ]);
     fireEvent.click(screen.getByRole('menuitem', { name: 'Menunggu Persetujuan Anda' }));
-    await waitFor(() => expect(requests.getLecturerApprovalInbox).toHaveBeenLastCalledWith({ kind: 'change_supervisor', status: 'awaiting_me', search: undefined, page: 1, pageSize: 10 }));
+    expect(screen.getByText('Pembimbing 1: Husnil Kamil → Aina Hubby')).toBeInTheDocument();
+    // Filtering and searching never ask the server again.
+    expect(requests.getLecturerApprovalInbox).toHaveBeenCalledTimes(1);
+  });
+
+  it('the search is instant: it filters the loaded rows by name, NIM or title', async () => {
+    vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([
+      supervisorRow(request()),
+      supervisorRow(request({ id: 'req-2', proposedTitle: 'Judul Kedua Tentang Jaringan', student: { id: 's2', fullName: 'SITI AMINAH', identityNumber: '2211528099' } })),
+    ]));
+    wrap(<LecturerApprovalInboxTable />);
+    await screen.findByText('Siti Aminah');
+    fireEvent.change(screen.getByPlaceholderText('Cari nama, NIM, atau judul...'), { target: { value: 'jaringan' } });
+    expect(screen.queryByText('Budi Santoso')).not.toBeInTheDocument();
+    expect(screen.getByText('Siti Aminah')).toBeInTheDocument();
+    fireEvent.change(screen.getByPlaceholderText('Cari nama, NIM, atau judul...'), { target: { value: '2211528099' } });
+    expect(screen.getByText('Siti Aminah')).toBeInTheDocument();
+    expect(requests.getLecturerApprovalInbox).toHaveBeenCalledTimes(1);
+  });
+
+  it('the load and "Menerima pengajuan baru" sit in the table toolbar, before Muat Ulang', async () => {
+    vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue(approvalInbox([supervisorRow(request())]));
+    wrap(<LecturerApprovalInboxTable />);
+    const toggle = await screen.findByRole('switch', { name: 'Menerima pengajuan baru' });
+    const refresh = screen.getByRole('button', { name: 'Muat Ulang' });
+    expect(toggle.compareDocumentPosition(refresh) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText('Beban bimbingan')).toBeInTheDocument();
   });
 
   it('The longest jenis, status and date stay inside their cells', async () => {
@@ -333,11 +361,11 @@ describe('Tugas Akhir > Permohonan (the lecturer approval inbox)', () => {
 
   it('pages past the first hundred rows: page 11 of 150 shows rows 101-110', async () => {
     const rows = Array.from({ length: 150 }, (_, i) => supervisorRow(request({ id: `req-${i + 1}`, status: 'closed', student: { id: `s${i + 1}`, fullName: `MAHASISWA ${i + 1}`, identityNumber: `${i + 1}` } })));
-    vi.mocked(requests.getLecturerApprovalInbox).mockImplementation(async ({ page, pageSize }) => ({
-      data: rows.slice((page - 1) * pageSize, page * pageSize),
-      meta: meta(150, page, pageSize),
+    vi.mocked(requests.getLecturerApprovalInbox).mockResolvedValue({
+      data: rows,
+      meta: meta(150, 1, 2000),
       counts: { waiting: 0, waitingRequests: 0, waitingChanges: 0 },
-    }));
+    });
     wrap(<LecturerApprovalInboxTable />);
 
     expect(await screen.findByText('Menampilkan 1-10 dari 150')).toBeInTheDocument();

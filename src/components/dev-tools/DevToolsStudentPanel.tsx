@@ -122,7 +122,7 @@ function StudentDetail({ student, mutations }: {
               Mengambil Tugas Akhir (semester berjalan)
             </div>
             <p className="text-xs text-muted-foreground">
-              KRS Tugas Akhir dari SIA. Dipakai saat Naik ke Penelitian setelah lulus Metode Penelitian.
+              KRS Tugas Akhir dari SIA. Dipakai untuk masuk fase Penelitian setelah lulus Metode Penelitian.
             </p>
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Status"><ThesisCourseFlagBadge value={flags.takingThesisCourse} /></Field>

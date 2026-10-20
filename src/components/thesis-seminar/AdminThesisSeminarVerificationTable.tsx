@@ -104,7 +104,7 @@ export function AdminThesisSeminarVerificationTable({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                className="h-8 w-8"
                 onClick={() => {
                   setSelectedSeminar(row);
                   setIsModalOpen(true);

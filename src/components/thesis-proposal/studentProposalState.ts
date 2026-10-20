@@ -1,5 +1,5 @@
-import { formatDateTimeWib } from '@/lib/text';
-import { SUPERVISOR_REQUEST_STATUS_SHORT_LABELS } from '@/lib/thesisLabels';
+import { formatDateTimeWib, formatLecturerName } from '@/lib/text';
+import { getSupervisorRequestRouteLabel, SUPERVISOR_REQUEST_STATUS_SHORT_LABELS } from '@/lib/thesisLabels';
 import type { StudentProposalOverview, StudentSupervisorRequests, SupervisorRequest } from '@/types/thesis-proposal.types';
 
 /**
@@ -59,7 +59,7 @@ export function buildProposalSteps(overview: StudentProposalOverview | undefined
   }
 
   if (inResearch) {
-    return [first, second, done('final', 'Proposal Final'), done('assessment', 'Penilaian Proposal', 'Lulus'), done('promotion', 'Naik ke Penelitian')];
+    return [first, second, done('final', 'Proposal Final'), done('assessment', 'Penilaian Proposal', 'Lulus'), done('promotion', 'Mulai Penelitian')];
   }
   const attempt = overview?.finalProposal.current ?? null;
   const third = attempt?.file ? done('final', 'Proposal Final', 'Diajukan') : waiting('final', 'Proposal Final');
@@ -76,8 +76,8 @@ export function buildProposalSteps(overview: StudentProposalOverview | undefined
     fourth = waiting('assessment', 'Penilaian Proposal');
   }
   const fifth = fourth.state === 'done'
-    ? waiting('promotion', 'Naik ke Penelitian', WAITING_THESIS_COURSE_NOTE)
-    : waiting('promotion', 'Naik ke Penelitian');
+    ? waiting('promotion', 'Mulai Penelitian', WAITING_THESIS_COURSE_NOTE)
+    : waiting('promotion', 'Mulai Penelitian');
   return [first, second, third, fourth, fifth];
 }
 
@@ -130,5 +130,123 @@ export function getRequestCardState(data: StudentSupervisorRequests): RequestCar
     action: hasDraft ? 'continue' : 'submit',
     message: rejected ? 'Pengajuan sebelumnya tidak disetujui. Ajukan lagi ke dosen lain atau lewat departemen.' : null,
     request: null,
+  };
+}
+
+/** "± 5 jam lagi" or "± 2 hari lagi" until `at`; null once it is reached. */
+export function formatTimeLeft(at: string | Date | null | undefined, now = new Date()): string | null {
+  if (!at) return null;
+  const ms = new Date(at).getTime() - now.getTime();
+  if (ms <= 0) return null;
+  const hours = Math.ceil(ms / 3_600_000);
+  return hours < 24 ? `± ${hours} jam lagi` : `± ${Math.round(hours / 24)} hari lagi`;
+}
+
+export type RequestCardButton = 'submit' | 'continue' | 'revise' | 'detail' | 'withdraw' | 'cancel';
+export interface RequestCardRow {
+  label: string;
+  value: string;
+  /** Muted text under the value (e.g. the countdown to the withdraw time). */
+  hint?: string | null;
+}
+export interface RequestCardView {
+  status: string;
+  variant: RequestCardState['variant'];
+  /** The not-eligible message, or a short note on an earlier refused request. */
+  message: string | null;
+  rows: RequestCardRow[];
+  /** The Ketua Departemen's note, in the soft yellow box. */
+  kadepNote: string | null;
+  buttons: RequestCardButton[];
+  request: SupervisorRequest | null;
+  /** Why Tarik or Batalkan cannot be used yet (tooltip of the disabled button). */
+  blockReason: string | null;
+}
+
+const lecturerOf = (request: SupervisorRequest) => {
+  const person = request.supervisor ?? request.lecturer;
+  return person?.fullName ? formatLecturerName(person.fullName) : 'Ditetapkan departemen';
+};
+
+/**
+ * What the Pengajuan Pembimbing card shows, per state: label and value rows in the grid of the
+ * seminar identity card, the Ketua Departemen's note, and the actions.
+ */
+export function getRequestCardView(data: StudentSupervisorRequests, overview?: StudentProposalOverview, now = new Date()): RequestCardView {
+  const state = getRequestCardState(data);
+  const request = state.request;
+  const base = { status: state.status, variant: state.variant, message: null, kadepNote: null, request, blockReason: null };
+  const route = request ? getSupervisorRequestRouteLabel(request.route) : '';
+
+  if (state.action === 'withdraw' && request) {
+    const lockedUntil = request.withdrawAvailableAt && new Date(request.withdrawAvailableAt) > now ? request.withdrawAvailableAt : null;
+    const rows: RequestCardRow[] = [
+      { label: 'Jalur', value: route },
+      { label: 'Dosen tujuan', value: lecturerOf(request) },
+      { label: 'Dikirim', value: formatDateTimeWib(request.createdAt) },
+      { label: 'Status', value: state.status },
+    ];
+    if (lockedUntil) rows.push({ label: 'Bisa ditarik mulai', value: formatDateTimeWib(lockedUntil), hint: formatTimeLeft(lockedUntil, now) });
+    return { ...base, rows, buttons: ['detail', 'withdraw'], blockReason: getWithdrawBlockReason(request, now) };
+  }
+  if (state.action === 'cancel' && request) {
+    return {
+      ...base,
+      rows: [
+        { label: 'Jalur', value: route },
+        { label: 'Diterima oleh', value: lecturerOf(request) },
+        { label: 'Tanggal diterima', value: formatDateTimeWib(request.reviewedAt ?? request.lecturerRespondedAt ?? request.updatedAt) },
+      ],
+      buttons: ['detail', 'cancel'],
+      blockReason: getWithdrawBlockReason(request, now),
+    };
+  }
+  if (state.action === 'detail' && request) {
+    const assignedAt = overview?.assignment?.assignedAt ?? request.thesis?.supervisorAssignedAt ?? null;
+    return {
+      ...base,
+      rows: [
+        { label: 'Jalur', value: route },
+        { label: 'Diterima tanggal', value: formatDateTimeWib(request.reviewedAt ?? request.lecturerRespondedAt ?? request.updatedAt) },
+        { label: 'Ditetapkan tanggal', value: formatDateTimeWib(assignedAt) },
+      ],
+      buttons: ['detail'],
+    };
+  }
+  if (state.action === null) {
+    return { ...base, message: state.message, rows: [], buttons: [] };
+  }
+  if (data.submission.revisionRequested) {
+    const last = request ?? data.requests[0] ?? null;
+    return {
+      ...base,
+      request: last,
+      rows: last ? [{ label: 'Jalur', value: getSupervisorRequestRouteLabel(last.route) }, { label: 'Status', value: state.status }] : [],
+      kadepNote: last?.kadepNotes ?? null,
+      buttons: ['revise'],
+    };
+  }
+
+  const draft = data.draft;
+  const hasDraft = state.action === 'continue';
+  const rows: RequestCardRow[] = hasDraft && draft
+    ? [
+      { label: 'Draf disimpan', value: formatDateTimeWib(draft.updatedAt) },
+      { label: 'Judul draf', value: draft.proposedTitle || '-' },
+      { label: draft.lecturer ? 'Dosen di draf' : 'Jalur di draf', value: draft.lecturer?.fullName ? formatLecturerName(draft.lecturer.fullName) : 'Ditetapkan departemen' },
+    ]
+    : [
+      { label: 'Semester', value: data.submission.academicYear?.label ?? '-' },
+      { label: 'Metode Penelitian', value: data.submission.eligibleResearchMethod ? 'Terdaftar' : '-' },
+    ];
+  // A request refused earlier: its note (the Ketua Departemen's, or the lecturer's reason).
+  const refused = data.requests[0] && ['rejected_by_lecturer', 'rejected_by_kadep', 'closed'].includes(data.requests[0].status) ? data.requests[0] : null;
+  return {
+    ...base,
+    message: state.message,
+    rows,
+    kadepNote: refused?.kadepNotes ?? null,
+    buttons: [hasDraft ? 'continue' : 'submit'],
+    request: refused,
   };
 }

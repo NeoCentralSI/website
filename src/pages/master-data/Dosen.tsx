@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Eye, Pencil } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { SEARCH_DEBOUNCE_MS, useDebounce } from '@/hooks/useDebounce';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,6 +24,8 @@ export default function Dosen() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
+  // The server is asked after the typing pause; the input itself stays instant.
+  const debouncedSearch = useDebounce(searchValue.trim(), SEARCH_DEBOUNCE_MS);
   const [scienceGroupFilter, setScienceGroupFilter] = useState('');
 
   // Edit states
@@ -65,8 +68,8 @@ export default function Dosen() {
 
   // Use TanStack Query for server state management
   const { data, isLoading, isFetching, refetch, error } = useQuery({
-    queryKey: ['lecturers', { page, pageSize, search: searchValue, scienceGroupId: scienceGroupFilter }],
-    queryFn: () => getLecturersAPI({ page, pageSize, search: searchValue, scienceGroupId: scienceGroupFilter }),
+    queryKey: ['lecturers', { page, pageSize, search: debouncedSearch, scienceGroupId: scienceGroupFilter }],
+    queryFn: () => getLecturersAPI({ page, pageSize, search: debouncedSearch, scienceGroupId: scienceGroupFilter }),
     placeholderData: (previousData) => previousData, // Keep previous data while fetching
     staleTime: 5 * 60 * 1000, // Data stays fresh for 5 minutes
   });
@@ -81,7 +84,7 @@ export default function Dosen() {
   // Reset to page 1 when search changes
   useEffect(() => {
     setPage(1);
-  }, [searchValue]);
+  }, [debouncedSearch]);
 
   const columns: Column<Lecturer>[] = [
     {
@@ -205,6 +208,7 @@ export default function Dosen() {
         columns={columns as any}
         data={lecturers}
         loading={isLoading}
+        subtleRefresh
         isRefreshing={isFetching && !isLoading}
         total={total}
         page={page}

@@ -40,7 +40,7 @@ describe("AuthenticatedDocumentPreviewDialog", () => {
     expect(frame).toHaveAttribute("src", "blob:http://localhost/abc");
     expect(fetchMock.mock.calls[0][1].headers).toEqual({ Authorization: "Bearer JWT-RAHASIA" });
 
-    fireEvent.click(screen.getByRole("button", { name: /Buka tab/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Buka di tab baru/ }));
     fireEvent.click(screen.getByRole("button", { name: /Unduh/ }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
 

@@ -252,8 +252,8 @@ describe('Tugas Akhir > Evaluasi (Ketua Departemen)', () => {
     // A long stage stays inside its cell, clamped with the full text as its tooltip (1.2).
     expect(within(rows[1]).getByText('Tindak Lanjut Evaluasi 6 Bulan')).toHaveAttribute('title', 'Tindak Lanjut Evaluasi 6 Bulan');
     expect(within(rows[1]).getByText('Tercatat').className).toContain('whitespace-nowrap');
-    // Only the waiting one can be decided; Setujui is green.
-    expect(within(rows[0]).getByRole('button', { name: 'Setujui' }).className).toContain('text-emerald-600');
+    // Only the waiting one can be decided; Setujui is a neutral action (green is for status only).
+    expect(within(rows[0]).getByRole('button', { name: 'Setujui' }).className).not.toMatch(/emerald|green/);
     expect(within(rows[1]).queryByRole('button', { name: 'Setujui' })).not.toBeInTheDocument();
     expect(screen.queryByRole('combobox', { name: /Filter/ })).not.toBeInTheDocument();
 

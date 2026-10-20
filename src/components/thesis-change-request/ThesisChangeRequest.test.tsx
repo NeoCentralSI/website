@@ -314,8 +314,8 @@ describe('Tugas Akhir > Perubahan (Ketua Departemen)', () => {
 
     const tableRow = (await screen.findByText('Ilham Nofaldi')).closest('tr')!;
     expect(within(tableRow).getByRole('button', { name: 'Lihat Detail' })).toBeInTheDocument();
-    // Approve is green, as on the reference table (1.1).
-    expect(within(tableRow).getByRole('button', { name: 'Setujui' }).className).toContain('text-emerald-600');
+    // Approve is a neutral action: the text colour, orange on hover.
+    expect(within(tableRow).getByRole('button', { name: 'Setujui' }).className).not.toMatch(/emerald|green/);
     fireEvent.click(within(tableRow).getByRole('button', { name: 'Tolak' }));
     const dialog = await screen.findByRole('dialog', { name: 'Tolak pengajuan?' });
     expect(within(dialog).getByRole('button', { name: 'Tolak' })).toBeDisabled();

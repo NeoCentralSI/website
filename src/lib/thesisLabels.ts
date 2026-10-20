@@ -632,3 +632,13 @@ export function getGuidanceActionBlockReason(
   if (!status) return owner === "Anda" ? "Anda belum memiliki tugas akhir yang aktif." : "Mahasiswa belum memiliki tugas akhir yang aktif.";
   return `Aksi ini hanya tersedia untuk tugas akhir berstatus "${THESIS_STATUS_LABELS.research}". Status tugas akhir ${owner} saat ini: "${getThesisStatusLabel(status)}".`;
 }
+
+/** `StudentStatus` (status studi mahasiswa, dari SIA atau Admin). */
+export const STUDENT_STATUS_LABELS: Record<string, string> = {
+  active: 'Aktif',
+  bss: 'Cuti (BSS)',
+  lulus: 'Lulus',
+  mengundurkan_diri: 'Mengundurkan Diri',
+  dropout: 'Drop Out',
+};
+export const getStudentStatusLabel = (status: string | null | undefined) => (status ? STUDENT_STATUS_LABELS[status] ?? status : 'Tidak diketahui');

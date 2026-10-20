@@ -17,11 +17,20 @@ const SOURCE_LABELS: Record<string, string> = { sia: 'SIA', admin: 'Admin', devt
 type FlagValue = 'yes' | 'no' | 'unknown';
 const toValue = (flag: boolean | null): FlagValue => (flag === null ? 'unknown' : flag ? 'yes' : 'no');
 const fromValue = (value: FlagValue): boolean | null => (value === 'unknown' ? null : value === 'yes');
-const FLAG_LABELS: Record<FlagValue, string> = { yes: 'Ya', no: 'Tidak', unknown: 'Belum diketahui' };
+const FLAG_LABELS: Record<FlagValue, string> = { yes: 'Mengambil', no: 'Tidak Mengambil', unknown: 'Belum Diketahui' };
 
+/** The source label, or null when there is none (the chip then has no " · …"). */
 function sourceOf(flags: StudentSemesterFlags, field: 'researchMethodSource' | 'thesisCourseSource') {
   const source = flags[field] ?? null;
-  return source ? SOURCE_LABELS[source] ?? source : '-';
+  return source ? SOURCE_LABELS[source] ?? source : null;
+}
+
+function FlagChip({ label, value, source }: { label: string; value: boolean | null; source: string | null }) {
+  return (
+    <Badge variant={value ? 'default' : 'outline'} title={source ? `Sumber: ${source}` : undefined}>
+      {label}: {FLAG_LABELS[toValue(value)]}{source ? ` · ${source}` : ''}
+    </Badge>
+  );
 }
 
 function FlagSelect({ id, label, value, onChange }: { id: string; label: string; value: FlagValue; onChange: (value: FlagValue) => void }) {
@@ -90,21 +99,20 @@ export function StudentSemesterFlagsCard({ studentId, semesterFlags, canEdit }: 
                 <li key={flags.academicYearId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
                   <span className="font-medium">{flags.academicYearLabel}</span>
                   <span className="flex flex-wrap items-center gap-1.5">
-                    <Badge variant={flags.takingResearchMethod ? 'default' : 'outline'} title={`Sumber: ${sourceOf(flags, 'researchMethodSource')}`}>
-                      Metode Penelitian: {FLAG_LABELS[toValue(flags.takingResearchMethod)]} · {sourceOf(flags, 'researchMethodSource')}
-                    </Badge>
-                    <Badge variant={flags.takingThesisCourse ? 'default' : 'outline'} title={`Sumber: ${sourceOf(flags, 'thesisCourseSource')}`}>
-                      Tugas Akhir: {FLAG_LABELS[toValue(flags.takingThesisCourse)]} · {sourceOf(flags, 'thesisCourseSource')}
-                    </Badge>
+                    <FlagChip label="Metode Penelitian" value={flags.takingResearchMethod} source={sourceOf(flags, 'researchMethodSource')} />
+                    <FlagChip label="Tugas Akhir" value={flags.takingThesisCourse} source={sourceOf(flags, 'thesisCourseSource')} />
                     {flags.capturedAt && <span className="text-xs text-muted-foreground">{formatDateId(flags.capturedAt)}</span>}
                     {canEdit && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => open(flags)}>Ubah</Button>
-                        <span title={sia.reason ?? (isAdmin ? undefined : 'Penanda semester ini sudah mengikuti data SIA.')} className="inline-flex">
-                          <Button size="sm" variant="outline" disabled={!sia.configured || !isAdmin || follow.isPending} onClick={() => follow.mutate(flags)}>
-                            {follow.isPending && follow.variables?.academicYearId === flags.academicYearId && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Ikuti Data SIA
-                          </Button>
-                        </span>
+                        {/* Only a value the Admin set can be handed back to SIA. */}
+                        {isAdmin && (
+                          <span title={sia.reason ?? undefined} className="inline-flex">
+                            <Button size="sm" variant="outline" disabled={!sia.configured || follow.isPending} onClick={() => follow.mutate(flags)}>
+                              {follow.isPending && follow.variables?.academicYearId === flags.academicYearId && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Ikuti Data SIA
+                            </Button>
+                          </span>
+                        )}
                       </>
                     )}
                   </span>
@@ -122,8 +130,8 @@ export function StudentSemesterFlagsCard({ studentId, semesterFlags, canEdit }: 
             <DialogDescription>{editing?.academicYearLabel}. Isian Admin tidak ditimpa sinkronisasi SIA.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-3 sm:grid-cols-2">
-            <FlagSelect id="flag-research-method" label="Mengambil Metode Penelitian" value={researchMethod} onChange={setResearchMethod} />
-            <FlagSelect id="flag-thesis-course" label="Mengambil Tugas Akhir" value={thesisCourse} onChange={setThesisCourse} />
+            <FlagSelect id="flag-research-method" label="Metode Penelitian" value={researchMethod} onChange={setResearchMethod} />
+            <FlagSelect id="flag-thesis-course" label="Tugas Akhir" value={thesisCourse} onChange={setThesisCourse} />
           </div>
           <DialogFooter className="gap-2">
             <Button size="sm" variant="outline" onClick={() => setEditing(null)} disabled={save.isPending}>Batal</Button>

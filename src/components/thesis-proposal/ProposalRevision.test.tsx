@@ -62,7 +62,7 @@ describe('Proposal revisi (mengulang proposal)', () => {
   it('Steps 3 to 5 are the repeat steps only for a thesis repeating its proposal', () => {
     const labels = (o: StudentProposalOverview) => buildProposalSteps(o, undefined).map((step) => step.label);
     expect(labels(overview({ applicable: false, evaluation: null, canSubmit: false }))).toEqual([
-      'Pengajuan Pembimbing', 'Penetapan Pembimbing', 'Proposal Final', 'Penilaian Proposal', 'Naik ke Penelitian',
+      'Pengajuan Pembimbing', 'Penetapan Pembimbing', 'Proposal Final', 'Penilaian Proposal', 'Mulai Penelitian',
     ]);
     const repeat = buildProposalSteps(overview({ current: revision({ status: 'revision_requested' }) }), undefined);
     expect(repeat.map((step) => step.label)).toEqual([
@@ -81,20 +81,20 @@ describe('Proposal revisi (mengulang proposal)', () => {
     })} />);
 
     expect(await screen.findByText('Proposal Revisi')).toBeInTheDocument();
-    expect(screen.getAllByText('Perlu Revisi').length).toBeGreaterThan(0);
-    expect(screen.getByText(/Perjelas metodologi penelitian\./)).toBeInTheDocument();
-    const button = screen.getByRole('button', { name: 'Ajukan Proposal Revisi' });
-    expect(button).toBeDisabled();
+    expect(screen.getByText('Perlu revisi')).toBeInTheDocument();
+    // Pembimbing 1's notes are in the soft yellow box.
+    expect(screen.getByRole('note')).toHaveTextContent('Perjelas metodologi penelitian.');
+    expect(screen.queryByRole('button', { name: 'Ajukan' })).not.toBeInTheDocument();
     const file = new File(['%PDF-1.7'], 'revisi-2.pdf', { type: 'application/pdf' });
     fireEvent.change(screen.getByLabelText('Berkas proposal revisi'), { target: { files: [file] } });
-    fireEvent.click(button);
+    fireEvent.click(await screen.findByRole('button', { name: 'Ajukan' }));
     await waitFor(() => expect(revisions.submitProposalRevision).toHaveBeenCalledWith(file, expect.anything()));
   });
 
   it('student: an upload waiting for review can be replaced', async () => {
     wrap(<StudentProposalFileCard kind="revision" overview={overview({ current: revision(), replacesCurrent: true })} />);
-    expect(await screen.findByRole('button', { name: 'Ganti Proposal Revisi' })).toBeInTheDocument();
-    expect(screen.getAllByText('Menunggu Tinjauan Pembimbing 1').length).toBeGreaterThan(0);
+    expect(await screen.findByRole('button', { name: /Ganti Berkas/ })).toBeInTheDocument();
+    expect(screen.getByText('Menunggu Pembimbing 1')).toBeInTheDocument();
   });
 
   it('Pembimbing 1: "Minta Revisi" needs notes; "Setujui" approves', async () => {

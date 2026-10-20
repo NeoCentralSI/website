@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { History, Loader2, PlayCircle } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { SupervisorRequestStatusBadge } from '@/components/shared/SupervisorRequestStatusBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,7 @@ function SupervisorRequestCard() {
   const mutations = useDevToolsMutations();
   const { search, setSearch, debouncedSearch, page, setPage } = usePagedSearch();
   const [pageSize, setPageSize] = useState(10);
-  const { data, isLoading, isFetching } = useDevToolsSupervisorRequests({ search: debouncedSearch, page, pageSize });
+  const { data, isLoading, isFetching, refetch } = useDevToolsSupervisorRequests({ search: debouncedSearch, page, pageSize });
 
   const columns = useMemo<Column<DevToolsSupervisorRequest>[]>(() => [
     {
@@ -74,6 +75,7 @@ function SupervisorRequestCard() {
           onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
           searchValue={search}
           onSearchChange={setSearch}
+          actions={<RefreshButton onClick={() => void refetch()} isRefreshing={isFetching && !isLoading} />}
           emptyText="Tidak ada pengajuan pembimbing ditemukan."
         />
       </CardContent>
@@ -85,13 +87,13 @@ function PromotionCard() {
   const { data, isLoading } = usePromotionPreview(true);
   const run = useRunPromotion();
   const rows = data?.rows ?? [];
-  const reason = rows.some((r) => r.decision === 'promote') ? null : 'Belum ada mahasiswa yang memenuhi syarat naik ke Penelitian.';
+  const reason = rows.some((r) => r.decision === 'promote') ? null : 'Belum ada mahasiswa yang memenuhi syarat masuk fase Penelitian.';
   return (
     <Card>
       <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
         <div className="space-y-1.5">
           <CardTitle className="text-base">Proses Kelulusan</CardTitle>
-          <CardDescription>Menjalankan langkah naik ke Penelitian sekarang (biasanya berjalan otomatis setiap enam jam).</CardDescription>
+          <CardDescription>Menjalankan langkah Mulai Penelitian sekarang (biasanya berjalan otomatis setiap enam jam).</CardDescription>
         </div>
         <span title={reason ?? undefined}>
           <Button size="sm" disabled={Boolean(reason) || run.isPending} onClick={() => run.mutate()}>

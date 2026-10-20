@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { CalendarClock } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import StatusBadge from '@/components/thesis/StatusBadge';
 import { useDevToolsGuidances, useDevToolsMutations } from '@/hooks/dev-tools/useDevTools';
@@ -27,7 +28,7 @@ export function DevToolsGuidancePanel() {
   const [pageSize, setPageSize] = useState(10);
   const [editing, setEditing] = useState<DevToolsGuidance | null>(null);
 
-  const { data, isLoading, isFetching } = useDevToolsGuidances({ search: debouncedSearch, status, page, pageSize });
+  const { data, isLoading, isFetching, refetch } = useDevToolsGuidances({ search: debouncedSearch, status, page, pageSize });
 
   const columns = useMemo<Column<DevToolsGuidance>[]>(() => [
     {
@@ -89,6 +90,7 @@ export function DevToolsGuidancePanel() {
         searchValue={search}
         onSearchChange={setSearch}
         enableColumnFilters
+        actions={<RefreshButton onClick={() => void refetch()} isRefreshing={isFetching && !isLoading} />}
         emptyText="Tidak ada sesi bimbingan ditemukan."
       />
       <DevToolsGuidanceScheduleDialog

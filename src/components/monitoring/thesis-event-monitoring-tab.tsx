@@ -22,7 +22,7 @@ interface ThesisEventMonitoringTabProps {
  * ready to register, the coming schedule, what needs attention, and the table.
  */
 export function ThesisEventMonitoringTab({ kind, academicYear, enabled }: ThesisEventMonitoringTabProps) {
-  const { data, isLoading, isError, error, refetch } = useThesisEventMonitoring(kind, academicYear, { enabled });
+  const { data, isLoading, isFetching, isError, error, refetch } = useThesisEventMonitoring(kind, academicYear, { enabled });
   // The seminar and defence detail pages are open to admin and every lecturer role.
   const { isAdmin, isDosen } = useRole();
   const canOpenDetail = isAdmin() || isDosen();
@@ -52,7 +52,14 @@ export function ThesisEventMonitoringTab({ kind, academicYear, enabled }: Thesis
         </div>
       </div>
 
-      <ThesisEventsTable kind={kind} events={data?.items} isLoading={loading} canOpenDetail={canOpenDetail} />
+      <ThesisEventsTable
+        kind={kind}
+        events={data?.items}
+        isLoading={loading}
+        canOpenDetail={canOpenDetail}
+        onRefresh={() => void refetch()}
+        isFetching={isFetching && !loading}
+      />
     </div>
   );
 }

@@ -210,7 +210,6 @@ export function ThesisChangeRequestTable() {
               <TableIconAction
                 icon={Check}
                 label="Setujui"
-                tone="approve"
                 disabled={!!row.applyBlockReason}
                 disabledReason={row.applyBlockReason}
                 onClick={() => decideAsKadep(row, true)}

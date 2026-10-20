@@ -39,7 +39,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft, ClipboardCheck, FilePenLine } from "lucide-react";
+import { Eye, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft, ClipboardCheck, FilePenLine, FileSearch } from "lucide-react";
+import { DETAIL_SECTIONS } from "@/components/tugas-akhir/lecturer/studentDetailPending";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TableIconAction } from "@/components/shared/TableIconAction";
 import { useAuth } from "@/hooks/shared";
@@ -329,6 +330,13 @@ export default function LecturerMyStudentsPage() {
         const canWarn = needsWarning(row.activityLevel) && (row.supervisorStatus ?? "active") === "active" && !row.noLongerSupervising;
         return (
           <div className="flex items-center justify-end gap-1">
+            {row.proposalRevisionPending && (
+              <TableIconAction
+                icon={FileSearch}
+                label="Tinjau Proposal Revisi"
+                onClick={() => navigate(`/tugas-akhir/bimbingan/lecturer/my-students/${row.thesisId}#${DETAIL_SECTIONS.revision}`)}
+              />
+            )}
             {canFillEvaluation(row) && (
               <TableIconAction icon={ClipboardCheck} label="Isi Evaluasi" onClick={() => setEvaluationThesisId(row.thesisId as string)} />
             )}

@@ -65,12 +65,12 @@ describe("useSidebarMenu", () => {
   });
 
   // One Tugas Akhir menu for students, no separate Metode Penelitian menu.
-  it("gives students Tugas Akhir > Overview, Proposal, Bimbingan, Seminar Hasil, Sidang and no Metode Penelitian menu", () => {
+  it("gives students Tugas Akhir > Overview, Bimbingan, Proposal, Seminar Hasil, Sidang and no Metode Penelitian menu", () => {
     const { result } = renderHook(() => useSidebarMenu());
 
     const taMenu = result.current.navMain.find((item) => item.title === "Tugas Akhir");
-    expect(taMenu?.items?.map((item) => item.title)).toEqual(["Overview", "Proposal", "Bimbingan", "Seminar Hasil", "Sidang TA"]);
-    expect(taMenu?.items?.[1].url).toBe("/tugas-akhir/proposal");
+    expect(taMenu?.items?.map((item) => item.title)).toEqual(["Overview", "Bimbingan", "Proposal", "Seminar Hasil", "Sidang TA"]);
+    expect(taMenu?.items?.[2].url).toBe("/tugas-akhir/proposal");
     expect(result.current.navMain.find((item) => item.title.startsWith("Metode Penelitian"))).toBeUndefined();
   });
 
@@ -85,9 +85,9 @@ describe("useSidebarMenu", () => {
   ];
 
   // Supervisors score in Tugas Akhir > Proposal (no Metode Penelitian menu).
-  // Permohonan, Proposal, Bimbingan, Seminar Hasil, Sidang TA; supervisors have
+  // Permohonan, Bimbingan, Proposal, Seminar Hasil, Sidang TA; supervisors have
   // no Perubahan or Evaluasi page.
-  const SUPERVISOR_TA = ["Permohonan", "Proposal", "Bimbingan", "Seminar Hasil", "Sidang TA"];
+  const SUPERVISOR_TA = ["Permohonan", "Bimbingan", "Proposal", "Seminar Hasil", "Sidang TA"];
   const KADEP_DECISIONS = ["Perubahan", "Evaluasi"];
 
   it("gives supervisors their Tugas Akhir order and no Metode Penelitian menu", () => {
@@ -147,7 +147,7 @@ describe("useSidebarMenu", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true, isPembimbing: true });
 
-    // Monitoring, Penetapan, Permohonan, Proposal, Bimbingan, Seminar Hasil, Sidang TA, Perubahan, Evaluasi.
+    // Monitoring, Penetapan, Permohonan, Bimbingan, Proposal, Seminar Hasil, Sidang TA, Perubahan, Evaluasi.
     expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Monitoring", "Penetapan", ...SUPERVISOR_TA, ...KADEP_DECISIONS]);
   });
 
