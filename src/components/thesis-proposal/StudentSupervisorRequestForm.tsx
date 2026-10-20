@@ -118,14 +118,21 @@ export function getSubmitBlockReason(form: FormState, chosenFull: boolean): stri
 const SHOWN_TOPICS = 2;
 export const CLOSED_INTAKE_REASON = 'Dosen sedang menutup penerimaan pengajuan.';
 
-/** "Topik A, Topik B +3": the first topics, the rest in the tooltip. */
+/** "Topik bimbingan: Topik A, Topik B +3": the first topics, the rest in the tooltip. */
 export function summarizeTopics(topics: string[]): { text: string; title: string | undefined } {
-  if (topics.length === 0) return { text: 'Belum ada topik', title: undefined };
+  if (topics.length === 0) return { text: 'Belum ada topik bimbingan', title: undefined };
   const rest = topics.length - SHOWN_TOPICS;
-  return { text: `${topics.slice(0, SHOWN_TOPICS).join(', ')}${rest > 0 ? ` +${rest}` : ''}`, title: topics.join(', ') };
+  return {
+    text: `Topik bimbingan: ${topics.slice(0, SHOWN_TOPICS).join(', ')}${rest > 0 ? ` +${rest}` : ''}`,
+    title: `Topik bimbingan: ${topics.join(', ')}`,
+  };
 }
 
-const topicsOf = (lecturer: CatalogLecturer) => (lecturer.offeredTopics?.length ? lecturer.offeredTopics : lecturer.supervisedTopics);
+/**
+ * Lecturers do not offer topics of their own (the topic master data is the Sekretaris
+ * Departemen's); the catalog shows the topics of the theses the lecturer supervises now.
+ */
+const topicsOf = (lecturer: CatalogLecturer) => lecturer.supervisedTopics;
 const groupOf = (lecturer: CatalogLecturer) => lecturer.scienceGroup?.name ?? 'Kelompok keilmuan belum diisi';
 
 function LoadBadge({ lecturer }: { lecturer: CatalogLecturer }) {
@@ -135,8 +142,8 @@ function LoadBadge({ lecturer }: { lecturer: CatalogLecturer }) {
 }
 
 /**
- * The lecturers as options of a searchable dropdown: name, kelompok keilmuan, the offered topics
- * (short, all of them in the tooltip) and the load. The search matches name, kelompok keilmuan
+ * The lecturers as options of a searchable dropdown: name, kelompok keilmuan, the topics they
+ * supervise now ("Topik bimbingan"; short, all of them in the tooltip) and the load. The search matches name, kelompok keilmuan
  * and topic. A full lecturer stays selectable; one who closed intake is listed but disabled.
  */
 export function toLecturerOptions(lecturers: CatalogLecturer[]): ComboboxOption[] {
@@ -164,7 +171,7 @@ function ChosenLecturer({ lecturer }: { lecturer: CatalogLecturer }) {
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{formatLecturerName(lecturer.fullName)}</p>
         <p className="text-xs text-muted-foreground">{groupOf(lecturer)}</p>
-        <p className="truncate text-xs text-muted-foreground" title={summary.title}>Topik: {summary.text}</p>
+        <p className="truncate text-xs text-muted-foreground" title={summary.title}>{summary.text}</p>
       </div>
       <LoadBadge lecturer={lecturer} />
     </div>

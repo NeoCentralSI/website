@@ -1,7 +1,7 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
-import { RefreshCw, Calendar, FileDown, Loader2 } from "lucide-react";
+import { FileDown, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
@@ -14,8 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { PageHeading } from "@/components/shared/PageHeading";
 import { LocalTabsNav } from "@/components/ui/tabs-nav";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ALL_SEMESTERS, monitoringKeys, useMonitoringSemester } from "@/hooks/monitoring";
 import { downloadProgressReportPdf } from "@/services/monitoring.service";
 
@@ -35,8 +35,12 @@ const NOW_NOTE: Record<MonitoringTab, string> = {
   sidang: "Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
 };
 
-const REPORT_ONLY_GUIDANCE = "Laporan hanya memuat data bimbingan. Buka tab Bimbingan untuk mengunduhnya.";
-
+/**
+ * Tugas Akhir > Monitoring: three tabs (Bimbingan, Seminar Hasil, Sidang) for one semester. The
+ * semester select (`?semester=`, shared by the tabs) sits in the toolbar of each tab's table, as
+ * on every page; the report download is in the Bimbingan toolbar, the only tab it covers. Muat
+ * Ulang of the Bimbingan table reloads the whole tab (charts too).
+ */
 export default function MonitoringDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialActivity = searchParams.get("activity") || undefined;
@@ -46,7 +50,6 @@ export default function MonitoringDashboard() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const queryClient = useQueryClient();
-  const semesterFieldId = useId();
 
   // Semester filter (`?semester=`), shared by the three tabs; the running semester by default.
   const semester = useMonitoringSemester();
@@ -112,13 +115,30 @@ export default function MonitoringDashboard() {
   };
 
   const nowNote = NOW_NOTE[activeTab];
-  const isReportTab = activeTab === "bimbingan";
+  const semesterSelect = (
+    // "" keeps the select controlled while the default semester is being resolved.
+    <Select value={semester.value ?? ""} onValueChange={semester.setSemester}>
+      {/* Wide enough for "Ganjil 2026/2027 (Berjalan)", so no choice is clamped or shifted. */}
+      <SelectTrigger className="w-64 text-left" aria-label="Semester">
+        <SelectValue placeholder="Pilih semester" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL_SEMESTERS}>Semua Semester</SelectItem>
+        {semester.semesters.map((ay) => (
+          <SelectItem key={ay.value} value={ay.value}>
+            {`${ay.label.trim()}${ay.isActive ? " (Berjalan)" : ""}`}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
   const downloadButton = (
     <Button
       variant="outline"
+      size="sm"
       className="flex items-center gap-2"
       onClick={handleDownloadPDF}
-      disabled={!isReportTab || isDownloadingPDF || isLoadingAny || !semester.isReady}
+      disabled={isDownloadingPDF || isLoadingAny || !semester.isReady}
     >
       {isDownloadingPDF ? (
         <Loader2 className="h-4 w-4 animate-spin" />
@@ -131,55 +151,10 @@ export default function MonitoringDashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Monitoring Tugas Akhir</h1>
-        <p className="text-muted-foreground">Pantau bimbingan, seminar hasil, dan sidang tugas akhir per semester</p>
-      </div>
-
-      {/* Semester filter, reload and report */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap items-center gap-3">
-            <label htmlFor={semesterFieldId} className="flex items-center gap-2 text-sm font-medium">
-              <Calendar className="h-5 w-5 text-muted-foreground" />
-              Semester
-            </label>
-            {/* "" keeps the select controlled while the default semester is being resolved */}
-            <Select value={semester.value ?? ""} onValueChange={semester.setSemester}>
-              {/* Wide enough for "Ganjil 2026/2027 (Berjalan)", so no choice is clamped or shifted. */}
-              <SelectTrigger id={semesterFieldId} className="w-72 text-left">
-                <SelectValue placeholder="Pilih semester" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_SEMESTERS}>Semua Semester</SelectItem>
-                {semester.semesters.map((ay) => (
-                  <SelectItem key={ay.value} value={ay.value}>
-                    {`${ay.label.trim()}${ay.isActive ? " (Berjalan)" : ""}`}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          {semester.isPastOrOtherSemester && <p className="text-sm text-amber-700">{nowNote}</p>}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoadingAny}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingAny ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          {isReportTab ? downloadButton : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                {/* A disabled button gets no pointer events; the wrapper carries the reason. */}
-                <span tabIndex={0} title={REPORT_ONLY_GUIDANCE}>{downloadButton}</span>
-              </TooltipTrigger>
-              <TooltipContent>{REPORT_ONLY_GUIDANCE}</TooltipContent>
-            </Tooltip>
-          )}
-        </div>
-      </div>
+      <PageHeading title="Monitoring Tugas Akhir" subtitle="Pantau bimbingan, seminar hasil, dan sidang tugas akhir per semester" />
 
       <LocalTabsNav tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
+      {semester.isPastOrOtherSemester && <p className="text-sm text-amber-700">{nowNote}</p>}
 
       {activeTab === "bimbingan" && (
         <GuidanceMonitoringTab
@@ -187,13 +162,16 @@ export default function MonitoringDashboard() {
           enabled={semester.isReady}
           isSyncing={isSyncing}
           initialActivity={initialActivity}
+          semesterSelect={semesterSelect}
+          extraActions={downloadButton}
+          onRefresh={() => void handleRefresh()}
         />
       )}
       {activeTab === "seminar" && (
-        <ThesisEventMonitoringTab kind="seminar" academicYear={academicYearFilter} enabled={semester.isReady} />
+        <ThesisEventMonitoringTab kind="seminar" academicYear={academicYearFilter} enabled={semester.isReady} semesterSelect={semesterSelect} />
       )}
       {activeTab === "sidang" && (
-        <ThesisEventMonitoringTab kind="defence" academicYear={academicYearFilter} enabled={semester.isReady} />
+        <ThesisEventMonitoringTab kind="defence" academicYear={academicYearFilter} enabled={semester.isReady} semesterSelect={semesterSelect} />
       )}
     </div>
   );

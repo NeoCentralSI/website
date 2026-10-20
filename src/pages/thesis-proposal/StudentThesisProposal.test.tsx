@@ -336,12 +336,12 @@ describe('Proposal mahasiswa', () => {
 });
 
 describe('Pengajuan Pembimbing page', () => {
-  const lecturer = (id: string, fullName: string, group: string, offeredTopics: string[], acceptingRequests = true): CatalogLecturer => ({
+  const lecturer = (id: string, fullName: string, group: string, supervisedTopics: string[], acceptingRequests = true): CatalogLecturer => ({
     lecturerId: id, fullName, identityNumber: id, avatarUrl: null, scienceGroup: { id: group, name: group }, acceptingRequests,
-    activeCount: 3, softLimit: 8, hardLimit: 10, level: 'available', supervisedTopics: [], offeredTopics,
+    activeCount: 3, softLimit: 8, hardLimit: 10, level: 'available', supervisedTopics,
   });
 
-  it('the lecturer dropdown shows kelompok keilmuan, offered topics and load; it searches topics; a closed lecturer is disabled', async () => {
+  it('the lecturer dropdown shows kelompok keilmuan, "Topik bimbingan" and load; it searches topics; a closed lecturer is disabled', async () => {
     vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({ draft: null }));
     vi.mocked(requests.getCatalog).mockResolvedValue([
       lecturer('l1', 'AINA HUBBY AZIIRA, M.Eng', 'Sistem Enterprise', ['ERP', 'Data Warehouse', 'Business Intelligence']),
@@ -355,7 +355,7 @@ describe('Pengajuan Pembimbing page', () => {
     await waitFor(() => expect(trigger).not.toBeDisabled());
     fireEvent.click(trigger);
     const aina = await screen.findByRole('option', { name: /^Aina Hubby/ });
-    expect(within(aina).getByText('Sistem Enterprise · ERP, Data Warehouse +1')).toHaveAttribute('title', 'Sistem Enterprise · ERP, Data Warehouse, Business Intelligence');
+    expect(within(aina).getByText('Sistem Enterprise · Topik bimbingan: ERP, Data Warehouse +1')).toHaveAttribute('title', 'Sistem Enterprise · Topik bimbingan: ERP, Data Warehouse, Business Intelligence');
     expect(within(aina).getByText('3/10 · Tersedia')).toBeInTheDocument();
     const closed = screen.getByRole('option', { name: /^Dosen Tutup/ });
     expect(closed).toHaveAttribute('aria-disabled', 'true');
@@ -367,7 +367,7 @@ describe('Pengajuan Pembimbing page', () => {
     fireEvent.click(await screen.findByRole('option', { name: /^Aina Hubby/ }));
     expect(screen.getByRole('combobox', { name: 'Dosen pembimbing' })).toHaveTextContent('Aina Hubby Aziira, M.Eng');
     // The chosen lecturer stays in view.
-    expect(screen.getByText('Topik: ERP, Data Warehouse +1')).toBeInTheDocument();
+    expect(screen.getByText('Topik bimbingan: ERP, Data Warehouse +1')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: 'Simpan Draf' }));
     await waitFor(() => expect(requests.saveDraft).toHaveBeenCalledWith(expect.objectContaining({ lecturerId: 'l1' })));

@@ -124,8 +124,6 @@ export interface CatalogLecturer extends SupervisorLoad {
   scienceGroup: { id: string; name: string } | null;
   acceptingRequests: boolean;
   supervisedTopics: string[];
-  /** The topics the lecturer offers (published). */
-  offeredTopics?: string[];
 }
 
 export interface CandidateLecturer extends CatalogLecturer {

@@ -270,8 +270,8 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                         <div className="flex items-center gap-1.5 ml-1 pl-3 border-l">
                           <Button
                             size="sm"
-                            variant="outline"
-                            className="h-8 text-emerald-600 border-emerald-100 hover:bg-emerald-50 hover:text-emerald-700"
+                            variant="default"
+                            className="h-8"
                             onClick={() => handleValidate(dt.id, 'approve')}
                             disabled={validateMutation.isPending}
                           >

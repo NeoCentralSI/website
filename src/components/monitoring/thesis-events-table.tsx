@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye } from "lucide-react";
 
@@ -45,6 +45,8 @@ interface ThesisEventsTableProps {
   /** Muat Ulang at the right end of the toolbar. */
   onRefresh?: () => void;
   isFetching?: boolean;
+  /** The page's semester select, before Muat Ulang. */
+  semesterSelect?: ReactNode;
 }
 
 /**
@@ -56,7 +58,7 @@ interface ThesisEventsTableProps {
  * seminar and defence modules (status priority, then the latest); the status filter sits in
  * the column header and the detail is an icon.
  */
-export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail, onRefresh, isFetching = false }: ThesisEventsTableProps) {
+export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail, onRefresh, isFetching = false, semesterSelect }: ThesisEventsTableProps) {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -171,7 +173,12 @@ export function ThesisEventsTable({ kind, events, isLoading, canOpenDetail, onRe
       tableClassName="table-fixed min-w-[900px]"
       isRefreshing={isFetching}
       subtleRefresh
-      actions={onRefresh ? <RefreshButton onClick={onRefresh} isRefreshing={isFetching} /> : undefined}
+      actions={(semesterSelect || onRefresh) ? (
+        <>
+          {semesterSelect}
+          {onRefresh && <RefreshButton onClick={onRefresh} isRefreshing={isFetching} />}
+        </>
+      ) : undefined}
       emptyText={hasFilters ? `Tidak ada ${copy.noun} yang cocok dengan pencarian atau filter.` : `Belum ada ${copy.noun} pada semester ini.`}
       rowKey={(event) => event.id}
     />

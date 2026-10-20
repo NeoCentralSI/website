@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Loading } from "@/components/ui/spinner";
 import { useMonitoringDashboard } from "@/hooks/monitoring/useMonitoring";
 import { ActivityDistributionChart } from "./ActivityDistributionChart";
@@ -21,13 +22,19 @@ interface GuidanceMonitoringTabProps {
   isSyncing?: boolean;
   /** Initial activity filter of the table, e.g. from `?activity=`. */
   initialActivity?: string;
+  /** The page's semester select, in the table toolbar. */
+  semesterSelect?: ReactNode;
+  /** Page actions in the table toolbar (the report download). */
+  extraActions?: ReactNode;
+  /** Muat Ulang of the whole page. */
+  onRefresh?: () => void;
 }
 
 /**
  * Bimbingan tab of the monitoring page: the theses that run in the semester, their activity
  * and evaluations, and the supervisors' load.
  */
-export function GuidanceMonitoringTab({ academicYear, enabled, isSyncing = false, initialActivity }: GuidanceMonitoringTabProps) {
+export function GuidanceMonitoringTab({ academicYear, enabled, isSyncing = false, initialActivity, semesterSelect, extraActions, onRefresh }: GuidanceMonitoringTabProps) {
   const { data, isLoading, isFetching } = useMonitoringDashboard(academicYear, { enabled });
   const isLoadingAny = isLoading || isFetching || isSyncing;
 
@@ -62,7 +69,14 @@ export function GuidanceMonitoringTab({ academicYear, enabled, isSyncing = false
         </div>
       </div>
 
-      <ThesesTable isSyncing={isSyncing} academicYear={academicYear} initialActivity={initialActivity} />
+      <ThesesTable
+        isSyncing={isSyncing}
+        academicYear={academicYear}
+        initialActivity={initialActivity}
+        semesterSelect={semesterSelect}
+        extraActions={extraActions}
+        onRefresh={onRefresh}
+      />
     </div>
   );
 }

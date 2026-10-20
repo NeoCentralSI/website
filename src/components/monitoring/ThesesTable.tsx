@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomTable } from "@/components/layout/CustomTable";
 import type { Column } from "@/components/layout/CustomTable";
@@ -59,9 +59,15 @@ interface ThesesTableProps {
   academicYear?: string;
   /** Initial activity filter (`active` | `slow` | `at_risk`), e.g. from `?activity=`. */
   initialActivity?: string;
+  /** The page's semester select, first on the right of the toolbar. */
+  semesterSelect?: ReactNode;
+  /** Page actions (e.g. the report download), just before Muat Ulang. */
+  extraActions?: ReactNode;
+  /** Muat Ulang of the whole page (charts too); the table alone when absent. */
+  onRefresh?: () => void;
 }
 
-export function ThesesTable({ isSyncing = false, academicYear, initialActivity }: ThesesTableProps) {
+export function ThesesTable({ isSyncing = false, academicYear, initialActivity, semesterSelect, extraActions, onRefresh }: ThesesTableProps) {
   const navigate = useNavigate();
   const { isKadep, isSekdep, isGkm } = useRole();
   // Backend rule: the department roles (KaDep, Sekdep, GKM) may warn any thesis
@@ -388,6 +394,7 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity }
 
   const actions = (
     <>
+      {semesterSelect}
       <Select
         value={statusFilter || "all"}
         onValueChange={(value) => handleFilterChange("status", value)}
@@ -466,9 +473,10 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity }
         </Button>
       )}
 
+      {extraActions}
       <RefreshButton
-        onClick={() => refetch()}
-        isRefreshing={isFetching && !isLoading}
+        onClick={() => (onRefresh ? onRefresh() : void refetch())}
+        isRefreshing={isLoadingAny && !isLoading}
       />
     </>
   );

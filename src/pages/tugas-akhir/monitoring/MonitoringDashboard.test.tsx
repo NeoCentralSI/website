@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { MemoryRouter, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -14,12 +15,24 @@ vi.mock("@/services/monitoring.service", () => ({
   downloadProgressReportPdf: vi.fn(),
 }));
 // The tabs have their own tests; here only what the page hands them matters. A tab that is
-// not ready yet (the semester is still being resolved) renders nothing.
+// not ready yet (the semester is still being resolved) renders nothing. The page hands each tab
+// the semester select (and Bimbingan the report download) for its table toolbar.
+type TabProps = { academicYear?: string; enabled: boolean; semesterSelect?: ReactNode; extraActions?: ReactNode };
 vi.mock("@/components/monitoring", () => ({
-  GuidanceMonitoringTab: ({ academicYear, enabled }: { academicYear?: string; enabled: boolean }) =>
-    enabled ? <div data-testid="tab-bimbingan">{academicYear ?? "semua"}</div> : null,
-  ThesisEventMonitoringTab: ({ kind, academicYear, enabled }: { kind: string; academicYear?: string; enabled: boolean }) =>
-    enabled ? <div data-testid={`tab-${kind}`}>{academicYear ?? "semua"}</div> : null,
+  GuidanceMonitoringTab: ({ academicYear, enabled, semesterSelect, extraActions }: TabProps) =>
+    enabled ? (
+      <div>
+        <div data-testid="tab-bimbingan">{academicYear ?? "semua"}</div>
+        <div data-testid="toolbar">{semesterSelect}{extraActions}</div>
+      </div>
+    ) : null,
+  ThesisEventMonitoringTab: ({ kind, academicYear, enabled, semesterSelect, extraActions }: TabProps & { kind: string }) =>
+    enabled ? (
+      <div>
+        <div data-testid={`tab-${kind}`}>{academicYear ?? "semua"}</div>
+        <div data-testid="toolbar">{semesterSelect}{extraActions}</div>
+      </div>
+    ) : null,
 }));
 
 const NOTE = "Indikator aktivitas dan evaluasi menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.";
@@ -69,6 +82,10 @@ describe("MonitoringDashboard — semester filter", () => {
     expect(await screen.findByTestId("tab-bimbingan")).toHaveTextContent("ay-now");
 
     expect(screen.getByLabelText("Semester")).toHaveTextContent("Ganjil 2026/2027 (Berjalan)");
+    // The semester select is in the table toolbar of the tab, not beside the title.
+    expect(within(screen.getByTestId("toolbar")).getByLabelText("Semester")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Monitoring Tugas Akhir" }).parentElement?.parentElement).not.toContainElement(screen.getByLabelText("Semester"));
+    expect(screen.queryByRole("button", { name: /^Refresh$/ })).not.toBeInTheDocument();
     // No scope sentence under the filter any more.
     expect(screen.queryByText(/^Menampilkan /)).not.toBeInTheDocument();
     // The running semester needs no remark about "now".
@@ -132,8 +149,6 @@ describe("MonitoringDashboard — semester filter", () => {
 });
 
 describe("MonitoringDashboard — tabs", () => {
-  const REPORT_REASON = "Laporan hanya memuat data bimbingan. Buka tab Bimbingan untuk mengunduhnya.";
-
   it("has one head and three tabs, Bimbingan first", async () => {
     renderPage();
     await screen.findByTestId("tab-bimbingan");
@@ -190,7 +205,7 @@ describe("MonitoringDashboard — tabs", () => {
     expect(screen.getByTestId("location")).toHaveTextContent("?tab=sidang&semester=ay-prev");
   });
 
-  it("offers the report on Bimbingan only, and says why on the other tabs", async () => {
+  it("offers the report in the Bimbingan toolbar only (the report covers guidance)", async () => {
     vi.mocked(downloadProgressReportPdf).mockResolvedValue(new Blob(["%PDF"]));
     URL.createObjectURL = vi.fn(() => "blob:http://localhost/laporan");
     URL.revokeObjectURL = vi.fn();
@@ -198,18 +213,17 @@ describe("MonitoringDashboard — tabs", () => {
     renderPage();
     await screen.findByTestId("tab-bimbingan");
 
-    const download = screen.getByRole("button", { name: /Download Laporan/ });
+    const download = within(screen.getByTestId("toolbar")).getByRole("button", { name: /Download Laporan/ });
     expect(download).toBeEnabled();
-    expect(screen.queryByTitle(REPORT_REASON)).not.toBeInTheDocument();
     fireEvent.click(download);
     await waitFor(() => expect(downloadProgressReportPdf).toHaveBeenCalledWith({ academicYearId: "ay-now" }));
     await waitFor(() => expect(screen.getByRole("button", { name: /Download Laporan/ })).toBeEnabled());
 
     for (const tab of ["Seminar Hasil", "Sidang"]) {
       fireEvent.click(screen.getByRole("button", { name: tab }));
-      const disabled = await screen.findByRole("button", { name: /Download Laporan/ });
-      expect(disabled).toBeDisabled();
-      expect(screen.getByTitle(REPORT_REASON)).toContainElement(disabled);
+      await screen.findByTestId(tab === "Sidang" ? "tab-defence" : "tab-seminar");
+      expect(within(screen.getByTestId("toolbar")).getByLabelText("Semester")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: /Download Laporan/ })).not.toBeInTheDocument();
     }
     expect(downloadProgressReportPdf).toHaveBeenCalledTimes(1);
     click.mockRestore();

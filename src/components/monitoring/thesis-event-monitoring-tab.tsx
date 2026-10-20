@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import EmptyState from "@/components/ui/empty-state";
 import { useThesisEventMonitoring } from "@/hooks/monitoring/useMonitoring";
 import { useRole } from "@/hooks/shared/useRole";
@@ -15,13 +16,15 @@ interface ThesisEventMonitoringTabProps {
   academicYear?: string;
   /** False while the semester filter is still being resolved. */
   enabled: boolean;
+  /** The page's semester select, in the table toolbar. */
+  semesterSelect?: ReactNode;
 }
 
 /**
  * Seminar Hasil / Sidang tab of the monitoring page (read-only): summary cards, students
  * ready to register, the coming schedule, what needs attention, and the table.
  */
-export function ThesisEventMonitoringTab({ kind, academicYear, enabled }: ThesisEventMonitoringTabProps) {
+export function ThesisEventMonitoringTab({ kind, academicYear, enabled, semesterSelect }: ThesisEventMonitoringTabProps) {
   const { data, isLoading, isFetching, isError, error, refetch } = useThesisEventMonitoring(kind, academicYear, { enabled });
   // The seminar and defence detail pages are open to admin and every lecturer role.
   const { isAdmin, isDosen } = useRole();
@@ -59,6 +62,7 @@ export function ThesisEventMonitoringTab({ kind, academicYear, enabled }: Thesis
         canOpenDetail={canOpenDetail}
         onRefresh={() => void refetch()}
         isFetching={isFetching && !loading}
+        semesterSelect={semesterSelect}
       />
     </div>
   );
