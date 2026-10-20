@@ -7,8 +7,6 @@ import { backdatedTime, DevToolsProposalPanel } from './DevToolsProposalPanel';
 vi.mock('lottie-react', () => ({ default: () => null }));
 
 const mutations = vi.hoisted(() => ({ isSubmitting: false, setPeriodFlags: vi.fn(), setSupervisorRequestTime: vi.fn() }));
-const promotion = vi.hoisted(() => ({ rows: [] as Array<Record<string, unknown>> }));
-const run = vi.hoisted(() => ({ mutate: vi.fn(), isPending: false }));
 
 vi.mock('@/hooks/dev-tools/useDevTools', () => ({
   useDevToolsMutations: () => mutations,
@@ -26,17 +24,11 @@ vi.mock('@/hooks/dev-tools/useDevTools', () => ({
     isFetching: false,
   }),
 }));
-vi.mock('@/hooks/research-method/useResearchMethod', () => ({
-  usePromotionPreview: () => ({ data: { academicYear: null, rows: promotion.rows }, isLoading: false }),
-  useRunPromotion: () => run,
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
-  promotion.rows = [];
 });
 
-describe('DevTools tab Proposal (rencana 10.8)', () => {
+describe('DevTools tab Proposal', () => {
   it('backdates a request just past the 72-hour withdraw lock', () => {
     const now = new Date('2026-10-14T10:00:00.000Z');
     const diff = now.getTime() - new Date(backdatedTime(now)).getTime();
@@ -53,22 +45,11 @@ describe('DevTools tab Proposal (rencana 10.8)', () => {
     expect(before - new Date(iso).getTime()).toBeGreaterThanOrEqual(72 * 60 * 60 * 1000);
   });
 
-  it('Two cards only; the semester flags moved to Data Master → Mahasiswa', () => {
+  it('one card only: no Proses Kelulusan (a pass starts research at once) and no semester flags', () => {
     render(<MemoryRouter><DevToolsProposalPanel /></MemoryRouter>);
     expect(screen.getByText('Waktu Pengajuan Pembimbing')).toBeInTheDocument();
-    expect(screen.getByText('Proses Kelulusan')).toBeInTheDocument();
+    expect(screen.queryByText('Proses Kelulusan')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Jalankan/ })).not.toBeInTheDocument();
     expect(screen.queryByText(/Penanda SIA/)).not.toBeInTheDocument();
-  });
-
-  it('runs the promotion only when someone may move up', () => {
-    const { unmount } = render(<MemoryRouter><DevToolsProposalPanel /></MemoryRouter>);
-    expect(screen.getByRole('button', { name: /Jalankan/ })).toBeDisabled();
-    unmount();
-
-    promotion.rows = [{ thesisId: 't1', student: { fullName: 'Uji Siap Naik', identityNumber: '2211528016' }, decision: 'promote', reason: 'Lulus dan KRS terkonfirmasi.' }];
-    render(<MemoryRouter><DevToolsProposalPanel /></MemoryRouter>);
-    expect(screen.getByText('Siap Naik')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /Jalankan/ }));
-    expect(run.mutate).toHaveBeenCalled();
   });
 });

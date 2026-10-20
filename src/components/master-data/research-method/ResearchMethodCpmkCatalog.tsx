@@ -2,8 +2,6 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
-import { TableIconAction } from "@/components/shared/TableIconAction";
-import { TruncatedText } from "@/lib/guidanceCells";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +31,7 @@ import type {
   ResearchMethodCpmk,
   UpdateResearchMethodCpmkPayload,
 } from "@/services/researchMethodAssessment.service";
+import { LOCKED_DELETE_REASON } from "./researchMethodLocks";
 
 export const CPMK_CODE_PATTERN = /^CPMK[- ]?\d{1,2}$/i;
 
@@ -59,6 +58,11 @@ interface ResearchMethodCpmkCatalogProps {
   extraActions?: ReactNode;
 }
 
+/**
+ * The CPMK table of Kelola > Metode Penelitian, the same as the thesis CPMK table: No, Kode CPMK,
+ * Deskripsi, and Aksi (Edit, and the red Hapus). Once Penilaian Proposal has started in the
+ * semester, Hapus is disabled with the reason; the code and description can still change.
+ */
 export function ResearchMethodCpmkCatalog({
   items,
   isLoading,
@@ -154,7 +158,7 @@ export function ResearchMethodCpmkCatalog({
       {
         key: "code",
         header: "Kode CPMK",
-        width: 140,
+        width: 120,
         render: (item) => (
           <div className="flex flex-col items-start gap-1">
             <span className="font-medium">{item.code}</span>
@@ -169,30 +173,43 @@ export function ResearchMethodCpmkCatalog({
       {
         key: "description",
         header: "Deskripsi",
-        className: "overflow-hidden",
-        render: (item) => <TruncatedText text={item.description} className="max-w-full" />,
-      },
-      {
-        key: "usage",
-        header: "Kriteria",
-        width: 130,
-        render: (item) => (
-          <span className="text-sm text-muted-foreground">
-            {item.criteriaCount ?? 0} kriteria
-          </span>
-        ),
+        className: "max-w-md whitespace-normal",
+        render: (item) => <span className="text-sm">{item.description}</span>,
       },
       {
         key: "actions",
         header: "Aksi",
         width: 90,
         className: "text-right",
-        render: (item) => (
-          <div className="flex items-center justify-end gap-1">
-            <TableIconAction icon={Pencil} label="Ubah" onClick={() => openEdit(item)} />
-            <TableIconAction icon={Trash2} label="Hapus" disabled={isDeleting} onClick={() => setDeleteId(item.id)} />
-          </div>
-        ),
+        render: (item) => {
+          const locked = Boolean(item.hasAssessmentDetails);
+          return (
+            <div className="flex items-center justify-end gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                onClick={() => openEdit(item)}
+                title="Edit"
+                aria-label={`Edit ${item.code}`}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <span title={locked ? LOCKED_DELETE_REASON : "Hapus"} className="inline-flex">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 ${locked ? "text-red-400 hover:text-red-500" : "text-red-600 hover:bg-red-50 hover:text-red-700"}`}
+                  onClick={() => setDeleteId(item.id)}
+                  disabled={isDeleting || locked}
+                  aria-label={`Hapus ${item.code}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </span>
+            </div>
+          );
+        },
       },
     ],
     [isDeleting, page, pageSize],

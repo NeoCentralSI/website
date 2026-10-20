@@ -1,71 +1,7 @@
-import type { PromotionDecision, ResearchMethodResult, SupervisorRequestRoute, SupervisorRequestStatus, ThesisLifecycleStatus } from '@/lib/thesisLabels';
+import type { ResearchMethodResult, SupervisorRequestRoute, SupervisorRequestStatus, ThesisLifecycleStatus } from '@/lib/thesisLabels';
 import type { AcademicYearRef } from '@/types/thesis-proposal.types';
 
 export type AssessorParty = 'supervisor' | 'coordinator';
-
-export interface AttendanceTotals {
-  totalRows: number;
-  matchedRows: number;
-  unmatchedRows: number;
-  eligibleRows: number;
-  ineligibleRows: number;
-  autoZeroedCount?: number;
-  skippedFinalizedCount?: number;
-  willAutoZeroCount?: number;
-  willSkipFinalizedCount?: number;
-}
-
-export interface AttendanceRow {
-  id?: string;
-  identityNumber: string;
-  studentName: string | null;
-  matched?: boolean;
-  presentCount?: number;
-  totalMeetings?: number;
-  attendancePercentage: number;
-  isEligible?: boolean;
-  thesisTitle?: string | null;
-}
-
-export interface AttendanceImport {
-  id: string;
-  academicYear: AcademicYearRef | null;
-  classCode: string | null;
-  courseName: string | null;
-  semesterLabel: string | null;
-  lecturerNames: string[];
-  sourceFiles: { index: number; originalName: string; classCode: string | null; rowCount: number; fileSize: number | null; url: string }[];
-  thresholdPercent: number;
-  totals: AttendanceTotals;
-  uploadedAt: string;
-  uploadedBy: { id: string; fullName: string | null } | null;
-  records?: AttendanceRow[];
-}
-
-export interface AttendanceOverview {
-  academicYear: AcademicYearRef;
-  thresholdPercent: number;
-  current: AttendanceImport | null;
-  history: AttendanceImport[];
-}
-
-export interface AttendancePreview {
-  academicYear: AcademicYearRef;
-  metadata: { classCode: string | null; courseName: string | null; semesterLabel: string | null };
-  sourceFiles: { originalName: string; classCode: string | null; rowCount: number }[];
-  thresholdPercent: number;
-  totals: AttendanceTotals;
-  willAutoZero: AttendanceRow[];
-  willSkipFinalized: AttendanceRow[];
-  unmatchedRows: AttendanceRow[];
-}
-
-export interface AttendanceUploadResult {
-  import: AttendanceImport;
-  autoZeroed: { thesisId: string; thesisTitle: string | null; identityNumber: string; attendancePercentage: number }[];
-  reopenedCount: number;
-  unmatchedRows: AttendanceRow[];
-}
 
 export interface AssessmentRubric {
   id: string;
@@ -88,6 +24,38 @@ export interface AssessmentForm {
   weight: number;
   minimumScore: number;
   criteria: AssessmentCriterion[];
+}
+
+/** A criterion of the score form with the assessor's own score (draft or sent), or null. */
+export interface ScoreFormCriterion extends AssessmentCriterion {
+  score: number | null;
+}
+
+/** The other party's sent score, shown read-only as a reference. */
+export interface OtherPartyScore {
+  party: AssessorParty;
+  submitted: boolean;
+  total: number | null;
+  weight: number;
+  name: string | null;
+  submittedAt: string | null;
+  criteria: { id: string; name: string; cpmkCode: string; maxScore: number; score: number | null }[];
+}
+
+export type OwnScoreStatus = 'empty' | 'draft' | 'submitted';
+
+/** The score form of one assessor for one attempt: own draft or sent score, and the other party's. */
+export interface AssessmentScoreForm {
+  party: AssessorParty;
+  academicYear: AcademicYearRef;
+  weight: number;
+  minimumScore: number;
+  criteria: ScoreFormCriterion[];
+  assessment: AssessmentView;
+  own: { status: OwnScoreStatus; total: number | null; submittedAt: string | null; name: string | null };
+  other: OtherPartyScore;
+  canEdit: boolean;
+  blockReason: string | null;
 }
 
 export interface ScoreDetail {
@@ -121,10 +89,10 @@ export interface AssessmentView {
   isFinalized?: boolean;
   finalizedAt?: string | null;
   result?: ResearchMethodResult | null;
-  attendance?: { attendancePercentage: number; isEligible: boolean; presentCount: number; totalMeetings: number } | null;
-  attendanceAutoZeroed?: boolean;
   canScore?: boolean;
   scoreBlockReason?: string | null;
+  /** The viewer's party has a saved draft (never shown to the other party). */
+  ownDraftSaved?: boolean;
 }
 
 export interface AssessmentQueue {
@@ -135,34 +103,9 @@ export interface AssessmentQueue {
 
 export interface ScoreInput {
   criteriaId: string;
-  rubricId?: string | null;
   score: number;
 }
 
-
-export interface PromotionRow {
-  thesisId: string;
-  title: string | null;
-  student: { id: string; fullName: string | null; identityNumber: string | null };
-  finalScore: number | null;
-  passedIn: string | null;
-  assignedIn: string | null;
-  decision: PromotionDecision;
-  reason: string;
-  error?: string;
-}
-
-export interface PromotionPreview {
-  academicYear: AcademicYearRef | null;
-  rows: PromotionRow[];
-}
-
-export interface PromotionRunResult {
-  academicYear: AcademicYearRef | null;
-  promoted: PromotionRow[];
-  deferred: PromotionRow[];
-  failed: PromotionRow[];
-}
 
 export interface MonitoringRow {
   studentId: string;
@@ -177,7 +120,6 @@ export interface MonitoringRow {
     proposalGuidances: number;
   } | null;
   request: { status: SupervisorRequestStatus; route: SupervisorRequestRoute } | null;
-  attendance: { attendancePercentage: number; isEligible: boolean } | null;
   assessment: {
     id: string;
     finalProposalAt: string | null;
@@ -186,13 +128,15 @@ export interface MonitoringRow {
     finalScore: number | null;
     isFinalized: boolean;
     result: ResearchMethodResult | null;
-    attendanceAutoZeroed: boolean;
+    supervisorName: string | null;
+    coordinatorName: string | null;
   } | null;
 }
 
 export interface ClassMonitoring {
   academicYear: AcademicYearRef;
   minimumScore: number;
-  summary: { total: number; withSupervisor: number; assigned: number; finalProposal: number; finalized: number; passed: number; failed: number; promoted: number };
+  /** Funnel: Peserta, Punya Pembimbing, Ditetapkan, Proposal Final, Dinilai, Mulai Penelitian; donut: passed, failed, not yet final. */
+  summary: { total: number; withSupervisor: number; assigned: number; finalProposal: number; finalized: number; passed: number; failed: number; notFinalized: number };
   rows: MonitoringRow[];
 }

@@ -17,6 +17,8 @@ interface ResearchMethodCriteriaFormDialogProps {
     editData?: ResearchMethodAssessmentCriteria | null;
     remainingScore?: number;
     roleCap?: number;
+    /** Penilaian Proposal has started: the maximum score stays, only the name can change. */
+    scoreLockedReason?: string | null;
     onSubmit:
         | ((data: CreateResearchMethodCriteriaPayload) => Promise<unknown>)
         | ((data: UpdateResearchMethodCriteriaPayload) => Promise<unknown>);
@@ -28,12 +30,13 @@ const ROLE_LABEL: Record<ResearchMethodAssessor, string> = {
 };
 
 export function ResearchMethodCriteriaFormDialog({
-    open, onOpenChange, cpmkId, cpmkCode, role, editData, remainingScore, roleCap = 100, onSubmit,
+    open, onOpenChange, cpmkId, cpmkCode, role, editData, remainingScore, roleCap = 100, scoreLockedReason = null, onSubmit,
 }: ResearchMethodCriteriaFormDialogProps) {
     const [name, setName] = useState('');
     const [maxScore, setMaxScore] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isEdit = !!editData;
+    const scoreLocked = isEdit && Boolean(scoreLockedReason);
 
     useEffect(() => {
         if (editData) {
@@ -49,15 +52,14 @@ export function ResearchMethodCriteriaFormDialog({
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const payload = {
-                name: name.trim(),
-                maxScore: parseInt(maxScore, 10),
-            };
+            const payload = scoreLocked
+                ? { name: name.trim() }
+                : { name: name.trim(), maxScore: parseInt(maxScore, 10) };
             if (isEdit) {
                 await (onSubmit as (data: UpdateResearchMethodCriteriaPayload) => Promise<unknown>)(payload);
             } else {
                 await (onSubmit as (data: CreateResearchMethodCriteriaPayload) => Promise<unknown>)({
-                    ...payload, researchMethodCpmkId: cpmkId,
+                    name: name.trim(), maxScore: parseInt(maxScore, 10), researchMethodCpmkId: cpmkId,
                 });
             }
             onOpenChange(false);
@@ -73,7 +75,7 @@ export function ResearchMethodCriteriaFormDialog({
         maxScore.trim() &&
         !isNaN(parsed) &&
         parsed >= 1 &&
-        parsed <= effectiveMax;
+        (scoreLocked || parsed <= effectiveMax);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -95,13 +97,14 @@ export function ResearchMethodCriteriaFormDialog({
                     <div className="space-y-2">
                         <Label htmlFor="criteriaMaxScore">Skor Maksimal <span className="text-destructive">*</span></Label>
                         <Input id="criteriaMaxScore" type="number" placeholder="Contoh: 20" min={1} max={effectiveMax}
-                            value={maxScore} onChange={(e) => setMaxScore(e.target.value)} required autoFocus />
+                            value={maxScore} onChange={(e) => setMaxScore(e.target.value)} required autoFocus={!scoreLocked}
+                            disabled={scoreLocked} title={scoreLocked ? scoreLockedReason ?? undefined : undefined} />
                         <p className="text-xs text-muted-foreground">
-                            {remainingScore != null
+                            {scoreLocked ? scoreLockedReason : remainingScore != null
                                 ? `Sisa skor tersedia: ${remainingScore} dari ${roleCap} (gabungan pembimbing & koordinator)`
                                 : `Skor maksimal untuk ${ROLE_LABEL[role]} (total gabungan ${roleCap}).`}
                         </p>
-                        {maxScore.trim() && !isNaN(parsed) && parsed > effectiveMax && (
+                        {!scoreLocked && maxScore.trim() && !isNaN(parsed) && parsed > effectiveMax && (
                             <p className="text-xs text-destructive">Skor ({parsed}) melebihi sisa yang tersedia ({effectiveMax}).</p>
                         )}
                     </div>

@@ -10,10 +10,10 @@ import { RefreshButton } from '@/components/ui/refresh-button';
 import { useSupervisorQueue } from '@/hooks/research-method/useResearchMethod';
 
 /**
- * Tugas Akhir > Proposal (dosen pembimbing): mahasiswa bimbingan fase
- * proposal per periode, proposal final, presensi, dan "Nilai Proposal". Pembimbing 1 normalnya
- * mengisi; Pembimbing 2 boleh mengisi sebagai cadangan. Nilai terkunci setelah dikirim. Toolbar:
- * cari, nilai minimum, semester, lalu Muat Ulang.
+ * Tugas Akhir > Proposal (dosen pembimbing): proposal-phase students of the semester, their final
+ * proposal and "Nilai Proposal" (the score page, with drafts). Pembimbing 1 normally scores;
+ * Pembimbing 2 may score as a backup, and the first score sent locks. Toolbar: search, minimum
+ * score, semester, then Muat Ulang.
  */
 export default function LecturerThesisProposal() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -38,12 +38,12 @@ export default function LecturerThesisProposal() {
           isLoading={queue.isLoading}
           isFetching={queue.isFetching}
           viewerCanScore
-          emptyText="Belum ada mahasiswa bimbingan fase proposal pada periode ini."
+          emptyText="Belum ada mahasiswa bimbingan fase proposal pada semester ini."
           studentHref={(row) => `/tugas-akhir/bimbingan/lecturer/my-students/${row.thesis.id}`}
           actions={
             <>
               {queue.data && (
-                <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium" title="Nilai diisi setelah mahasiswa mengajukan proposal final dan presensi kelas tersedia">
+                <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium" title="Nilai diisi setelah mahasiswa mengajukan proposal final; lulus bila nilai akhir mencapai nilai minimum">
                   Nilai minimum: {queue.data.minimumScore}
                 </Badge>
               )}

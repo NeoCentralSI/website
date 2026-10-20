@@ -14,19 +14,22 @@ interface ResearchMethodRubricItemFormDialogProps {
     onOpenChange: (open: boolean) => void;
     criteriaMaxScore: number | null;
     editData?: ResearchMethodAssessmentRubric | null;
+    /** Penilaian Proposal has started: the range stays, only the description can change. */
+    rangeLockedReason?: string | null;
     onSubmit:
         | ((data: CreateResearchMethodRubricPayload) => Promise<unknown>)
         | ((data: UpdateResearchMethodRubricPayload) => Promise<unknown>);
 }
 
 export function ResearchMethodRubricItemFormDialog({
-    open, onOpenChange, criteriaMaxScore, editData, onSubmit,
+    open, onOpenChange, criteriaMaxScore, editData, rangeLockedReason = null, onSubmit,
 }: ResearchMethodRubricItemFormDialogProps) {
     const [description, setDescription] = useState('');
     const [minScore, setMinScore] = useState('');
     const [maxScore, setMaxScore] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const isEdit = !!editData;
+    const rangeLocked = isEdit && Boolean(rangeLockedReason);
 
     useEffect(() => {
         if (editData) {
@@ -44,11 +47,15 @@ export function ResearchMethodRubricItemFormDialog({
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await (onSubmit as (data: CreateResearchMethodRubricPayload) => Promise<unknown>)({
-                description,
-                minScore: parseInt(minScore, 10),
-                maxScore: parseInt(maxScore, 10),
-            });
+            if (rangeLocked) {
+                await (onSubmit as (data: UpdateResearchMethodRubricPayload) => Promise<unknown>)({ description });
+            } else {
+                await (onSubmit as (data: CreateResearchMethodRubricPayload) => Promise<unknown>)({
+                    description,
+                    minScore: parseInt(minScore, 10),
+                    maxScore: parseInt(maxScore, 10),
+                });
+            }
             onOpenChange(false);
         } catch { /* handled by hook toast */ } finally {
             setIsSubmitting(false);
@@ -85,17 +92,18 @@ export function ResearchMethodRubricItemFormDialog({
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="rubricMinScore">Skor Minimum <span className="text-destructive">*</span></Label>
-                            <Input id="rubricMinScore" type="number" placeholder="Contoh: 0" min={0}
+                            <Input id="rubricMinScore" type="number" placeholder="Contoh: 0" min={0} disabled={rangeLocked} title={rangeLocked ? rangeLockedReason ?? undefined : undefined}
                                 max={criteriaMaxScore ?? undefined} value={minScore}
                                 onChange={(e) => setMinScore(e.target.value)} required />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="rubricMaxScore">Skor Maksimum <span className="text-destructive">*</span></Label>
                             <Input id="rubricMaxScore" type="number" placeholder={criteriaMaxScore ? `Maks: ${criteriaMaxScore}` : 'Contoh: 25'}
-                                min={1} max={criteriaMaxScore ?? undefined} value={maxScore}
+                                min={1} max={criteriaMaxScore ?? undefined} value={maxScore} disabled={rangeLocked} title={rangeLocked ? rangeLockedReason ?? undefined : undefined}
                                 onChange={(e) => setMaxScore(e.target.value)} required />
                         </div>
                     </div>
+                    {rangeLocked && <p className="text-xs text-muted-foreground">{rangeLockedReason}</p>}
                     {maxScore.trim() && maxValid && !withinCriteria && (
                         <p className="text-xs text-destructive">Skor maksimum ({parsedMax}) melebihi skor kriteria ({criteriaMaxScore}).</p>
                     )}

@@ -100,12 +100,12 @@ describe('Proposal final (10.3)', () => {
       current: {
         id: 'a2', academicYear: { id: 'ay-2', label: '2026/2027 Ganjil' },
         file: { fileName: 'proposal.pdf', fileSize: 10, url: '/uploads/thesis/t1/proposal/a2/1-proposal.pdf', submittedAt: '2026-10-01T03:00:00Z' },
-        supervisorScored: true, coordinatorScored: false, isFinalized: false, finalScore: null, result: null, attendanceAutoZeroed: false,
+        supervisorScored: true, coordinatorScored: false, isFinalized: false, finalScore: null, result: null,
       },
       history: [{
         id: 'a1', academicYear: { id: 'ay-1', label: '2025/2026 Genap' },
         file: { fileName: 'lama.pdf', fileSize: 10, url: '/uploads/thesis/t1/proposal/a1/lama.pdf', submittedAt: null },
-        supervisorScored: true, coordinatorScored: true, isFinalized: true, finalScore: 47, result: 'failed', attendanceAutoZeroed: false,
+        supervisorScored: true, coordinatorScored: true, isFinalized: true, finalScore: 47, result: 'failed',
       }],
     });
     wrap(<StudentProposalFileCard kind="final" overview={locked} />);

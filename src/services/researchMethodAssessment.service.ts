@@ -33,6 +33,8 @@ export interface ResearchMethodCpmk {
   createdAt: string;
   updatedAt: string;
   criteriaCount?: number;
+  /** The semester has Penilaian Proposal details (draft or sent): deleting is locked. */
+  hasAssessmentDetails?: boolean;
 }
 
 export interface ResearchMethodCpmkWithRubrics extends ResearchMethodCpmk {
@@ -86,6 +88,10 @@ export interface ResearchMethodWeightSummary {
   remainingScore: number;
   supervisor: ResearchMethodWeightSummaryDetail[];
   coordinator: ResearchMethodWeightSummaryDetail[];
+  /** Penilaian Proposal has started in the semester (a draft or a sent score). */
+  assessmentStarted?: boolean;
+  /** The semester has a final result: the minimum passing score is locked. */
+  minimumScoreLocked?: boolean;
 }
 
 async function parseValue<T>(

@@ -342,9 +342,7 @@ export interface FinalProposalAttempt {
   isFinalized: boolean;
   finalScore: number | null;
   result: ResearchMethodResult | null;
-  attendanceAutoZeroed: boolean;
   minimumScore?: number;
-  attendance?: { attendancePercentage: number; isEligible: boolean } | null;
 }
 
 export interface FinalProposalState {

@@ -80,7 +80,6 @@ describe("useSidebarMenu", () => {
   };
   const COORDINATOR_ITEMS = [
     { title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" },
-    { title: "Presensi", url: "/metode-penelitian/presensi" },
     { title: "Penilaian Proposal", url: "/metode-penelitian/penilaian" },
   ];
 
@@ -118,7 +117,7 @@ describe("useSidebarMenu", () => {
     expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Bimbingan", "Seminar Hasil", "Sidang TA"]);
   });
 
-  it("gives the Research Method coordinator Monitoring Kelas, Presensi, Penilaian Proposal and no Kelola", () => {
+  it("gives the Research Method coordinator Monitoring Kelas and Penilaian Proposal (no Presensi) and no Kelola", () => {
     mockAuthUser({ id: "lecturer-1", fullName: "Dosen Uji" });
     mockRole({ isDosen: true, isResearchMethodCoordinator: true });
 

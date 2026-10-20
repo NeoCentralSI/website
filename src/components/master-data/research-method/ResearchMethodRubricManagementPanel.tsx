@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { ResearchMethodCriteriaFormDialog } from "./ResearchMethodCriteriaFormDialog";
 import { ResearchMethodCriteriaTable } from "./ResearchMethodCriteriaTable";
 import { ResearchMethodRubricPreviewDialog } from "./ResearchMethodRubricPreviewDialog";
+import { LOCKED_MINIMUM_REASON, LOCKED_SCORE_REASON } from "./researchMethodLocks";
 import { academicYearOptionLabel, useResearchMethodPeriod } from "./useResearchMethodPeriod";
 
 const ASSESSOR_OPTIONS: { value: ResearchMethodAssessor; label: string }[] = [
@@ -68,6 +69,8 @@ export function ResearchMethodRubricManagementPanel() {
   }, [hook.allCpmks, hook.cpmks]);
 
   const summary = hook.weightSummary;
+  const assessmentStarted = Boolean(summary?.assessmentStarted);
+  const minimumLocked = Boolean(summary?.minimumScoreLocked);
   const supervisorTotal = summary?.supervisorTotal ?? 0;
   const coordinatorTotal = summary?.coordinatorTotal ?? 0;
   const combinedTotal = summary?.totalScore ?? 0;
@@ -126,10 +129,12 @@ export function ResearchMethodRubricManagementPanel() {
             </Button>
           </span>
           {academicYearId && minimumScore !== undefined && (
-            <Button variant="outline" size="sm" className="h-fit py-2" onClick={() => setMinimumOpen(true)}>
-              <Settings className="mr-2 h-4 w-4" />
-              Min Lulus: {minimumScore}
-            </Button>
+            <span className="inline-flex" title={minimumLocked ? LOCKED_MINIMUM_REASON : undefined}>
+              <Button variant="outline" size="sm" className="h-fit py-2" disabled={minimumLocked} onClick={() => setMinimumOpen(true)}>
+                <Settings className="mr-2 h-4 w-4" />
+                Min Lulus: {minimumScore}
+              </Button>
+            </span>
           )}
           {summary ? (
             <div
@@ -230,6 +235,7 @@ export function ResearchMethodRubricManagementPanel() {
           isRemovingCpmk={hook.isRemovingConfiguration}
           isDeletingRubric={hook.isDeletingRubric}
           catalogCount={hook.allCpmks.length}
+          locked={assessmentStarted}
         />
       </CardContent>
 
@@ -241,6 +247,7 @@ export function ResearchMethodRubricManagementPanel() {
         role={assessor}
         roleCap={100}
         editData={editCriteria}
+        scoreLockedReason={assessmentStarted ? LOCKED_SCORE_REASON : null}
         remainingScore={
           editCriteria
             ? remainingScore + (editCriteria.maxScore ?? 0)

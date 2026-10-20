@@ -122,7 +122,7 @@ function StudentDetail({ student, mutations }: {
               Mengambil Tugas Akhir (semester berjalan)
             </div>
             <p className="text-xs text-muted-foreground">
-              KRS Tugas Akhir dari SIA. Dipakai untuk masuk fase Penelitian setelah lulus Metode Penelitian.
+              KRS Tugas Akhir dari SIA. Hanya informasi; tidak menjadi syarat apa pun.
             </p>
             <div className="grid gap-3 md:grid-cols-2">
               <Field label="Status"><ThesisCourseFlagBadge value={flags.takingThesisCourse} /></Field>
@@ -258,7 +258,7 @@ export function DevToolsStudentPanel() {
 
       <AlertDialog open={!!resetProgressTarget} onOpenChange={() => setResetProgressTarget(null)}>
         <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Reset Progress SIMPTA?</AlertDialogTitle>
-          <AlertDialogDescription>Progress SIMPTA <strong>{resetProgressTarget?.fullName}</strong> akan dihapus: draf dan riwayat Pengajuan Pembimbing, tugas akhir beserta proposal dan bimbingannya, pembimbing, keanggotaan Penetapan Pembimbing, Penilaian Proposal, serta tautan presensi. Snapshot akademik juga direset dan kuota dosen akan dihitung ulang. User tetap ada. Aksi ini tidak dapat dibatalkan.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogDescription>Progress SIMPTA <strong>{resetProgressTarget?.fullName}</strong> akan dihapus: draf dan riwayat Pengajuan Pembimbing, tugas akhir beserta proposal dan bimbingannya, pembimbing, keanggotaan Penetapan Pembimbing, serta Penilaian Proposal. Snapshot akademik juga direset dan kuota dosen akan dihitung ulang. User tetap ada. Aksi ini tidak dapat dibatalkan.</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel disabled={mutations.isSubmitting}>Batal</AlertDialogCancel>
             <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={mutations.isSubmitting} onClick={async () => { if (resetProgressTarget) { await mutations.resetStudentProgress(resetProgressTarget.id); setResetProgressTarget(null); if (expandedId === resetProgressTarget.id) setExpandedId(null); } }}>
               {mutations.isSubmitting ? 'Mereset...' : 'Reset Progress'}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>

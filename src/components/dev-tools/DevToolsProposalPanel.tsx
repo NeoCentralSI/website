@@ -1,18 +1,14 @@
 import { useMemo, useState } from 'react';
-import { History, Loader2, PlayCircle } from 'lucide-react';
+import { History } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { SupervisorRequestStatusBadge } from '@/components/shared/SupervisorRequestStatusBadge';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Spinner } from '@/components/ui/spinner';
 import { useDevToolsMutations, useDevToolsSupervisorRequests } from '@/hooks/dev-tools/useDevTools';
-import { usePromotionPreview, useRunPromotion } from '@/hooks/research-method/useResearchMethod';
 import { usePagedSearch } from '@/hooks/shared/usePagedSearch';
 import { formatDateTimeWib } from '@/lib/text';
-import { getPromotionDecisionLabel, getPromotionDecisionVariant } from '@/lib/thesisLabels';
 import type { DevToolsSupervisorRequest } from '@/types/devTools.types';
 import { TruncatedText } from './DevToolsShared';
 
@@ -83,50 +79,11 @@ function SupervisorRequestCard() {
   );
 }
 
-function PromotionCard() {
-  const { data, isLoading } = usePromotionPreview(true);
-  const run = useRunPromotion();
-  const rows = data?.rows ?? [];
-  const reason = rows.some((r) => r.decision === 'promote') ? null : 'Belum ada mahasiswa yang memenuhi syarat masuk fase Penelitian.';
-  return (
-    <Card>
-      <CardHeader className="gap-3 md:flex-row md:items-start md:justify-between">
-        <div className="space-y-1.5">
-          <CardTitle className="text-base">Proses Kelulusan</CardTitle>
-          <CardDescription>Menjalankan langkah Mulai Penelitian sekarang (biasanya berjalan otomatis setiap enam jam).</CardDescription>
-        </div>
-        <span title={reason ?? undefined}>
-          <Button size="sm" disabled={Boolean(reason) || run.isPending} onClick={() => run.mutate()}>
-            {run.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}Jalankan
-          </Button>
-        </span>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex justify-center py-6"><Spinner className="h-5 w-5" /></div>
-        ) : rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Tidak ada mahasiswa lulus yang masih di fase proposal.</p>
-        ) : (
-          <ul className="divide-y rounded-lg border text-sm">
-            {rows.map((r) => (
-              <li key={r.thesisId} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
-                <span>{r.student.fullName} · {r.student.identityNumber} <span className="block text-xs text-muted-foreground">{r.reason}</span></span>
-                <Badge variant={getPromotionDecisionVariant(r.decision)}>{getPromotionDecisionLabel(r.decision)}</Badge>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-/** DevTools tab "Proposal" (rencana 10.8). */
+/** DevTools tab "Proposal": the sending time of supervisor requests (a pass starts research at once). */
 export function DevToolsProposalPanel() {
   return (
     <div className="space-y-4">
       <SupervisorRequestCard />
-      <PromotionCard />
     </div>
   );
 }

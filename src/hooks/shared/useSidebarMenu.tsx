@@ -92,14 +92,13 @@ export const useSidebarMenu = () => {
 
     /**
      * Metode Penelitian: the coordinator runs the class (Monitoring Kelas,
-     * Presensi, Penilaian Proposal); Kadep and Sekdep follow it read-only in Monitoring Kelas.
+     * Penilaian Proposal); Kadep and Sekdep follow it read-only in Monitoring Kelas, which has the scores.
      * Supervisors score in Tugas Akhir > Proposal; Sekdep's master data is Kelola > Metode Penelitian.
      */
     const buildResearchMethodItems = (): SidebarLeafItem[] => {
       if (role.researchMethodCoordinator) {
         return [
           { title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" },
-          { title: "Presensi", url: "/metode-penelitian/presensi" },
           { title: "Penilaian Proposal", url: "/metode-penelitian/penilaian" },
         ];
       }
@@ -249,7 +248,7 @@ export const useSidebarMenu = () => {
       });
 
       // Kelola > Metode Penelitian is the Sekdep's; the coordinator's
-      // menu is Metode Penelitian > Monitoring Kelas, Presensi, Penilaian Proposal.
+      // menu is Metode Penelitian > Monitoring Kelas, Penilaian Proposal.
 
       return {
         user: {

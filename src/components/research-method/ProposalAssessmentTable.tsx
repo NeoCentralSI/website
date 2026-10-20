@@ -1,10 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ClipboardCheck, Eye, FileText } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
-import { formatAttendance, ResultCell } from '@/components/research-method/AssessmentCells';
-import { ScoreFormDialog } from '@/components/research-method/ScoreFormDialog';
+import { ResultCell } from '@/components/research-method/AssessmentCells';
 import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
 import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
 import { TableIconAction } from '@/components/shared/TableIconAction';
@@ -31,6 +30,12 @@ import type { AssessmentQueue, AssessmentView, AssessorParty } from '@/types/res
 const TABLE_CLASS = 'table-fixed min-w-[1000px]';
 
 const NO_PROPOSAL = 'Mahasiswa belum mengajukan proposal final.';
+
+/** The score page of an attempt for each party. */
+export const SCORE_PAGE: Record<AssessorParty, (id: string) => string> = {
+  supervisor: (id) => `/tugas-akhir/proposal/penilaian/${id}`,
+  coordinator: (id) => `/metode-penelitian/penilaian/${id}`,
+};
 
 function sortRows(rows: AssessmentView[], party: AssessorParty) {
   const rank = (row: AssessmentView) => ASSESSMENT_VIEW_STATUS_ORDER.indexOf(assessmentViewStatus(row, party));
@@ -80,12 +85,12 @@ interface Props {
  * The Penilaian Proposal queue of one party in one table, for Tugas Akhir > Proposal
  * (pembimbing) and Metode Penelitian > Penilaian Proposal (koordinator). "Semua" by default,
  * sorted with what the viewer has to score first; Status is filtered in its column header. The
- * row actions are icons; the detail opens in a modal.
+ * row actions are icons; the detail opens in a modal and "Nilai Proposal" opens the score page.
  */
 export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, viewerCanScore, viewerBlockReason, actions, emptyText, studentHref }: Props) {
   const [status, setStatus] = useState<AssessmentViewStatus | ''>('');
+  const navigate = useNavigate();
   const [detail, setDetail] = useState<AssessmentView | null>(null);
-  const [scoring, setScoring] = useState<AssessmentView | null>(null);
   const [viewer, setViewer] = useState<{ name: string; url: string } | null>(null);
 
   const rows = useMemo(() => {
@@ -119,14 +124,7 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
       key: 'title',
       header: 'Judul',
       className: CLIP_CELL,
-      render: (row) => (
-        <div className="min-w-0 space-y-0.5">
-          <TruncatedText text={row.thesis.title || 'Judul belum ditentukan'} className="max-w-full" />
-          {party === 'coordinator' && (
-            <p className="truncate text-xs text-muted-foreground" title={supervisorsLine(row)}>{supervisorsLine(row) || '-'}</p>
-          )}
-        </div>
-      ),
+      render: (row) => <TruncatedText text={row.thesis.title || 'Judul belum ditentukan'} className="max-w-full" />,
     },
     {
       key: 'proposal',
@@ -134,12 +132,9 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
       width: 150,
       className: CLIP_CELL,
       render: (row) => (
-        <div className="leading-tight">
-          <div className="whitespace-nowrap">{row.proposal?.submittedAt ? formatDateShortId(row.proposal.submittedAt) : <span className="text-muted-foreground">Belum diajukan</span>}</div>
-          <div className={`whitespace-nowrap text-xs ${row.attendance && !row.attendance.isEligible ? 'font-medium text-destructive' : 'text-muted-foreground'}`}>
-            Presensi {row.attendance ? formatAttendance(row.attendance.attendancePercentage) : '-'}
-          </div>
-        </div>
+        <span className="whitespace-nowrap">
+          {row.proposal?.submittedAt ? formatDateShortId(row.proposal.submittedAt) : <span className="text-muted-foreground">Belum diajukan</span>}
+        </span>
       ),
     },
     {
@@ -190,7 +185,7 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
         return (
           <div className="flex items-center justify-center gap-1">
             <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setDetail(row)} />
-            <TableIconAction icon={ClipboardCheck} label="Nilai Proposal" disabled={Boolean(block)} disabledReason={block} onClick={() => setScoring(row)} />
+            <TableIconAction icon={ClipboardCheck} label="Nilai Proposal" disabled={Boolean(block)} disabledReason={block} onClick={() => row.id && navigate(SCORE_PAGE[party](row.id))} />
             <TableIconAction
               icon={FileText}
               label="Buka Proposal Final"
@@ -232,7 +227,7 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
             <DetailDialogActions onClose={() => setDetail(null)} note={detail.isFinalized ? undefined : detailBlock} />
           ) : (
             <DetailDialogActions onClose={() => setDetail(null)}>
-              <Button size="sm" onClick={() => { setScoring(detail); setDetail(null); }}>Nilai Proposal</Button>
+              <Button size="sm" onClick={() => detail.id && navigate(SCORE_PAGE[party](detail.id))}>Nilai Proposal</Button>
             </DetailDialogActions>
           )
         ) : undefined}
@@ -252,11 +247,6 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
               ) : <span className="text-muted-foreground">Belum diajukan</span>}
               {detail.proposal?.submittedAt && <span className="text-muted-foreground"> · {formatDateTimeWib(detail.proposal.submittedAt)}</span>}
             </DetailRow>
-            <DetailRow label="Presensi">
-              {detail.attendance
-                ? `${formatAttendance(detail.attendance.attendancePercentage)} (${detail.attendance.presentCount} dari ${detail.attendance.totalMeetings} pertemuan)`
-                : <span className="text-muted-foreground">Belum tercatat</span>}
-            </DetailRow>
             <DetailRow label="Nilai pembimbing">{partyScore(detail.supervisorScore, detail.supervisorName, detail.supervisorScoredAt)}</DetailRow>
             <DetailRow label="Nilai koordinator">{partyScore(detail.coordinatorScore, detail.coordinatorName, detail.coordinatorScoredAt)}</DetailRow>
             <DetailRow label="Nilai akhir"><ResultCell row={detail} /></DetailRow>
@@ -265,7 +255,6 @@ export function ProposalAssessmentTable({ party, queue, isLoading, isFetching, v
         )}
       </RecordDetailDialog>
 
-      <ScoreFormDialog row={scoring} party={party} onOpenChange={(open) => !open && setScoring(null)} />
       <AuthenticatedDocumentPreviewDialog
         open={Boolean(viewer)}
         onOpenChange={(value) => { if (!value) setViewer(null); }}

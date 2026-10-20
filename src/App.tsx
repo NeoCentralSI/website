@@ -13,7 +13,7 @@ import OfficialDocumentVerificationPage from './pages/public/OfficialDocumentVer
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import RoleGuard from './pages/guards/RoleGuard'
-import { ROLES, LECTURER_ROLES } from './lib/roles'
+import { ROLES, LECTURER_ROLES, SUPERVISOR_ROLES } from './lib/roles'
 
 // Lazy-loaded pages
 const Login = lazy(() => import('./pages/Login'))
@@ -120,8 +120,8 @@ const LecturerAvailability = lazy(() => import('./pages/master-data/LecturerAvai
 // Kelola
 const ResearchMethodPage = lazy(() => import('./pages/master-data/ResearchMethod'))
 const ResearchMethodMonitoringPage = lazy(() => import('./pages/research-method/ClassMonitoring'))
-const ResearchMethodAttendancePage = lazy(() => import('./pages/research-method/Attendance'))
 const ResearchMethodAssessmentPage = lazy(() => import('./pages/research-method/ProposalAssessment'))
+const ProposalScorePage = lazy(() => import('./pages/research-method/ProposalScorePage'))
 const KelolaSopPage = lazy(() => import('./pages/kelola/Sop'))
 
 // Pengumuman
@@ -261,6 +261,10 @@ function App() {
                 <Route element={<RoleGuard allowedRoles={[ROLES.MAHASISWA]} />}>
                   <Route path="/tugas-akhir/proposal/pengajuan" element={<StudentSupervisorRequestPage />} />
                 </Route>
+                {/* The supervisor's score page of one proposal attempt */}
+                <Route element={<RoleGuard allowedRoles={[...SUPERVISOR_ROLES]} />}>
+                  <Route path="/tugas-akhir/proposal/penilaian/:assessmentId" element={<ProposalScorePage party="supervisor" />} />
+                </Route>
 
                 {/* Pengumuman dapat dibaca oleh seluruh pengguna terautentikasi.
                     Mutasi pendaftaran audiens seminar tetap dibatasi untuk Mahasiswa
@@ -359,11 +363,14 @@ function App() {
                   <Route path="/kelola/cpl/:curriculumId/:cplId" element={<CplDetailPage />} />
                 </Route>
 
-                {/* Metode Penelitian: the coordinator runs the class; Kadep, Sekdep and Admin read. */}
+                {/* Metode Penelitian: Monitoring Kelas for the coordinator, Kadep, Sekdep and Admin;
+                    Penilaian Proposal for the coordinator only. */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METODE_PENELITIAN]} />}>
+                  <Route path="/metode-penelitian/penilaian" element={<ResearchMethodAssessmentPage />} />
+                  <Route path="/metode-penelitian/penilaian/:assessmentId" element={<ProposalScorePage party="coordinator" />} />
+                </Route>
                 <Route element={<RoleGuard allowedRoles={[ROLES.KOORDINATOR_METODE_PENELITIAN, ROLES.SEKRETARIS_DEPARTEMEN, ROLES.KETUA_DEPARTEMEN, ROLES.ADMIN]} />}>
                   <Route path="/metode-penelitian/monitoring" element={<ResearchMethodMonitoringPage />} />
-                  <Route path="/metode-penelitian/presensi" element={<ResearchMethodAttendancePage />} />
-                  <Route path="/metode-penelitian/penilaian" element={<ResearchMethodAssessmentPage />} />
                   <Route path="/metode-penelitian" element={<Navigate to="/metode-penelitian/monitoring" replace />} />
                   {/* Old addresses of the former research-method module redirect to the new pages */}
                   <Route path="/kelola/metopen" element={<Navigate to="/metode-penelitian/monitoring" replace />} />

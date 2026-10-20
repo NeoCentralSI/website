@@ -34,7 +34,7 @@ export function SiaSyncStatusCard({ canMutate = false }: { canMutate?: boolean }
         <div>
           <CardTitle className="text-base">Sinkronisasi SIA</CardTitle>
           <CardDescription>
-            NeoCentral hanya membaca SIA. Penanda per semester dipakai untuk kelayakan Metode Penelitian dan KRS Tugas Akhir.
+            NeoCentral hanya membaca SIA. Penanda Metode Penelitian per semester dipakai untuk kelayakan mengajukan pembimbing; penanda Tugas Akhir hanya informasi.
           </CardDescription>
         </div>
         {canMutate && (

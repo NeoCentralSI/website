@@ -6,21 +6,26 @@ import type { AssessmentView, AssessorParty, MonitoringRow } from '@/types/resea
  * enum on the server). Each list below is also the order of "Semua": what needs attention first.
  */
 
-/** Penilaian Proposal, from the side of one party (pembimbing or koordinator). */
-export type AssessmentViewStatus = 'needs_score' | 'waiting_other' | 'not_ready' | 'failed' | 'passed';
+/**
+ * Penilaian Proposal, from the side of one party (pembimbing or koordinator). The parties score
+ * in any order; a draft is the viewer's own and counts for nothing until it is sent.
+ */
+export type AssessmentViewStatus = 'needs_score' | 'draft' | 'waiting_other' | 'not_ready' | 'failed' | 'passed';
 
-export const ASSESSMENT_VIEW_STATUS_ORDER: AssessmentViewStatus[] = ['needs_score', 'waiting_other', 'not_ready', 'failed', 'passed'];
+export const ASSESSMENT_VIEW_STATUS_ORDER: AssessmentViewStatus[] = ['needs_score', 'draft', 'waiting_other', 'not_ready', 'failed', 'passed'];
 
 export function assessmentViewStatus(row: AssessmentView, party: AssessorParty): AssessmentViewStatus {
   if (row.isFinalized) return row.result === 'passed' ? 'passed' : 'failed';
   const own = party === 'supervisor' ? row.supervisorScore : row.coordinatorScore;
   if (own != null) return 'waiting_other';
-  return row.canScore ? 'needs_score' : 'not_ready';
+  if (!row.canScore) return 'not_ready';
+  return row.ownDraftSaved ? 'draft' : 'needs_score';
 }
 
 export function assessmentViewStatusLabel(status: AssessmentViewStatus, party: AssessorParty): string {
   switch (status) {
     case 'needs_score': return 'Perlu Dinilai';
+    case 'draft': return 'Draf Tersimpan';
     case 'waiting_other': return party === 'supervisor' ? 'Menunggu Koordinator' : 'Menunggu Pembimbing';
     case 'not_ready': return 'Belum Dapat Dinilai';
     case 'failed': return 'Tidak Lulus';
@@ -30,13 +35,14 @@ export function assessmentViewStatusLabel(status: AssessmentViewStatus, party: A
 
 export const ASSESSMENT_VIEW_STATUS_VARIANTS: Record<AssessmentViewStatus, ThesisBadgeVariant> = {
   needs_score: 'warning',
+  draft: 'secondary',
   waiting_other: 'info',
   not_ready: 'outline',
   failed: 'destructive',
   passed: 'success',
 };
 
-/** Monitoring Kelas: where a student of the class is in the proposal flow. */
+/** Monitoring Kelas: where a student of the class is in the proposal flow. A pass starts research at once. */
 export type ResearchMethodStage =
   | 'assessing'
   | 'no_supervisor'
@@ -44,11 +50,10 @@ export type ResearchMethodStage =
   | 'waiting_assignment'
   | 'guidance'
   | 'failed'
-  | 'passed'
-  | 'promoted';
+  | 'research';
 
 export const RESEARCH_METHOD_STAGE_ORDER: ResearchMethodStage[] = [
-  'assessing', 'no_supervisor', 'requesting', 'waiting_assignment', 'guidance', 'failed', 'passed', 'promoted',
+  'assessing', 'no_supervisor', 'requesting', 'waiting_assignment', 'guidance', 'failed', 'research',
 ];
 
 export const RESEARCH_METHOD_STAGE_LABELS: Record<ResearchMethodStage, string> = {
@@ -58,8 +63,7 @@ export const RESEARCH_METHOD_STAGE_LABELS: Record<ResearchMethodStage, string> =
   waiting_assignment: 'Menunggu Penetapan',
   guidance: 'Bimbingan Proposal',
   failed: 'Tidak Lulus',
-  passed: 'Lulus',
-  promoted: 'Naik ke Penelitian',
+  research: 'Mulai Penelitian',
 };
 
 export const RESEARCH_METHOD_STAGE_VARIANTS: Record<ResearchMethodStage, ThesisBadgeVariant> = {
@@ -69,8 +73,7 @@ export const RESEARCH_METHOD_STAGE_VARIANTS: Record<ResearchMethodStage, ThesisB
   waiting_assignment: 'info',
   guidance: 'secondary',
   failed: 'destructive',
-  passed: 'success',
-  promoted: 'success',
+  research: 'success',
 };
 
 const REQUESTING = new Set(['pending', 'under_review', 'pending_kadep', 'revision_requested']);
@@ -78,10 +81,7 @@ const ACCEPTED = new Set(['accepted', 'redirected']);
 
 export function researchMethodStage(row: MonitoringRow): ResearchMethodStage {
   const assessment = row.assessment;
-  if (assessment?.isFinalized) {
-    if (assessment.result !== 'passed') return 'failed';
-    return row.thesis?.status === 'research' ? 'promoted' : 'passed';
-  }
+  if (assessment?.isFinalized) return assessment.result === 'passed' ? 'research' : 'failed';
   if (assessment?.finalProposalAt) return 'assessing';
   if (row.thesis?.supervisorAssignedAt) return 'guidance';
   const status = row.request?.status;

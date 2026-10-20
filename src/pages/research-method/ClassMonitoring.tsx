@@ -1,22 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Loader2, PlayCircle } from 'lucide-react';
+import { Eye } from 'lucide-react';
 
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { formatAttendance } from '@/components/research-method/AssessmentCells';
+import { ResultCell } from '@/components/research-method/AssessmentCells';
+import { ClassMonitoringCharts } from '@/components/research-method/ClassMonitoringCharts';
 import { ExportButtons } from '@/components/research-method/ExportButtons';
 import { PeriodSelect } from '@/components/research-method/PeriodSelect';
+import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
 import { PageHeading } from '@/components/shared/PageHeading';
+import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { ThesisStudentInfoCell } from '@/components/shared/ThesisTableCells';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { RefreshButton } from '@/components/ui/refresh-button';
-import { LocalTabsNav } from '@/components/ui/tabs-nav';
-import { useClassMonitoring, usePromotionPreview, useRunPromotion } from '@/hooks/research-method/useResearchMethod';
+import { useClassMonitoring } from '@/hooks/research-method/useResearchMethod';
 import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
-import { useRole } from '@/hooks/shared/useRole';
 import { TruncatedText } from '@/lib/guidanceCells';
 import {
   RESEARCH_METHOD_STAGE_LABELS,
@@ -27,17 +27,11 @@ import {
   type ResearchMethodStage,
 } from '@/lib/researchMethodViews';
 import { BADGE_COLUMN_WIDTH, CLIP_CELL } from '@/lib/tableColumnWidths';
-import { formatDateShortId, formatLecturerName } from '@/lib/text';
-import {
-  getPromotionDecisionLabel,
-  getPromotionDecisionVariant,
-  getSupervisorRequestStatusLabel,
-  PROMOTION_DECISION_LABELS,
-  type PromotionDecision,
-} from '@/lib/thesisLabels';
-import type { MonitoringRow, PromotionRow } from '@/types/research-method.types';
+import { formatDateShortId, formatLecturerName, toTitleCaseName } from '@/lib/text';
+import { getSupervisorRequestStatusLabel, getThesisStatusLabel } from '@/lib/thesisLabels';
+import type { MonitoringRow } from '@/types/research-method.types';
 
-/** Fixed columns 728 px; the title narrows. No horizontal scroll at 1366 px. */
+/** Fixed columns 798 px; the title narrows. No horizontal scroll at 1366 px. */
 const TABLE_CLASS = 'table-fixed min-w-[1000px]';
 
 const STAGE_OPTIONS = [
@@ -45,20 +39,12 @@ const STAGE_OPTIONS = [
   ...RESEARCH_METHOD_STAGE_ORDER.map((value) => ({ label: RESEARCH_METHOD_STAGE_LABELS[value], value })),
 ];
 
-/** "Proses Kelulusan": who is promoted first. */
-const DECISION_ORDER: PromotionDecision[] = ['promote', 'wait_sia', 'wait_thesis_course', 'wait_next_period'];
-const DECISION_OPTIONS = [
-  { label: 'Semua', value: '' },
-  ...DECISION_ORDER.map((value) => ({ label: PROMOTION_DECISION_LABELS[value], value })),
-];
-
 /** The line under the stage badge: the step's date or count. */
 function stageDetail(row: MonitoringRow, stage: ResearchMethodStage): string {
   switch (stage) {
     case 'assessing':
     case 'failed':
-    case 'passed':
-    case 'promoted':
+    case 'research':
       return row.assessment?.finalProposalAt ? `Proposal final ${formatDateShortId(row.assessment.finalProposalAt)}` : '';
     case 'guidance':
       return row.thesis?.supervisorAssignedAt ? `Ditetapkan ${formatDateShortId(row.thesis.supervisorAssignedAt)}` : '';
@@ -74,24 +60,37 @@ function supervisorsOf(row: MonitoringRow) {
   return (row.thesis?.supervisors ?? []).map((sv) => `${formatLecturerName(sv.fullName)} (${sv.role ?? '-'})`).join(' · ');
 }
 
+function DetailRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid gap-1 sm:grid-cols-[10rem_1fr]">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="min-w-0 text-sm [overflow-wrap:anywhere]">{children}</dd>
+    </div>
+  );
+}
+
+function partyScore(score: number | null | undefined, name: string | null | undefined) {
+  if (score == null) return <span className="text-muted-foreground">Belum dikirim</span>;
+  return (
+    <>
+      <span className="font-medium">{score}</span>
+      {name && <span className="text-muted-foreground"> · {formatLecturerName(name)}</span>}
+    </>
+  );
+}
+
 /**
- * Metode Penelitian > Monitoring Kelas: semua mahasiswa kelas periode itu dan sejauh
- * mana prosesnya, ekspor, dan proses kelulusan (naik ke Penelitian). Bawaan "Semua",
- * diurutkan dari tahap yang paling butuh perhatian; Tahap disaring di kepala kolom.
- * The period select beside the title; Peserta Kelas and Proses Kelulusan are two
- * panels, one table each.
+ * Metode Penelitian > Monitoring Kelas: every student of the class in the semester, how far each
+ * one is in the proposal flow, and the scores. One panel: the two charts, then one table. "Semua"
+ * puts the stages that need attention first; Tahap is filtered in its header; the eye opens both
+ * scores. A pass starts the research phase at once, so the last stage is "Mulai Penelitian".
  */
 export default function ClassMonitoring() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isResearchMethodCoordinator, isKadep, isAdmin } = useRole();
-  const canPromote = isResearchMethodCoordinator() || isKadep() || isAdmin();
   const [academicYearId, setAcademicYearId] = useState<string | null>(null);
   const [stage, setStage] = useState<ResearchMethodStage | ''>('');
-  const [decision, setDecision] = useState<PromotionDecision | ''>('');
-  const [tab, setTab] = useState('peserta');
+  const [detail, setDetail] = useState<MonitoringRow | null>(null);
   const monitoring = useClassMonitoring(academicYearId);
-  const promotion = usePromotionPreview(canPromote);
-  const run = useRunPromotion();
   const data = monitoring.data;
   const yearId = academicYearId ?? data?.academicYear.id ?? null;
 
@@ -106,26 +105,7 @@ export default function ClassMonitoring() {
     return stage ? sorted.filter((row) => researchMethodStage(row) === stage) : sorted;
   }, [data, stage]);
   const table = useLocalTable(rows, (row, term) => haystack(row.fullName, row.identityNumber, row.thesis?.title).includes(term));
-
-  const promotionRows = useMemo(() => {
-    const rank = (row: PromotionRow) => DECISION_ORDER.indexOf(row.decision);
-    const sorted = [...(promotion.data?.rows ?? [])].sort((a, b) => rank(a) - rank(b));
-    return decision ? sorted.filter((row) => row.decision === decision) : sorted;
-  }, [promotion.data, decision]);
-  const promotionTable = useLocalTable(promotionRows, (row, term) => haystack(row.student.fullName, row.student.identityNumber).includes(term));
-
-  const promotable = (promotion.data?.rows ?? []).filter((r) => r.decision === 'promote').length;
-  const runReason = !canPromote
-    ? 'Proses kelulusan dijalankan koordinator, Ketua Departemen, atau Admin.'
-    : promotable === 0 ? 'Belum ada mahasiswa yang memenuhi syarat naik ke Penelitian.' : null;
-
-  const s = data?.summary;
-  const tiles: [string, number][] = s
-    ? [
-        ['Peserta', s.total], ['Punya Pembimbing', s.withSupervisor], ['Ditetapkan', s.assigned], ['Proposal Final', s.finalProposal],
-        ['Nilai Final', s.finalized], ['Lulus', s.passed], ['Tidak Lulus', s.failed], ['Naik ke Penelitian', s.promoted],
-      ]
-    : [];
+  const refreshing = monitoring.isFetching && !monitoring.isLoading;
 
   const columns: Column<MonitoringRow>[] = [
     {
@@ -153,11 +133,11 @@ export default function ClassMonitoring() {
       className: CLIP_CELL,
       render: (row) => {
         const value = researchMethodStage(row);
-        const detail = stageDetail(row, value);
+        const line = stageDetail(row, value);
         return (
           <div className="min-w-0 space-y-0.5">
             <Badge variant={RESEARCH_METHOD_STAGE_VARIANTS[value]} className="whitespace-nowrap">{RESEARCH_METHOD_STAGE_LABELS[value]}</Badge>
-            {detail && <p className="truncate text-xs text-muted-foreground" title={detail}>{detail}</p>}
+            {line && <p className="truncate text-xs text-muted-foreground" title={line}>{line}</p>}
           </div>
         );
       },
@@ -176,17 +156,6 @@ export default function ClassMonitoring() {
       render: (row) => <span className="whitespace-nowrap">{row.thesis?.proposalGuidances ?? 0} sesi</span>,
     },
     {
-      key: 'attendance',
-      header: 'Presensi',
-      width: 100,
-      className: CLIP_CELL,
-      render: (row) => (
-        <span className={row.attendance && !row.attendance.isEligible ? 'font-medium text-destructive' : undefined}>
-          {row.attendance ? formatAttendance(row.attendance.attendancePercentage) : '-'}
-        </span>
-      ),
-    },
-    {
       key: 'score',
       header: 'Nilai',
       width: 140,
@@ -200,108 +169,78 @@ export default function ClassMonitoring() {
         );
       },
     },
+    {
+      key: 'actions',
+      header: 'Aksi',
+      width: 80,
+      className: 'text-center',
+      render: (row) => (
+        <div className="flex justify-center">
+          <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => setDetail(row)} />
+        </div>
+      ),
+    },
   ];
 
-  const promotionColumns: Column<PromotionRow>[] = [
-    {
-      key: 'student',
-      header: 'Mahasiswa',
-      width: 220,
-      className: CLIP_CELL,
-      render: (row) => <ThesisStudentInfoCell name={row.student.fullName ?? ''} nim={row.student.identityNumber ?? ''} />,
-    },
-    {
-      key: 'passed',
-      header: 'Lulus Metode Penelitian',
-      width: 200,
-      className: CLIP_CELL,
-      render: (row) => <span className="whitespace-nowrap">{row.passedIn ?? '-'} · nilai {row.finalScore ?? '-'}</span>,
-    },
-    {
-      key: 'decision',
-      header: 'Keputusan',
-      width: BADGE_COLUMN_WIDTH.promotionDecision,
-      className: CLIP_CELL,
-      render: (row) => <Badge variant={getPromotionDecisionVariant(row.decision)} className="whitespace-nowrap">{getPromotionDecisionLabel(row.decision)}</Badge>,
-      filter: {
-        type: 'select',
-        value: decision,
-        onChange: (value) => { setDecision(value as PromotionDecision | ''); promotionTable.resetPage(); },
-        options: DECISION_OPTIONS,
-      },
-    },
-    { key: 'reason', header: 'Keterangan', className: CLIP_CELL, render: (row) => <TruncatedText text={row.error ?? row.reason} className="max-w-full" /> },
-  ];
-
-  const tabs = [
-    { value: 'peserta', label: 'Peserta Kelas' },
-    ...(canPromote ? [{ value: 'kelulusan', label: 'Proses Kelulusan', badge: promotable || undefined }] : []),
-  ];
+  const a = detail?.assessment ?? null;
 
   return (
     <div className="space-y-6 p-6">
-      <PageHeading title="Monitoring Kelas" subtitle="Kemajuan mahasiswa kelas Metode Penelitian">
-        <PeriodSelect value={yearId} onChange={setAcademicYearId} />
-      </PageHeading>
-      <LocalTabsNav tabs={tabs} activeTab={tab} onTabChange={setTab} />
+      <PageHeading title="Monitoring Kelas" subtitle="Kemajuan mahasiswa kelas Metode Penelitian" />
 
-      {tab === 'kelulusan' && canPromote ? (
+      <ClassMonitoringCharts summary={data?.summary} isLoading={monitoring.isLoading} />
+
+      {monitoring.error ? (
+        <p className="text-sm text-destructive">{monitoring.error instanceof Error ? monitoring.error.message : 'Gagal memuat monitoring.'}</p>
+      ) : (
         <CustomTable
-          columns={promotionColumns}
-          {...promotionTable.tableProps}
-          loading={promotion.isLoading}
-          isRefreshing={promotion.isFetching && !promotion.isLoading}
+          columns={columns}
+          {...table.tableProps}
+          loading={monitoring.isLoading}
+          isRefreshing={refreshing}
           subtleRefresh
           enableColumnFilters
-          tableClassName="table-fixed"
-          searchPlaceholder="Cari nama atau NIM..."
-          emptyText={promotionTable.search || decision ? 'Tidak ditemukan' : 'Tidak ada mahasiswa lulus yang masih di fase proposal.'}
-          rowKey={(row) => row.thesisId}
-          actions={(
-            <span title={runReason ?? undefined} className="inline-flex">
-              <Button size="sm" disabled={Boolean(runReason) || run.isPending} onClick={() => run.mutate()}>
-                {run.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlayCircle className="mr-2 h-4 w-4" />}Jalankan Proses Kelulusan
-              </Button>
-            </span>
-          )}
+          tableClassName={TABLE_CLASS}
+          searchPlaceholder="Cari nama, NIM, atau judul..."
+          emptyText={table.search || stage ? 'Tidak ditemukan' : 'Belum ada peserta kelas Metode Penelitian pada semester ini.'}
+          rowKey={(row) => row.studentId}
+          actions={
+            <>
+              {data && <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium">Nilai minimum: {data.minimumScore}</Badge>}
+              <PeriodSelect value={yearId} onChange={setAcademicYearId} />
+              <ExportButtons academicYearId={yearId} />
+              <RefreshButton onClick={() => void monitoring.refetch()} isRefreshing={refreshing} />
+            </>
+          }
         />
-      ) : (
-        <>
-          {tiles.length > 0 && (
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-8">
-              {tiles.map(([label, value]) => (
-                <Card key={label} className="gap-1 p-3">
-                  <dt className="text-xs text-muted-foreground">{label}</dt>
-                  <dd className="text-xl font-semibold">{value}</dd>
-                </Card>
-              ))}
-            </dl>
-          )}
-          {monitoring.error ? (
-            <p className="text-sm text-destructive">{monitoring.error instanceof Error ? monitoring.error.message : 'Gagal memuat monitoring.'}</p>
-          ) : (
-            <CustomTable
-              columns={columns}
-              {...table.tableProps}
-              loading={monitoring.isLoading}
-              isRefreshing={monitoring.isFetching && !monitoring.isLoading}
-              subtleRefresh
-              enableColumnFilters
-              tableClassName={TABLE_CLASS}
-              searchPlaceholder="Cari nama, NIM, atau judul..."
-              emptyText={table.search || stage ? 'Tidak ditemukan' : 'Belum ada peserta kelas Metode Penelitian pada periode ini.'}
-              rowKey={(row) => row.studentId}
-              actions={
-                <>
-                  {data && <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium">Nilai minimum: {data.minimumScore}</Badge>}
-                  <ExportButtons academicYearId={yearId} />
-                  <RefreshButton onClick={() => void monitoring.refetch()} isRefreshing={monitoring.isFetching && !monitoring.isLoading} />
-                </>
-              }
-            />
-          )}
-        </>
       )}
+
+      <RecordDetailDialog
+        open={!!detail}
+        onOpenChange={(open) => { if (!open) setDetail(null); }}
+        title="Detail Peserta Kelas"
+        description={detail ? `${toTitleCaseName(detail.fullName) || '-'} · ${detail.identityNumber ?? '-'}` : undefined}
+        footer={detail ? <DetailDialogActions onClose={() => setDetail(null)} /> : undefined}
+      >
+        {detail && (
+          <dl className="space-y-2">
+            <DetailRow label="Judul">{detail.thesis?.title || 'Belum ada judul'}</DetailRow>
+            <DetailRow label="Pembimbing">{supervisorsOf(detail) || 'Belum ada pembimbing'}</DetailRow>
+            <DetailRow label="Status tugas akhir">{detail.thesis ? getThesisStatusLabel(detail.thesis.status) : '-'}</DetailRow>
+            <DetailRow label="Tahap">{RESEARCH_METHOD_STAGE_LABELS[researchMethodStage(detail)]}</DetailRow>
+            <DetailRow label="Bimbingan proposal">{detail.thesis?.proposalGuidances ?? 0} sesi selesai</DetailRow>
+            <DetailRow label="Proposal final">
+              {a?.finalProposalAt ? formatDateShortId(a.finalProposalAt) : <span className="text-muted-foreground">Belum diajukan</span>}
+            </DetailRow>
+            <DetailRow label="Nilai pembimbing">{partyScore(a?.supervisorScore, a?.supervisorName)}</DetailRow>
+            <DetailRow label="Nilai koordinator">{partyScore(a?.coordinatorScore, a?.coordinatorName)}</DetailRow>
+            <DetailRow label="Nilai akhir">
+              {a ? <ResultCell row={a} /> : <span className="text-muted-foreground">Belum final</span>}
+            </DetailRow>
+            {data && <DetailRow label="Nilai minimum lulus">{data.minimumScore} ({data.academicYear.label})</DetailRow>}
+          </dl>
+        )}
+      </RecordDetailDialog>
     </div>
   );
 }

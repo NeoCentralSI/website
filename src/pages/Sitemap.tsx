@@ -68,7 +68,6 @@ const sitemapGroups: SitemapGroup[] = [
       { label: 'Kelola Dosen', path: '/kelola/dosen' },
       { label: 'Kelola CPL', path: '/kelola/cpl' },
       { label: 'Monitoring Kelas Metode Penelitian', path: '/metode-penelitian/monitoring' },
-      { label: 'Presensi Metode Penelitian', path: '/metode-penelitian/presensi' },
       { label: 'Penilaian Proposal', path: '/metode-penelitian/penilaian' },
       { label: 'Kelola Metode Penelitian', path: '/kelola/metode-penelitian' },
       { label: 'Sekretaris Departemen', path: '/sekretaris-departemen' },

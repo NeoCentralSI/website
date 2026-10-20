@@ -41,10 +41,6 @@ export const BADGE_COLUMN_WIDTH = {
   supervisionLoad: 192,
   /** Beban dosen, header "Pengajuan Baru" with its filter; "Ditutup Dosen": 128. */
   acceptingRequests: 150,
-  /** Proses Kelulusan, "Menunggu Periode Berikutnya": 222. */
-  promotionDecision: 228,
-  /** Presensi, "Di Bawah 75%": 129. */
-  attendanceStatus: 136,
   /** Riwayat pengajuan mahasiswa (label pendek), "Menunggu Kadep": 149. */
   supervisorRequestShortStatus: 152,
   /** Riwayat percobaan penilaian, "Tidak Lulus" / "Belum Final": 113. */

@@ -89,7 +89,7 @@ const mine = (overrides: Partial<StudentSupervisorRequests> = {}, submission: Pa
 const attempt = (overrides: Partial<FinalProposalAttempt> = {}): FinalProposalAttempt => ({
   id: 'a1', academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' },
   file: { fileName: 'proposal.pdf', fileSize: 10, url: '/uploads/thesis/t1/proposal/a1/proposal.pdf', submittedAt: '2026-10-01T03:00:00Z' },
-  supervisorScored: false, coordinatorScored: false, isFinalized: false, finalScore: null, result: null, attendanceAutoZeroed: false,
+  supervisorScored: false, coordinatorScored: false, isFinalized: false, finalScore: null, result: null,
   ...overrides,
 });
 
@@ -261,10 +261,11 @@ describe('Proposal mahasiswa', () => {
     expect(await screen.findByRole('dialog')).toHaveTextContent('Buka di tab baru');
   });
 
-  it('passed: the score as supervisor + coordinator = final, and the next step waits for the thesis course', async () => {
+  it('passed: the score as supervisor + coordinator = final, and the thesis is in Penelitian at once (step 5 done)', async () => {
     const assigned = request({ status: 'assigned' });
     vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({ activeRequest: assigned, requests: [assigned] }, { canSubmit: false }));
     vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(proposal({
+      thesis: { ...proposal().thesis!, status: 'research', startDate: '2026-10-15T03:00:00.000Z' },
       finalProposal: {
         academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' }, canSubmit: false, blockReason: 'Penilaian proposal periode ini sudah final. Proposal final tidak dapat diganti.', history: [],
         current: attempt({ supervisorScored: true, coordinatorScored: true, supervisorScore: 40, coordinatorScore: 42, isFinalized: true, finalScore: 82, result: 'passed' }),
@@ -274,7 +275,8 @@ describe('Proposal mahasiswa', () => {
 
     expect(await screen.findByText('40 + 42 = 82')).toBeInTheDocument();
     expect(screen.getAllByText('Lulus').length).toBeGreaterThan(0);
-    expect(steps()[4]).toHaveTextContent('Menunggu KRS Tugas Akhir semester berikutnya');
+    expect(steps()[4]).toHaveTextContent('Mulai Penelitian');
+    expect(steps()[4]).not.toHaveTextContent(/KRS|Menunggu/);
   });
 
   it('failed: the assessment step is red with "Tidak lulus, ulangi semester berikutnya"', async () => {

@@ -2,24 +2,21 @@ import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { ExportButtons } from '@/components/research-method/ExportButtons';
 import { PeriodSelect } from '@/components/research-method/PeriodSelect';
 import { ProposalAssessmentTable } from '@/components/research-method/ProposalAssessmentTable';
 import { PageHeading } from '@/components/shared/PageHeading';
 import { Badge } from '@/components/ui/badge';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { useCoordinatorQueue } from '@/hooks/research-method/useResearchMethod';
-import { useRole } from '@/hooks/shared/useRole';
 
 /**
- * Metode Penelitian > Penilaian Proposal (koordinator): setiap percobaan periode yang
- * sudah berproposal final, nilai pembimbing dan koordinator, hasil, serta ekspor rekap nilai
- * (format templat SIA) dan daftar judul TA yang lulus. Kadep, Sekdep, dan Admin membaca.
- * The period select beside the title; the minimum score in the toolbar.
+ * Metode Penelitian > Penilaian Proposal, for the Koordinator Metode Penelitian only: every attempt
+ * of the semester with a final proposal, both parties' sent scores and the result. The coordinator
+ * scores on the score page of the attempt. Kadep and Sekdep follow the class in Monitoring Kelas.
+ * Toolbar: search, minimum score, semester, Muat Ulang.
  */
 export default function ProposalAssessment() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const { isResearchMethodCoordinator } = useRole();
   const [academicYearId, setAcademicYearId] = useState<string | null>(null);
   const queue = useCoordinatorQueue(academicYearId);
   const yearId = academicYearId ?? queue.data?.academicYear.id ?? null;
@@ -31,9 +28,7 @@ export default function ProposalAssessment() {
 
   return (
     <div className="space-y-6 p-6">
-      <PageHeading title="Penilaian Proposal" subtitle="Nilai koordinator untuk setiap proposal final">
-        <PeriodSelect value={yearId} onChange={setAcademicYearId} />
-      </PageHeading>
+      <PageHeading title="Penilaian Proposal" subtitle="Nilai koordinator untuk setiap proposal final" />
 
       {queue.error ? (
         <p className="text-sm text-destructive">{queue.error instanceof Error ? queue.error.message : 'Gagal memuat data.'}</p>
@@ -43,17 +38,16 @@ export default function ProposalAssessment() {
           queue={queue.data}
           isLoading={queue.isLoading}
           isFetching={queue.isFetching}
-          viewerCanScore={isResearchMethodCoordinator()}
-          viewerBlockReason="Hanya Koordinator Metode Penelitian yang mengisi nilai koordinator."
-          emptyText="Belum ada proposal final pada periode ini."
+          viewerCanScore
+          emptyText="Belum ada proposal final pada semester ini."
           actions={
             <>
               {queue.data && (
-                <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium" title="Lulus bila presensi minimal 75% dan nilai akhir (pembimbing + koordinator) mencapai nilai minimum">
+                <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium" title="Lulus bila nilai akhir (pembimbing + koordinator) mencapai nilai minimum; tugas akhir langsung masuk fase Penelitian">
                   Nilai minimum: {queue.data.minimumScore}
                 </Badge>
               )}
-              <ExportButtons academicYearId={yearId} />
+              <PeriodSelect value={yearId} onChange={setAcademicYearId} />
               <RefreshButton onClick={() => void queue.refetch()} isRefreshing={queue.isFetching && !queue.isLoading} />
             </>
           }

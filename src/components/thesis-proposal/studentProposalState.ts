@@ -18,7 +18,6 @@ export interface ProposalStep {
 const WAITING_STATUSES = ['pending', 'under_review', 'pending_kadep'];
 const APPROVED_STATUSES = ['accepted', 'redirected', 'assigned'];
 export const FAILED_NOTE = 'Tidak lulus, ulangi semester berikutnya';
-export const WAITING_THESIS_COURSE_NOTE = 'Menunggu KRS Tugas Akhir semester berikutnya';
 
 const done = (key: string, label: string, note = 'Terpenuhi'): ProposalStep => ({ key, label, state: 'done', note });
 const waiting = (key: string, label: string, note = 'Menunggu'): ProposalStep => ({ key, label, state: 'waiting', note });
@@ -58,13 +57,14 @@ export function buildProposalSteps(overview: StudentProposalOverview | undefined
     return [first, second, third, fourth, fifth];
   }
 
+  // A pass starts the research phase at once, in the same step as the second final score.
   if (inResearch) {
     return [first, second, done('final', 'Proposal Final'), done('assessment', 'Penilaian Proposal', 'Lulus'), done('promotion', 'Mulai Penelitian')];
   }
   const attempt = overview?.finalProposal.current ?? null;
   const third = attempt?.file ? done('final', 'Proposal Final', 'Diajukan') : waiting('final', 'Proposal Final');
   let fourth: ProposalStep;
-  if (attempt?.attendanceAutoZeroed || (attempt?.isFinalized && attempt.result === 'failed')) {
+  if (attempt?.isFinalized && attempt.result === 'failed') {
     fourth = { key: 'assessment', label: 'Penilaian Proposal', state: 'failed', note: FAILED_NOTE };
   } else if (attempt?.isFinalized && attempt.result === 'passed') {
     fourth = done('assessment', 'Penilaian Proposal', 'Lulus');
@@ -75,10 +75,7 @@ export function buildProposalSteps(overview: StudentProposalOverview | undefined
   } else {
     fourth = waiting('assessment', 'Penilaian Proposal');
   }
-  const fifth = fourth.state === 'done'
-    ? waiting('promotion', 'Mulai Penelitian', WAITING_THESIS_COURSE_NOTE)
-    : waiting('promotion', 'Mulai Penelitian');
-  return [first, second, third, fourth, fifth];
+  return [first, second, third, fourth, waiting('promotion', 'Mulai Penelitian')];
 }
 
 export type RequestCardAction = 'submit' | 'continue' | 'withdraw' | 'cancel' | 'detail' | null;
