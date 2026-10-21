@@ -1,0 +1,58 @@
+import { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+
+import type { LayoutContext } from '@/components/layout/ProtectedLayout';
+import { PeriodSelect } from '@/components/research-method/PeriodSelect';
+import { ProposalAssessmentTable } from '@/components/research-method/ProposalAssessmentTable';
+import { PageHeading } from '@/components/shared/PageHeading';
+import { Badge } from '@/components/ui/badge';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import { useSupervisorQueue } from '@/hooks/research-method/useResearchMethod';
+
+/**
+ * Tugas Akhir > Proposal (dosen pembimbing): proposal-phase students of the semester, their final
+ * proposal and "Nilai Proposal" (the score page, with drafts). Pembimbing 1 normally scores;
+ * Pembimbing 2 may score as a backup, and the first score sent locks. Toolbar: search, minimum
+ * score, semester, then Muat Ulang.
+ */
+export default function LecturerThesisProposal() {
+  const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
+  const [academicYearId, setAcademicYearId] = useState<string | null>(null);
+  const queue = useSupervisorQueue(academicYearId);
+
+  useEffect(() => {
+    setBreadcrumbs([{ label: 'Tugas Akhir' }, { label: 'Proposal' }]);
+    setTitle('Proposal');
+  }, [setBreadcrumbs, setTitle]);
+
+  return (
+    <div className="space-y-6 p-6">
+      <PageHeading title="Proposal" subtitle="Penilaian proposal mahasiswa bimbingan" />
+
+      {queue.error ? (
+        <p className="text-sm text-destructive">{queue.error instanceof Error ? queue.error.message : 'Gagal memuat data.'}</p>
+      ) : (
+        <ProposalAssessmentTable
+          party="supervisor"
+          queue={queue.data}
+          isLoading={queue.isLoading}
+          isFetching={queue.isFetching}
+          viewerCanScore
+          emptyText="Belum ada mahasiswa bimbingan fase proposal pada semester ini."
+          studentHref={(row) => `/tugas-akhir/bimbingan/lecturer/my-students/${row.thesis.id}`}
+          actions={
+            <>
+              {queue.data && (
+                <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium" title="Nilai diisi setelah mahasiswa mengajukan proposal final; lulus bila nilai akhir mencapai nilai minimum">
+                  Nilai minimum: {queue.data.minimumScore}
+                </Badge>
+              )}
+              <PeriodSelect value={academicYearId ?? queue.data?.academicYear.id} onChange={setAcademicYearId} />
+              <RefreshButton onClick={() => void queue.refetch()} isRefreshing={queue.isFetching && !queue.isLoading} />
+            </>
+          }
+        />
+      )}
+    </div>
+  );
+}

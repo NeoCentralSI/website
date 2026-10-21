@@ -8,6 +8,24 @@ export function toTitleCaseName(input?: string | null): string {
     .join(" ");
 }
 
+/**
+ * A lecturer's name with academic degrees: the name is title-cased like `toTitleCaseName`,
+ * and whatever follows the first comma (the degrees) is kept exactly as written, so
+ * "HUSNIL KAMIL, M.T" becomes "Husnil Kamil, M.T" and "…, M.Sc" does not turn into "M.sc".
+ * A name without a comma is title-cased as a whole. Empty input gives "-".
+ */
+export function formatLecturerName(input?: string | null): string {
+  if (!input) return "-";
+  const text = String(input).trim();
+  const comma = text.indexOf(",");
+  if (comma === -1) return toTitleCaseName(text);
+
+  const name = text.slice(0, comma).trim();
+  const degrees = text.slice(comma + 1).trim();
+  if (!name) return degrees || "-";
+  return degrees ? `${toTitleCaseName(name)}, ${degrees}` : toTitleCaseName(name);
+}
+
 export function formatRoleName(input?: string | null): string {
   if (!input) return "-";
   const s = String(input).trim().toLowerCase();

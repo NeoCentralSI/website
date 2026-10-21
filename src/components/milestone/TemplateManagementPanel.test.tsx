@@ -36,6 +36,22 @@ vi.mock("@/hooks/milestone/useMilestone", () => ({
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
+// The same panel for the general proposal templates (Kelola > Metode Penelitian).
+const proposal = vi.hoisted(() => ({
+  query: { data: [] as unknown[], isLoading: false, isError: false, error: null, refetch: () => {} },
+  create: { mutate: vi.fn(), isPending: false },
+  update: { mutate: vi.fn(), isPending: false },
+  remove: { mutate: vi.fn(), isPending: false },
+  removeMany: { mutate: vi.fn(), isPending: false },
+  reorder: { mutateAsync: vi.fn(), isPending: false },
+}));
+vi.mock("@/hooks/research-method/useMilestoneTemplates", () => ({
+  useProposalMilestoneTemplates: () => proposal.query,
+  useProposalMilestoneTemplateMutations: () => ({
+    create: proposal.create, update: proposal.update, remove: proposal.remove, removeMany: proposal.removeMany, reorder: proposal.reorder,
+  }),
+}));
+
 const TOPICS = [
   { id: "topic-bi", name: "Business Intelligence (BI)", count: 0 },
   { id: "topic-ps", name: "Pengembangan Sistem (Enterprise Application)", count: 1 },
@@ -60,7 +76,7 @@ globalThis.ResizeObserver ??= class {
   disconnect() {}
 } as unknown as typeof ResizeObserver;
 
-// Paket C (C1): topics are picked from one searchable combobox.
+// Topics are picked from one searchable combobox.
 function pickTopic(name: RegExp) {
   fireEvent.click(screen.getByRole("combobox", { name: /Pilih topik/ }));
   fireEvent.click(screen.getByRole("option", { name }));
@@ -169,5 +185,60 @@ describe("TemplateManagementPanel", () => {
     expect(buttons).toHaveLength(2);
     fireEvent.click(buttons[1]);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+});
+
+describe("TemplateManagementPanel phase=\"proposal\"", () => {
+  const proposalTemplate = (id: string, name: string, orderIndex: number, usedCount = 0, isActive = true) => ({
+    id, name, description: `Deskripsi ${name}`, orderIndex, isActive, usedCount, updatedAt: "2026-10-01T00:00:00.000Z",
+  });
+
+  beforeEach(() => {
+    proposal.query = { data: [], isLoading: false, isError: false, error: null, refetch: () => {} };
+    vi.clearAllMocks();
+  });
+
+  it("is the same panel without the topic picker; it never reads the thesis templates", () => {
+    render(<TemplateManagementPanel phase="proposal" />);
+    expect(screen.getByText("Kelola Template Milestone")).toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: /Pilih topik/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Belum ada template milestone fase proposal/)).toBeInTheDocument();
+    expect(useTemplatesMock).not.toHaveBeenCalled();
+  });
+
+  it("lists the templates in order with their usage, and edits without a topic field", () => {
+    proposal.query = { ...proposal.query, data: [proposalTemplate("p2", "Bab II", 1), proposalTemplate("p1", "Bab I", 0, 3), proposalTemplate("p3", "Lama", 2, 0, false)] };
+    render(<TemplateManagementPanel phase="proposal" />);
+    const names = screen.getAllByText(/^(Bab I|Bab II|Lama)$/).map((el) => el.textContent);
+    expect(names).toEqual(["Bab I", "Bab II", "Lama"]);
+    expect(screen.getByText(/Dipakai 3 milestone mahasiswa/)).toBeInTheDocument();
+    expect(screen.getByText("Nonaktif")).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit/ })[0]);
+    const dialog = screen.getByRole("dialog");
+    expect(dialog).toHaveTextContent("Template fase Proposal, berlaku umum tanpa topik");
+    expect(screen.queryByLabelText("Topik")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Simpan" }));
+    expect(proposal.update.mutate).toHaveBeenCalledWith(
+      { id: "p1", dto: { name: "Bab I", description: "Deskripsi Bab I", isActive: true, orderIndex: 0 } },
+      expect.anything(),
+    );
+  });
+
+  it("asks for at least three characters, as the server does", () => {
+    render(<TemplateManagementPanel phase="proposal" />);
+    fireEvent.click(screen.getAllByRole("button", { name: /Tambah Template/ })[0]);
+    fireEvent.change(screen.getByLabelText("Nama"), { target: { value: "ab" } });
+    expect(screen.getByRole("button", { name: "Simpan" })).toBeDisabled();
+    expect(screen.getByText("Nama template minimal 3 karakter.")).toBeInTheDocument();
+  });
+
+  it("deletes the selected templates together", () => {
+    proposal.query = { ...proposal.query, data: [proposalTemplate("p1", "Bab I", 0), proposalTemplate("p2", "Bab II", 1)] };
+    render(<TemplateManagementPanel phase="proposal" />);
+    fireEvent.click(screen.getByLabelText(/Pilih semua/));
+    fireEvent.click(screen.getByRole("button", { name: /Hapus \(2\)/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Ya, Hapus" }));
+    expect(proposal.removeMany.mutate).toHaveBeenCalledWith(["p1", "p2"], expect.anything());
   });
 });

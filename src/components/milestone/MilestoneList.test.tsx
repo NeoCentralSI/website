@@ -8,7 +8,7 @@ vi.mock("lottie-react", () => ({
   default: () => <div data-testid="lottie-mock" />,
 }));
 
-// K14: create actions stay visible but are disabled with a visible reason.
+// Create actions stay visible but are disabled with a visible reason.
 describe("MilestoneList create actions", () => {
   it("disables 'Buat dari Template' and 'Buat Manual' with the reason for a non-research thesis", () => {
     const reason = getGuidanceActionBlockReason("on_leave");
@@ -27,7 +27,8 @@ describe("MilestoneList create actions", () => {
     expect(fromTemplate.length).toBeGreaterThan(0);
     for (const button of fromTemplate) {
       expect(button).toBeDisabled();
-      expect(button).toHaveAttribute("title", reason);
+      // A disabled button gets no pointer events, so the reason is on its wrapper.
+      expect(button.parentElement).toHaveAttribute("title", reason);
     }
     expect(screen.getByRole("button", { name: /Buat Manual/ })).toBeDisabled();
     expect(reason).toContain("Berhenti Studi Sementara (BSS)");
@@ -49,5 +50,16 @@ describe("MilestoneList create actions", () => {
       expect(button).toBeEnabled();
     }
     expect(screen.getByRole("button", { name: /Buat Manual/ })).toBeEnabled();
+  });
+
+  it("The empty list says which templates the running phase offers", () => {
+    const { rerender } = render(
+      <MilestoneList milestones={[]} progress={null} isOwner currentPhase="proposal" onCreateNew={vi.fn()} onCreateFromTemplates={vi.fn()} />,
+    );
+    expect(screen.getByText(/template milestone fase proposal yang berlaku umum/)).toBeInTheDocument();
+
+    rerender(<MilestoneList milestones={[]} progress={null} isOwner currentPhase="research" onCreateNew={vi.fn()} onCreateFromTemplates={vi.fn()} />);
+    expect(screen.getByText(/fase penelitian sesuai topik tugas akhir Anda/)).toBeInTheDocument();
+    expect(screen.getByText(/milestone fase proposal tidak menghalangi/)).toBeInTheDocument();
   });
 });

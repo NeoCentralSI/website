@@ -10,6 +10,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { formatThesisDocName, formatDateTimeWib } from '@/lib/text';
 import { GUIDANCE_ACTOR_LABELS, GUIDANCE_STATUS_LABELS } from '@/lib/thesisLabels';
 import { DateTimeCell, GuidanceDocCell, STICKY_ACTION_COLUMN_CLASS } from '@/lib/guidanceCells';
+import { ThesisPhaseBadge } from '@/components/shared/ThesisPhaseBadge';
+import { THESIS_PHASE_FILTER_LABELS } from '@/lib/thesisLabels';
+import type { PhaseFilterValue } from '@/components/thesis/ThesisPhaseFilter';
 
 interface GetGuidanceTableColumnsOptions {
   items: GuidanceItem[];
@@ -35,6 +38,9 @@ interface GetGuidanceTableColumnsOptions {
   onToggleSelectAll?: (ids: string[], selected: boolean) => void;
   /** IDs of exportable items (completed/summary_pending with sessionSummary) */
   exportableIds?: string[];
+  /** Phase filter in the "Jenis" column header; omitted = no filter. */
+  phase?: PhaseFilterValue;
+  setPhase?: (value: PhaseFilterValue) => void;
 }
 
 export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions): Column<GuidanceItem>[] => {
@@ -56,6 +62,8 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
     onToggleSelect,
     onToggleSelectAll,
     exportableIds,
+    phase,
+    setPhase,
   } = options;
 
   const hasSelection = !!selectedIds && !!onToggleSelect;
@@ -116,6 +124,29 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       },
     },
     {
+      // Jenis sesi (Proposal / Penelitian), tetap sejak dibuat
+      key: 'phase',
+      header: 'Jenis',
+      render: (r) => (r.phase ? <ThesisPhaseBadge phase={r.phase} /> : '-'),
+      ...(setPhase
+        ? {
+            filter: {
+              type: 'select' as const,
+              value: phase ?? '',
+              onChange: (v: string) => {
+                setPhase(v as PhaseFilterValue);
+                setPage(1);
+              },
+              options: [
+                { label: 'Semua', value: '' },
+                { label: THESIS_PHASE_FILTER_LABELS.proposal, value: 'proposal' },
+                { label: THESIS_PHASE_FILTER_LABELS.research, value: 'research' },
+              ],
+            },
+          }
+        : {}),
+    },
+    {
       key: 'time',
       header: 'Waktu',
       // C6: the effective schedule (approvedDate ?? requestedDate)
@@ -136,7 +167,7 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       key: 'status',
       header: 'Status',
       render: (r) => {
-        // K19: a scheduled session (legacy "rescheduled" included) needs a summary, and a
+        // A scheduled session (legacy "rescheduled" included) needs a summary, and a
         // summary sent back by the lecturer (summary_rejected) needs a revision.
         const isScheduled = r.status === 'accepted' || r.status === 'rescheduled';
         const needsSummary = (isScheduled && !r.sessionSummary) || r.status === 'summary_rejected';
@@ -237,7 +268,7 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (r) => {
         const isRequested = r.status === 'requested';
-        // K19: legacy "rescheduled" is a scheduled session like "accepted".
+        // Legacy "rescheduled" is a scheduled session like "accepted".
         const isAccepted = r.status === 'accepted' || r.status === 'rescheduled';
         const isCancellable = isRequested || isAccepted;
 
@@ -284,7 +315,7 @@ export const getGuidanceTableColumns = (options: GetGuidanceTableColumnsOptions)
 };
 
 /**
- * K19 context shown under a session status: rejection reason + suggested time, lecturer
+ * Context shown under a session status: rejection reason + suggested time, lecturer
  * reschedule reason, cancellation (who + why), or the lecturer's summary revision notes.
  */
 export function getGuidanceStatusContext(r: GuidanceItem): string | null {

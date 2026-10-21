@@ -1,6 +1,6 @@
 import { API_CONFIG, getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
-import type { ThesisLifecycleStatus, ThesisRating } from '@/lib/thesisLabels';
+import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus, ThesisPhase, ThesisPhaseSummary } from '@/lib/thesisLabels';
 
 // Types (align with backend contracts as needed)
 // "rescheduled" and "summary_rejected" are legacy statuses written before the guidance revival.
@@ -9,6 +9,10 @@ export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed"
 export interface MyStudentItem {
   /** Relation status of the current lecturer to this thesis (active/released). */
   supervisorStatus?: string | null;
+  /** This lecturer was replaced; shown under "Semua" only, read-only. */
+  noLongerSupervising?: boolean;
+  /** A proposal revision waits for this lecturer as Pembimbing 1 ("Tinjau Proposal Revisi"). */
+  proposalRevisionPending?: boolean;
   studentId: string;
   fullName: string;
   email?: string;
@@ -17,7 +21,11 @@ export interface MyStudentItem {
   thesisTitle?: string;
   thesisStatus?: ThesisLifecycleStatus | null;
   roles?: string[]; // e.g., ["pembimbing1"]
-  thesisRating?: ThesisRating;
+  /** Nilai turunan; null bila TA tidak berstatus Penelitian. */
+  activityLevel?: ThesisActivityLevel | null;
+  lastActivityAt?: string | null;
+  daysSinceActivity?: number | null;
+  supervisionClock?: SupervisionClock | null;
   latestMilestone?: string;
   // Milestone progress info
   totalMilestones?: number;
@@ -28,12 +36,24 @@ export interface MyStudentItem {
   lastGuidanceDate?: string | null;
   /** ISO; format di frontend (C5). */
   lastGuidanceAt?: string | null;
-  deadlineDate?: string | null;
   startDate?: string | null;
+  /**
+   * The open-request marker, "Ajukan Perubahan" and "Alihkan" of the row, with the
+   * reason when a rule blocks them (null for a closed relation the backend does not read).
+   */
+  changeRequest?: {
+    hasOpenRequest: boolean;
+    canSubmit: boolean;
+    blockReason: string | null;
+    canTransfer: boolean;
+    transferBlockReason: string | null;
+  } | null;
 }
 
 export interface GuidanceItem {
   id: string;
+  /** Jenis sesi (Proposal / Penelitian). */
+  phase?: ThesisPhase;
   studentId?: string;
   studentName?: string;
   studentNim?: string;
@@ -80,15 +100,20 @@ export interface ApproveGuidanceBody {
 }
 
 // API calls
-export interface StudentDetail {
+export interface StudentDetail extends ThesisPhaseSummary {
   thesisId: string;
   title: string;
   status: ThesisLifecycleStatus;
-  rating: ThesisRating | null;
+  activityLevel: ThesisActivityLevel | null;
+  lastActivityAt: string | null;
+  daysSinceActivity: number | null;
+  supervisionClock: SupervisionClock | null;
+  /** True while the thesis is back in proposal because of a guidance evaluation. */
+  repeatingProposal?: boolean;
+  /** The viewer's supervision ended (replaced); the page is read-only. */
+  noLongerSupervising?: boolean;
   startDate: string | null;
   startDateFormatted: string | null;
-  deadlineDate: string | null;
-  deadlineDateFormatted: string | null;
   student: {
     id: string;
     fullName: string;
@@ -107,6 +132,7 @@ export interface StudentDetail {
   } | null;
   uploadedFiles: Array<{
     id: string;
+    phase?: ThesisPhase;
     fileName: string;
     filePath: string;
     uploadedAt: string;
@@ -116,6 +142,7 @@ export interface StudentDetail {
     id: string;
     title: string;
     status: string;
+    phase?: ThesisPhase;
     updatedAt: string;
     updatedAtFormatted?: string;
     progressPercentage: number;
@@ -128,18 +155,6 @@ export interface StudentDetail {
     feedbackByName?: string | null;
     feedbackAt?: string | null;
   }[];
-  // Superset kept for the Metopen SupervisorScoreCard; the restored guidance API does not send it.
-  researchMethodScore?: {
-    id?: string;
-    supervisorScore?: number | null;
-    lecturerScore?: number | null;
-    finalScore?: number | null;
-    isFinalized?: boolean;
-    attendanceAutoZeroedAt?: string | null;
-    attendanceAutoZeroReason?: string | null;
-    periodClosedAt?: string | null;
-    periodClosedReason?: string | null;
-  } | null;
   guidanceHistory: {
     count: number;
     items: GuidanceItem[];
@@ -180,8 +195,8 @@ export const getStudentDetail = async (thesisId: string): Promise<{ success: boo
   return res.json();
 };
 
-/** K21: list filter; "active" (default) = research + on_leave. */
-export type MyStudentsFilter = "active" | "completed" | "failed" | "all";
+/** List filter; "active" (default) = research + on_leave. */
+export type MyStudentsFilter = "active" | "proposal" | "completed" | "failed" | "all";
 
 export const getMyStudents = async (params?: { roles?: string; status?: MyStudentsFilter }): Promise<{ success: boolean; count: number; students: MyStudentItem[] }> => {
   const search = new URLSearchParams();
@@ -196,7 +211,8 @@ export const getMyStudents = async (params?: { roles?: string; status?: MyStuden
   return res.json();
 };
 
-export type WarningType = "SLOW" | "AT_RISK" | "FAILED";
+/** Peringatan dikirim menurut tingkat aktivitas. */
+export type WarningType = "slow" | "at_risk";
 
 export const sendWarningToStudent = async (thesisId: string, warningType: WarningType): Promise<{ success: boolean; message: string }> => {
   const res = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_LECTURER.MY_STUDENTS}/${thesisId}/send-warning`), {
@@ -234,7 +250,7 @@ export const getScheduledGuidances = async (params?: { page?: number; pageSize?:
   return res.json();
 };
 
-/** K19: rejecting needs a reason; the lecturer may suggest another (future) time. */
+/** Rejecting needs a reason; the lecturer may suggest another (future) time. */
 export const rejectGuidanceRequest = async (
   guidanceId: string,
   body: { reason: string; suggestedDate?: string | null },
@@ -274,7 +290,7 @@ export const cancelGuidanceByLecturer = async (guidanceId: string, body: { reaso
   return res.json();
 };
 
-/** K19: the lecturer moves an accepted session (status stays accepted). */
+/** The lecturer moves an accepted session (status stays accepted). */
 export const rescheduleGuidanceByLecturer = async (
   guidanceId: string,
   body: { newDate: string; reason: string; duration?: number },
@@ -290,7 +306,7 @@ export const rescheduleGuidanceByLecturer = async (
   return res.json();
 };
 
-/** K19: the lecturer asks the student to revise the session summary (notes required). */
+/** The lecturer asks the student to revise the session summary (notes required). */
 export const rejectSessionSummary = async (
   guidanceId: string,
   body: { notes: string },
@@ -493,79 +509,7 @@ export const rejectSupervisor2Request = async (requestId: string, reason?: strin
 };
 
 
-// ==================== STUDENT TRANSFER ====================
-
-export interface TransferLecturer {
-  id: string;
-  fullName: string;
-  identityNumber: string;
-  currentStudentCount: number;
-}
-
-export interface TransferStudent {
-  thesisId: string;
-  thesisSupervisorId: string;
-  studentName: string;
-  studentNim: string;
-  thesisTitle: string;
-  role: string;
-}
-
-export interface IncomingTransfer {
-  notificationId: string;
-  sourceLecturerId: string;
-  sourceLecturerName: string;
-  students: TransferStudent[];
-  reason: string;
-  createdAt: string;
-}
-
-export const getEligibleTransferLecturers = async (): Promise<{ success: boolean; lecturers: TransferLecturer[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_ELIGIBLE_LECTURERS));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat daftar dosen");
-  return res.json();
-};
-
-export const requestStudentTransfer = async (body: {
-  thesisIds: string[];
-  targetLecturerId: string;
-  reason: string;
-}): Promise<{ success: boolean; message: string; studentCount: number }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_REQUEST), {
-    method: "POST",
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ message: "Gagal mengirim permintaan transfer" }));
-    throw new Error(errorData.message || "Gagal mengirim permintaan transfer");
-  }
-  return res.json();
-};
-
-export const getIncomingTransfers = async (): Promise<{ success: boolean; count: number; transfers: IncomingTransfer[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_INCOMING));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan transfer masuk");
-  return res.json();
-};
-
-export const approveTransfer = async (notificationId: string): Promise<{ success: boolean; message: string }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_APPROVE(notificationId)), {
-    method: "PATCH",
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui transfer");
-  return res.json();
-};
-
-export const rejectTransfer = async (notificationId: string, reason?: string): Promise<{ success: boolean; message: string }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_LECTURER.TRANSFER_REJECT(notificationId)), {
-    method: "PATCH",
-    body: JSON.stringify({ reason }),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak transfer");
-  return res.json();
-};
-
-// Kept from the active app (guidance revival): Pembimbing 2 KaDep decision, Metopel proposal versions and informal logs (read-only). Not part of the formal TA guidance flow.
+// Kept from the active app (guidance revival): Pembimbing 2 KaDep decision. Not part of the formal TA guidance flow.
 const EP = API_CONFIG.ENDPOINTS.THESIS_LECTURER;
 
 async function handleJson<T = unknown>(response: Response): Promise<T> {
@@ -612,52 +556,4 @@ export async function rejectSupervisor2KadepRequest(
     body: JSON.stringify({ reason }),
   });
   return handleJson<{ message: string }>(response);
-}
-
-export interface ProposalVersion {
-    id: string;
-    version: number;
-    isLatest: boolean;
-    fileName: string | null;
-    fileSize: number | null;
-    description: string | null;
-    mimeType?: string | null;
-    submittedAsFinalAt?: string | null;
-    createdAt: string;
-    url: string | null;
-  }
-
-export async function getStudentProposalVersions(
-  thesisId: string,
-): Promise<{ thesisId: string; versions: ProposalVersion[] }> {
-  const url = getApiUrl(EP.STUDENT_PROPOSAL_VERSIONS(thesisId));
-  const response = await apiRequest(url);
-  return handleJson(response);
-}
-
-/** FR-LOG-08: P1/P2 read-only Metopel informal notes (same item shape as student list). */
-export interface InformalLogItem {
-  id: string;
-  content: string;
-  createdAt: string;
-  updatedAt: string;
-  document: {
-    id: string;
-    fileName: string | null;
-    url: string | null;
-    fileSize: number | null;
-    mimeType: string | null;
-  } | null;
-}
-
-export async function getStudentInformalLogs(
-  thesisId: string,
-): Promise<{ thesisId: string; items: InformalLogItem[] }> {
-  const url = getApiUrl(EP.STUDENT_INFORMAL_LOGS(thesisId));
-  const response = await apiRequest(url);
-  const json = await handleJson<{
-    success: boolean;
-    data: { thesisId: string; items: InformalLogItem[] };
-  }>(response);
-  return json.data;
 }

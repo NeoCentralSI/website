@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
@@ -31,6 +31,7 @@ import type {
   ResearchMethodCpmk,
   UpdateResearchMethodCpmkPayload,
 } from "@/services/researchMethodAssessment.service";
+import { LOCKED_DELETE_REASON } from "./researchMethodLocks";
 
 export const CPMK_CODE_PATTERN = /^CPMK[- ]?\d{1,2}$/i;
 
@@ -53,8 +54,15 @@ interface ResearchMethodCpmkCatalogProps {
   isCreating: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
+  /** The period select and "Salin Template", before "Tambah". */
+  extraActions?: ReactNode;
 }
 
+/**
+ * The CPMK table of Kelola > Metode Penelitian, the same as the thesis CPMK table: No, Kode CPMK,
+ * Deskripsi, and Aksi (Edit, and the red Hapus). Once Penilaian Proposal has started in the
+ * semester, Hapus is disabled with the reason; the code and description can still change.
+ */
 export function ResearchMethodCpmkCatalog({
   items,
   isLoading,
@@ -66,6 +74,7 @@ export function ResearchMethodCpmkCatalog({
   isCreating,
   isUpdating,
   isDeleting,
+  extraActions,
 }: ResearchMethodCpmkCatalogProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<ResearchMethodCpmk | null>(null);
@@ -149,7 +158,7 @@ export function ResearchMethodCpmkCatalog({
       {
         key: "code",
         header: "Kode CPMK",
-        width: 140,
+        width: 120,
         render: (item) => (
           <div className="flex flex-col items-start gap-1">
             <span className="font-medium">{item.code}</span>
@@ -168,45 +177,39 @@ export function ResearchMethodCpmkCatalog({
         render: (item) => <span className="text-sm">{item.description}</span>,
       },
       {
-        key: "usage",
-        header: "Kriteria",
-        width: 130,
-        render: (item) => (
-          <span className="text-sm text-muted-foreground">
-            {item.criteriaCount ?? 0} kriteria
-          </span>
-        ),
-      },
-      {
         key: "actions",
         header: "Aksi",
         width: 90,
         className: "text-right",
-        render: (item) => (
-          <div className="flex items-center justify-end gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-primary"
-              onClick={() => openEdit(item)}
-              title="Edit"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
-              onClick={() => setDeleteId(item.id)}
-              disabled={isDeleting}
-              title="Hapus"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        ),
+        render: (item) => {
+          const locked = Boolean(item.hasAssessmentDetails);
+          return (
+            <div className="flex items-center justify-end gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-primary"
+                onClick={() => openEdit(item)}
+                title="Edit"
+                aria-label={`Edit ${item.code}`}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <span title={locked ? LOCKED_DELETE_REASON : "Hapus"} className="inline-flex">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-8 w-8 ${locked ? "text-red-400 hover:text-red-500" : "text-red-600 hover:bg-red-50 hover:text-red-700"}`}
+                  onClick={() => setDeleteId(item.id)}
+                  disabled={isDeleting || locked}
+                  aria-label={`Hapus ${item.code}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </span>
+            </div>
+          );
+        },
       },
     ],
     [isDeleting, page, pageSize],
@@ -229,9 +232,11 @@ export function ResearchMethodCpmkCatalog({
           setSearch(value);
           setPage(1);
         }}
+        tableClassName="table-fixed"
         emptyText="Belum ada data CPMK Metode Penelitian"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {extraActions}
             <Button type="button" variant="outline" size="sm" onClick={openCreate}>
               <Plus className="mr-2 h-4 w-4" /> Tambah
             </Button>

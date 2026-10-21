@@ -140,7 +140,7 @@ export default function LecturerBimbinganPage() {
   const total = filteredItems.length;
   const paginatedItems = filteredItems.slice((page - 1) * pageSize, page * pageSize);
 
-  // K19: the lecturer moves an accepted session
+  // The lecturer moves an accepted session
   const [rescheduleTarget, setRescheduleTarget] = useState<GuidanceItem | null>(null);
 
   const columns = getLecturerRequestColumns({

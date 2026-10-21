@@ -20,8 +20,9 @@ import {
   getPendingRequests,
   getSupervisor2Requests,
 } from "@/services/lecturerGuidance.service";
-import { assessmentService } from "@/services/assessment.service";
-import { advisorRequestService } from "@/services/advisorRequest.service";
+import { getSupervisorQueue } from "@/services/research-method/research-method.service";
+import { getKadepQueue, getLecturerInbox } from "@/services/thesis-proposal/supervisor-request.service";
+import { getAssignmentOverview } from "@/services/thesis-proposal/supervisor-assignment.service";
 import { useLottie } from 'lottie-react';
 import completeAnimation from '@/assets/lottie/complete.json';
 import { useActiveAcademicYear } from "@/hooks/shared/useActiveAcademicYear";
@@ -82,29 +83,53 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
     enabled: showSupervisorActions,
   });
 
-  const { data: supervisorScoringQueue, isLoading: loadingSupervisorScoring } = useQuery({
-    queryKey: ["supervisor-scoring-queue", academicYear?.id],
-    queryFn: () => assessmentService.getSupervisorScoringQueue(academicYear!.id),
+  const { data: supervisorQueue, isLoading: loadingSupervisorScoring } = useQuery({
+    queryKey: ["research-method", "supervisor-queue", academicYear?.id ?? "current"],
+    queryFn: () => getSupervisorQueue(academicYear!.id),
     enabled: showSupervisorActions && Boolean(academicYear?.id),
   });
 
   const { data: kadepQueue, isLoading: loadingKadepQueue } = useQuery({
-    queryKey: ["dashboard-kadep-queue"],
-    queryFn: async () => (await advisorRequestService.getKadepQueue()).data,
+    queryKey: ["thesis-proposal", "supervisor-requests", "kadep"],
+    queryFn: getKadepQueue,
     enabled: showKadepActions,
+  });
+
+  const { data: assignmentOverview, isLoading: loadingAssignment } = useQuery({
+    queryKey: ["thesis-proposal", "supervisor-assignments", "current"],
+    queryFn: () => getAssignmentOverview(),
+    enabled: showKadepActions,
+  });
+
+  const { data: supervisorInbox, isLoading: loadingSupervisorInbox } = useQuery({
+    queryKey: ["thesis-proposal", "supervisor-requests", "inbox"],
+    queryFn: getLecturerInbox,
+    enabled: showSupervisorActions,
   });
 
   const pendingSupervisor2Count = supervisor2RequestsData?.length || 0;
   const pendingRequestsCount = pendingRequestsData?.total || 0;
   const pendingApprovalsCount = pendingApprovalsData?.total || 0;
-  const pendingSupervisorScoringCount = supervisorScoringQueue?.items?.length || 0;
-  const pendingKadepEscalatedCount = kadepQueue?.escalated?.length || 0;
+  const pendingSupervisorScoringCount = supervisorQueue?.rows?.filter((row) => row.canScore).length || 0;
+  const pendingKadepCount = (kadepQueue?.department?.length || 0) + (kadepQueue?.overQuota?.length || 0);
+  const pendingAssignmentCount = assignmentOverview?.needsIssue ? assignmentOverview.newCount : 0;
+  const pendingSupervisorRequestCount = supervisorInbox?.waiting?.length || 0;
 
   const firstPendingApprovalId = pendingApprovalsData?.guidances?.[0]?.id;
-  const firstSupervisorScoringThesisId = supervisorScoringQueue?.items?.[0]?.thesisId;
 
   const supervisorActions: QuickAction[] = showSupervisorActions
     ? [
+        {
+          id: "pending-supervisor-requests",
+          title: "Permohonan Pembimbing",
+          description: "Mahasiswa yang mengajukan Anda sebagai pembimbing",
+          count: pendingSupervisorRequestCount,
+          icon: UserPlus,
+          color: "text-amber-600",
+          bgColor: "bg-amber-50",
+          link: "/tugas-akhir/permohonan",
+          loading: loadingSupervisorInbox,
+        },
         {
           id: "pending-supervisor2",
           title: "Approval Pembimbing",
@@ -113,7 +138,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           icon: UserPlus,
           color: "text-teal-600",
           bgColor: "bg-teal-50",
-          link: "/tugas-akhir/bimbingan/lecturer/my-students",
+          link: "/tugas-akhir/permohonan",
           loading: loadingSupervisor2,
         },
         {
@@ -141,16 +166,14 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           loading: loadingApprovals,
         },
         {
-          id: "pending-ta03a",
-          title: "Penilaian TA-03A",
+          id: "pending-proposal-score",
+          title: "Nilai Proposal",
           description: "Proposal final yang menunggu nilai pembimbing",
           count: pendingSupervisorScoringCount,
           icon: ShieldCheck,
           color: "text-purple-600",
           bgColor: "bg-purple-50",
-          link: firstSupervisorScoringThesisId
-            ? `/tugas-akhir/bimbingan/lecturer/my-students/${firstSupervisorScoringThesisId}`
-            : "/tugas-akhir/bimbingan/lecturer/my-students",
+          link: "/tugas-akhir/proposal",
           loading: loadingSupervisorScoring,
         },
       ]
@@ -159,15 +182,26 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
   const kadepActions: QuickAction[] = showKadepActions
     ? [
         {
-          id: "kadep-escalated",
-          title: "Keputusan TA-01 / TA-02",
-          description: "Validasi kuota merah dan penetapan jalur departemen",
-          count: pendingKadepEscalatedCount,
+          id: "kadep-supervisor-requests",
+          title: "Pengajuan Pembimbing",
+          description: "Pengajuan lewat departemen dan pengajuan di atas kuota",
+          count: pendingKadepCount,
           icon: ShieldCheck,
           color: "text-amber-600",
           bgColor: "bg-amber-50",
-          link: "/kelola/tugas-akhir/kadep/pembimbing",
+          link: `/kelola/tugas-akhir/kadep/penetapan-pembimbing?tab=${kadepQueue?.department?.length ? "departemen" : "atas-kuota"}`,
           loading: loadingKadepQueue,
+        },
+        {
+          id: "kadep-supervisor-assignment",
+          title: "Penetapan Pembimbing",
+          description: "Mahasiswa yang disetujui pembimbingnya dan belum ditetapkan",
+          count: pendingAssignmentCount,
+          icon: FileCheck,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+          link: "/kelola/tugas-akhir/kadep/penetapan-pembimbing",
+          loading: loadingAssignment,
         },
       ]
     : [];

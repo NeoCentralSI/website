@@ -31,7 +31,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
-import type { ExitSurveyForm } from '@/types/exit-survey.types';
+import { TableIconAction } from '@/components/shared/TableIconAction';
+import { RefreshButton } from '@/components/ui/refresh-button';
+import type { ExitSurveyForm, ExitSurveyResponse, ExitSurveyAnswer } from '@/types/exit-survey.types';
 import { useQuery } from '@tanstack/react-query';
 import {
   downloadExitSurveyResponsesExcel,
@@ -87,6 +89,19 @@ const downloadBlob = (blob: Blob, filename: string) => {
   window.URL.revokeObjectURL(url);
 };
 
+const formatAnswer = (answer: ExitSurveyAnswer): string => {
+  if (answer.optionText != null) return answer.optionText;
+  if (answer.answerText != null) return answer.answerText;
+  if (answer.answerNumber != null) return String(answer.answerNumber);
+  if (answer.answerDate) {
+    const date = new Date(answer.answerDate);
+    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString('id-ID', {
+      timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric',
+    });
+  }
+  return '';
+};
+
 const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps) => {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -94,10 +109,10 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
   const [selectedYudisiumId, setSelectedYudisiumId] = useState<string>('all');
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [tempPdfYudisiumId, setTempPdfYudisiumId] = useState<string>('all');
-  const [selectedResponse, setSelectedResponse] = useState<any>(null);
+  const [selectedResponse, setSelectedResponse] = useState<ExitSurveyResponse | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
-  const { data: responses = [], isLoading } = useQuery({
+  const { data: responses = [], isLoading, isFetching, isError, refetch } = useQuery({
     queryKey: ['exit-survey-responses', form.id],
     queryFn: () => getExitSurveyFormResponses(form.id),
   });
@@ -201,7 +216,7 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
     return filteredResponses.slice((page - 1) * pageSize, page * pageSize);
   }, [filteredResponses, page, pageSize]);
 
-  const tableColumns = useMemo<Column<any>[]>(
+  const tableColumns = useMemo<Column<ExitSurveyResponse>[]>(
     () => [
       {
         key: 'no',
@@ -224,8 +239,8 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
       {
         key: 'email',
         header: 'Email',
-        width: 220,
-        render: (item) => <div className="text-muted-foreground">{item.email}</div>,
+        width: 180,
+        render: (item) => <div title={item.email} className="text-muted-foreground line-clamp-2 break-all whitespace-normal">{item.email}</div>,
       },
       {
         key: 'phone',
@@ -242,23 +257,16 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
       {
         key: 'actions',
         header: 'Aksi',
-        width: 100,
+        width: 64,
         className: 'text-right',
         render: (item) => (
           <div className="flex justify-end">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 border-gray-200 text-xs"
-              title="Lihat Detail"
+            <TableIconAction icon={Eye} label={`Lihat detail respons ${toTitleCaseName(item.name)}`}
               onClick={() => {
                 setSelectedResponse(item);
                 setIsDetailModalOpen(true);
               }}
-            >
-              <Eye className="h-3.5 w-3.5" />
-              Lihat
-            </Button>
+            />
           </div>
         ),
       },
@@ -407,20 +415,23 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
           </div>
         ) : (
           <CustomTable
+            tableClassName="table-fixed"
+            isRefreshing={isFetching}
+            actions={<RefreshButton onClick={() => refetch()} isRefreshing={isFetching} />}
             columns={tableColumns}
             data={paginatedResponses}
             total={filteredResponses.length}
             page={page}
             pageSize={pageSize}
             onPageChange={setPage}
-            onPageSizeChange={setPageSize}
+            onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
             searchValue={search}
             onSearchChange={(value) => {
               setSearch(value);
               setPage(1);
             }}
             enableColumnFilters
-            emptyText="Belum ada responden untuk formulir ini"
+            emptyText={isError ? 'Gagal memuat respons. Silakan muat ulang.' : 'Belum ada responden untuk formulir ini'}
             className="border border-gray-200 rounded-lg overflow-hidden"
           />
         )}
@@ -496,7 +507,7 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
               </div>
               <div>
                 <p className="text-xs text-muted-foreground font-medium">Periode Yudisium</p>
-                <p className="text-sm font-semibold text-foreground mt-0.5 truncate" title={selectedResponse?.yudisiumName}>
+                <p className="text-sm font-semibold text-foreground mt-0.5 truncate" title={selectedResponse?.yudisiumName ?? undefined}>
                   {selectedResponse?.yudisiumName || '-'}
                 </p>
               </div>
@@ -521,8 +532,8 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
 
                   <div className="space-y-3">
                     {session.questions?.map((q, qIdx) => {
-                      const answers = selectedResponse?.answers.filter((a: any) => a.questionId === q.id) || [];
-                      const answerText = answers.map((a: any) => a.optionText || a.answerText).filter(Boolean).join(', ');
+                      const answers = selectedResponse?.answers.filter((a) => a.questionId === q.id) || [];
+                      const answerText = answers.map(formatAnswer).filter(Boolean).join(', ');
 
                       return (
                         <div key={q.id} className="p-4 bg-card rounded-lg border border-gray-200 space-y-2">
@@ -534,7 +545,7 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
                           </div>
                           <div className="pl-4">
                             {answerText ? (
-                              <div className="text-xs text-foreground bg-muted/30 p-3 rounded-md border border-gray-100 font-medium leading-relaxed">
+                              <div className="text-xs text-foreground bg-muted/30 p-3 rounded-md border border-gray-100 font-medium leading-relaxed whitespace-pre-wrap break-words">
                                 {answerText}
                               </div>
                             ) : (
@@ -559,7 +570,7 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
               onClick={() => setIsDetailModalOpen(false)}
               className="h-8 px-4 border-gray-200 text-xs font-medium"
             >
-              Tutup Detail
+              Tutup
             </Button>
           </DialogFooter>
         </DialogContent>

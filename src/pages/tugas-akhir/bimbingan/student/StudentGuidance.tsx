@@ -23,8 +23,9 @@ import GuidanceExportDialog from '@/components/thesis/GuidanceExportDialog';
 import BatchExportDialog from '@/components/thesis/BatchExportDialog';
 import { PendingRequestAlert } from '@/components/thesis/PendingRequestAlert';
 import { RequirementsNotMet } from '@/components/shared/RequirementsNotMet';
+import { ThesisClosedAlert } from '@/components/thesis/ThesisClosedAlert';
 import { ThesisActionBlockedAlert } from '@/components/thesis/ThesisActionBlockedAlert';
-import { getGuidanceActionBlockReason, getThesisStatusLabel } from '@/lib/thesisLabels';
+import { getGuidanceActionBlockReason } from '@/lib/thesisLabels';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStudentGuidance, useGuidanceDialogs } from '@/hooks/guidance';
 import { getGuidanceTableColumns } from '@/lib/guidanceTableColumns';
@@ -55,6 +56,8 @@ export default function StudentGuidancePage() {
     setPage,
     pageSize,
     setPageSize,
+    phase,
+    setPhase,
     hasPendingRequest,
     pendingRequestInfo,
     refetch,
@@ -65,11 +68,20 @@ export default function StudentGuidancePage() {
     queryFn: getMyThesisDetail,
   });
 
-  // The detail endpoint only returns a TA-phase thesis; a proposal-phase student gets 404.
+  // The detail endpoint answers 404 only when the student has no thesis at all.
   const isNotInThesisPhase = isThesisDetailError;
-  const isThesisInactive = thesisDetail?.status === "completed" || thesisDetail?.status === "failed";
-  // K14: guidance write actions only for status `research`; the button stays visible but disabled.
-  const actionBlockReason = thesisDetail ? getGuidanceActionBlockReason(thesisDetail.status) : null;
+  // A stopped or finished thesis keeps its sessions visible,
+  // read-only, under a ribbon with the day it was closed.
+  const closedStatus = thesisDetail?.status === "failed" || thesisDetail?.status === "completed" ? thesisDetail.status : null;
+  const isThesisStopped = !!closedStatus;
+  // Guidance writes for status `research`, or `proposal` after Penetapan Pembimbing;
+  // the button stays visible but disabled with the reason.
+  const actionBlockReason = thesisDetail
+    ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", {
+        repeatingProposal: thesisDetail.repeatingProposal,
+        proposalPhaseOpen: thesisDetail.proposalPhaseOpen,
+      })
+    : null;
 
   /* ADDED: Search params for Quick Actions */
   const [searchParams, setSearchParams] = useSearchParams();
@@ -174,20 +186,21 @@ export default function StudentGuidancePage() {
     onToggleSelect: handleToggleSelect,
     onToggleSelectAll: handleToggleSelectAll,
     exportableIds,
-    onReschedule: (guidanceId: string) => {
+    onReschedule: isThesisStopped ? undefined : (guidanceId: string) => {
       const guidance = (items || []).find(g => g.id === guidanceId);
       if (guidance && guidance.supervisorId) {
         setRescheduleGuidance({ id: guidanceId, supervisorId: guidance.supervisorId });
       }
     },
-    onCancel: (guidanceId: string) => {
+    onCancel: isThesisStopped ? undefined : (guidanceId: string) => {
       setCancelGuidanceId(guidanceId);
     },
     onExport: (guidanceId: string) => {
       setExportGuidanceId(guidanceId);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }), [items, supervisorFilter, setSupervisorFilter, status, setStatus, setPage, openDocumentPreview, navigate, thesisDetail?.student?.nim, thesisDetail?.student?.name, selectedIds, exportableIds]);
+    phase,
+    setPhase,
+  }), [items, supervisorFilter, setSupervisorFilter, status, setStatus, setPage, openDocumentPreview, navigate, thesisDetail?.student?.nim, thesisDetail?.student?.name, selectedIds, exportableIds, phase, setPhase, isThesisStopped]);
 
   const handleReschedule = async (data: { requestedDate: string; studentNotes: string }) => {
     if (!rescheduleGuidance) return false;
@@ -213,7 +226,7 @@ export default function StudentGuidancePage() {
     <div className="p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Bimbingan Tugas Akhir</h1>
-        <p className="text-muted-foreground">Jadwal bimbingan Tugas Akhir</p>
+        <p className="text-muted-foreground">Jadwal bimbingan fase proposal dan penelitian</p>
       </div>
 
       <TabsNav
@@ -241,25 +254,24 @@ export default function StudentGuidancePage() {
 
           {!thesisId || isNotInThesisPhase ? (
             <RequirementsNotMet
-              title="Syarat Mata Kuliah Belum Terpenuhi"
-              description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+              title="Belum Ada Tugas Akhir"
+              description="Bimbingan tersedia setelah Anda memiliki tugas akhir dan pembimbing."
               requirements={[
                 {
-                  label: "Mengambil mata kuliah Tugas Akhir",
+                  label: "Pengajuan pembimbing disetujui",
                   met: false,
-                  description: "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+                  description: "Ajukan pembimbing di Tugas Akhir > Proposal. Bimbingan proposal terbuka setelah Ketua Departemen menerbitkan Penetapan Pembimbing.",
                 },
               ]}
               homeUrl="/dashboard"
             />
-          ) : isThesisInactive ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
-              <h3 className="text-lg font-semibold mb-2">Tugas Akhir Tidak Aktif</h3>
-              <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{getThesisStatusLabel(thesisDetail?.status)}</strong>. Anda tidak dapat mengakses fitur bimbingan.</p>
-            </div>
           ) : (
             <>
-            <ThesisActionBlockedAlert reason={actionBlockReason} />
+            {closedStatus ? (
+              <ThesisClosedAlert status={closedStatus} closedAt={closedStatus === 'failed' ? thesisDetail?.terminatedAt : thesisDetail?.completedAt} />
+            ) : (
+              <ThesisActionBlockedAlert reason={actionBlockReason} />
+            )}
             <CustomTable
               columns={columns as any}
               data={displayItems}
@@ -279,7 +291,7 @@ export default function StudentGuidancePage() {
                 setQ(v);
                 setPage(1);
               }}
-              emptyText={q || supervisorFilter ? 'Tidak ditemukan' : 'Tidak ada data'}
+              emptyText={q || supervisorFilter || phase ? 'Tidak ditemukan' : 'Tidak ada data'}
               actions={
                 <div className="flex items-center gap-2">
                   {selectedIds.size > 0 && (
@@ -309,7 +321,7 @@ export default function StudentGuidancePage() {
                     onClick={() => refetch()}
                     isRefreshing={isFetching && !isLoading}
                   />
-                  <Button
+                  {!isThesisStopped && <Button
                     onClick={() => setOpenRequest(true)}
                     disabled={hasPendingRequest || !!actionBlockReason}
                     title={
@@ -320,7 +332,7 @@ export default function StudentGuidancePage() {
                     }
                   >
                     Ajukan Bimbingan
-                  </Button>
+                  </Button>}
                 </div>
               }
             />
@@ -375,7 +387,7 @@ export default function StudentGuidancePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          {/* K19: a reason is required for every cancellation */}
+          {/* A reason is required for every cancellation */}
           {(
             <div className="py-2">
               <label className="text-sm font-medium mb-1.5 block">Alasan Pembatalan <span className="text-destructive">*</span></label>

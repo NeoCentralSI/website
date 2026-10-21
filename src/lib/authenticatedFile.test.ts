@@ -29,8 +29,8 @@ describe("authenticatedFile", () => {
   });
 
   it("prefixes relative upload paths without putting a token in the URL", () => {
-    expect(resolveApiFileUrl("/uploads/thesis/abc/informal-log/file.pdf")).toBe(
-      "https://api.example.test/uploads/thesis/abc/informal-log/file.pdf",
+    expect(resolveApiFileUrl("/uploads/thesis/abc/proposal/a1/file.pdf")).toBe(
+      "https://api.example.test/uploads/thesis/abc/proposal/a1/file.pdf",
     );
     expect(resolveApiFileUrl("uploads/thesis/abc/file.pdf")).toBe("https://api.example.test/uploads/thesis/abc/file.pdf");
     expect(resolveApiFileUrl(null)).toBeNull();

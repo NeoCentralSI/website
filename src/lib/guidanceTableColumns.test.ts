@@ -5,7 +5,7 @@ import type { GuidanceItem } from "@/services/studentGuidance.service";
 
 const item = (extra: Partial<GuidanceItem>): GuidanceItem => ({ id: "g1", status: "requested", ...extra }) as GuidanceItem;
 
-// K19: what a student/lecturer sees under a session status
+// What a student/lecturer sees under a session status
 describe("getGuidanceStatusContext", () => {
   it("rejection shows the reason and the suggested time", () => {
     expect(

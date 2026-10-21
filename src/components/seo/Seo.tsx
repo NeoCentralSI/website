@@ -12,6 +12,8 @@ export type SeoProps = {
 };
 
 const SITE_URL = 'https://neocentral.dev';
+/** Tab title of index.html, used when a public page is left. */
+const BASE_TITLE = 'NeoCentral';
 const DEFAULT_TITLE = 'NeoCentral — Platform Digital Kerja Praktek & Tugas Akhir';
 const DEFAULT_DESCRIPTION =
   'Platform Digital untuk Kerja Praktek & Tugas Akhir Departemen Sistem Informasi Universitas Andalas. Kelola bimbingan, seminar, sidang, dan monitoring progress secara terstruktur dan transparan.';
@@ -88,8 +90,11 @@ export function Seo({
     setMeta('twitter:description', desc);
     if (img) setMeta('twitter:image', img.startsWith('http') ? img : `${SITE_URL}${img}`);
 
-    // Cleanup on unmount (optional — next page will overwrite)
-    return () => {};
+    // Pages behind the login never set the tab title, so leaving a public page (e.g. the
+    // login page after signing in) must restore the base title of index.html.
+    return () => {
+      document.title = BASE_TITLE;
+    };
   }, [fullTitle, desc, keywords, url, img, ogType, twitterCard, noindex]);
 
   return null;

@@ -6,12 +6,14 @@ import { Loading } from '@/components/ui/spinner';
 import { Badge } from '@/components/ui/badge';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
+import { Eye, FileDown } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
+import { generateAttendanceLogPdf } from '@/services/thesis-seminar/student.service';
 import { cn } from '@/lib/utils';
 import type { AttendanceHistoryResponse, AttendanceRecord } from '@/types/seminar.types';
 import {
   ThesisStudentInfoCell,
-  ThesisTitleCell,
 } from '@/components/shared/ThesisTableCells';
 import { ThesisSeminarDateCell } from '@/components/thesis-seminar/atoms/ThesisSeminarScheduleCell';
 import { ThesisSeminarLecturerCell } from '@/components/thesis-seminar/atoms/ThesisSeminarPersonnelCells';
@@ -58,7 +60,9 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const summary = attendance?.summary;
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isExporting, setIsExporting] = useState(false);
+  const selectedRecords = (attendance?.records ?? []).filter((row) => row.isPresent && selectedIds.has(row.seminarId));
 
   const filteredRecords = useMemo(() => {
     const q = search.toLowerCase();
@@ -74,6 +78,34 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
     const start = (page - 1) * pageSize;
     return filteredRecords.slice(start, start + pageSize);
   }, [filteredRecords, page, pageSize]);
+
+  const selectablePage = pagedRecords.filter((row) => row.isPresent);
+  const allSelected = selectablePage.length > 0 && selectablePage.every((row) => selectedIds.has(row.seminarId));
+  const someSelected = selectablePage.some((row) => selectedIds.has(row.seminarId));
+  const toggleSelection = (ids: string[], checked: boolean) => setSelectedIds((previous) => {
+    const next = new Set(previous);
+    ids.forEach((id) => checked ? next.add(id) : next.delete(id));
+    return next;
+  });
+  const handleExport = async () => {
+    if (!selectedRecords.length || isExporting) return;
+    setIsExporting(true);
+    try {
+      const blob = await generateAttendanceLogPdf(selectedRecords.map((row) => row.seminarId));
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'Daftar_Kehadiran_Seminar_Hasil.pdf';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal membuat PDF daftar kehadiran');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // Handle data refresh
   const handleRefresh = () => {
@@ -117,9 +149,20 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
 
   const columns: Column<AttendanceRecord>[] = [
     {
+      key: 'select',
+      width: 40,
+      header: <Checkbox aria-label="Pilih semua kehadiran pada halaman ini" disabled={!selectablePage.length || isExporting}
+        checked={allSelected || (someSelected ? 'indeterminate' : false)}
+        onCheckedChange={(checked) => toggleSelection(selectablePage.map((row) => row.seminarId), checked === true)} />,
+      render: (row) => <Checkbox aria-label={`Pilih kehadiran seminar ${row.presenterName}`}
+        disabled={!row.isPresent || isExporting} checked={row.isPresent && selectedIds.has(row.seminarId)}
+        title={!row.isPresent ? 'Kehadiran belum diverifikasi hadir' : undefined}
+        onCheckedChange={(checked) => toggleSelection([row.seminarId], checked === true)} />,
+    },
+    {
       key: 'presenter',
       header: 'Presenter',
-      width: 200,
+      width: 160,
       render: (row) => (
         <ThesisStudentInfoCell
           name={row.presenterName}
@@ -130,13 +173,12 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
     {
       key: 'thesis',
       header: 'Judul TA',
-      width: 300,
-      render: (row) => <ThesisTitleCell title={row.thesisTitle} />,
+      render: (row) => <div title={row.thesisTitle} className="line-clamp-2 whitespace-normal break-words text-sm font-medium">{row.thesisTitle}</div>,
     },
     {
       key: 'date',
       header: 'Tanggal',
-      width: 130,
+      width: 110,
       render: (row) => <ThesisSeminarDateCell date={row.date} />,
     },
     {
@@ -163,7 +205,7 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
     {
       key: 'verifiedBy',
       header: 'Diverifikasi Oleh',
-      width: 180,
+      width: 160,
       render: (row) => (
         <ThesisSeminarLecturerCell
           name={row.approvedBy || '-'}
@@ -194,7 +236,9 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
   return (
     <div className="space-y-6">
       <CustomTable
+        tableClassName="table-fixed"
         data={pagedRecords}
+        rowKey={(row) => row.seminarId}
         columns={columns}
         loading={isLoading}
         isRefreshing={isFetching && !isLoading}
@@ -213,23 +257,12 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
           setPage(1);
         }}
         actions={
-          <div className="flex items-center justify-end gap-3 w-full sm:min-w-[480px]">
-            <div className="flex items-center gap-3 mr-1">
-              <Badge
-                variant={summary?.met ? 'success' : 'warning'}
-                className={cn(
-                  "px-3 py-0.5 rounded-full font-semibold border text-[11px] uppercase tracking-wider shadow-sm",
-                  summary?.met
-                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                    : "bg-amber-50 text-amber-700 border-amber-200"
-                )}
-              >
-                {summary?.met ? 'Syarat Terpenuhi' : 'Belum Terpenuhi'}
-              </Badge>
-              <span className="text-sm font-medium text-gray-700">
-                <span className="text-gray-900 font-bold">{summary?.attended ?? 0}</span> / {summary?.required ?? 0} Hadir
-              </span>
-            </div>
+          <div className="flex items-center justify-end gap-2">
+            <Badge variant="secondary">{selectedRecords.length} Dipilih</Badge>
+            <Button onClick={handleExport} disabled={!selectedRecords.length || isExporting}>
+              <FileDown className="h-4 w-4" />
+              {isExporting ? 'Membuat PDF...' : 'Cetak Daftar Kehadiran'}
+            </Button>
             <RefreshButton
               onClick={handleRefresh}
               isRefreshing={isFetching && !isLoading}

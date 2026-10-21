@@ -1,241 +1,168 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChevronRight, Mail, Copy, Bell, CheckCircle2, ExternalLink } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Bell } from "lucide-react";
+import { toast } from "sonner";
+
+import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
 import { useRole } from "@/hooks/shared/useRole";
 import { toTitleCaseName } from "@/lib/text";
-import { sendBatchWarnings, type AtRiskStudent } from "@/services/monitoring.service";
-import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { sendBatchWarnings, type AtRiskStudent, type BatchWarningNotSent } from "@/services/monitoring.service";
+import { InactiveDaysText, MonitoringListCard, MonitoringListRow } from "./MonitoringListCard";
 
-interface SlowStudentsCardProps {
-    slowStudents: AtRiskStudent[] | undefined;
-    atRiskStudents: AtRiskStudent[] | undefined;
-    isLoading: boolean;
-    showViewAll?: boolean;
+/** "Aktivitas tugas akhir Lancar (2), Tugas akhir tidak berstatus Penelitian (1)" */
+function summarizeNotSent(notSent: BatchWarningNotSent[]): string {
+  const counts = new Map<string, number>();
+  for (const item of notSent) counts.set(item.reasonLabel, (counts.get(item.reasonLabel) ?? 0) + 1);
+  return [...counts].map(([label, count]) => `${label} (${count})`).join(", ");
 }
 
-export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading, showViewAll = true }: SlowStudentsCardProps) {
-    const navigate = useNavigate();
-    const { isKadep } = useRole();
-    const [sending, setSending] = React.useState(false);
+interface SlowStudentsCardProps {
+  slowStudents: AtRiskStudent[] | undefined;
+  atRiskStudents: AtRiskStudent[] | undefined;
+  isLoading: boolean;
+}
 
-    // Combine and prioritize at-risk
-    const allStudents = React.useMemo(() => {
-        const slow = slowStudents || [];
-        const atRisk = atRiskStudents || [];
+/**
+ * "Progres Lambat & Berisiko": running theses whose activity level is Lambat or Berisiko,
+ * Berisiko first, then the longest without activity. Ketua Departemen, Sekretaris Departemen
+ * and GKM can warn them all, after confirming how many students receive it.
+ */
+export function SlowStudentsCard({ slowStudents, atRiskStudents, isLoading }: SlowStudentsCardProps) {
+  const { isKadep, isSekdep, isGkm } = useRole();
+  const canSendWarning = isKadep() || isSekdep() || isGkm();
+  const queryClient = useQueryClient();
+  const [sending, setSending] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-        // Combine, ensuring unique thesisIds (though they should be distinct categories)
-        const combined = [...atRisk.map(s => ({ ...s, isAtRisk: true })), ...slow.map(s => ({ ...s, isAtRisk: false }))];
+  const allStudents = useMemo(() => {
+    const combined = [
+      ...(atRiskStudents ?? []).map((student) => ({ ...student, level: "at_risk" as const })),
+      ...(slowStudents ?? []).map((student) => ({ ...student, level: "slow" as const })),
+    ];
+    // The two lists are separate categories; a thesis in both keeps its Berisiko entry.
+    const unique = combined.filter((student, index, list) => list.findIndex((other) => other.thesisId === student.thesisId) === index);
+    return unique.sort((a, b) => {
+      if (a.level !== b.level) return a.level === "at_risk" ? -1 : 1;
+      return b.daysSinceActivity - a.daysSinceActivity;
+    });
+  }, [slowStudents, atRiskStudents]);
 
-        // Distinct by thesisId just in case
-        const unique = combined.filter((v, i, a) => a.findIndex(t => t.thesisId === v.thesisId) === i);
+  const handleBatchWarning = async () => {
+    if (allStudents.length === 0) return;
 
-        // Sort: At Risk first, then by days since activity
-        return unique.sort((a, b) => {
-            if (a.isAtRisk && !b.isAtRisk) return -1;
-            if (!a.isAtRisk && b.isAtRisk) return 1;
-            return b.daysSinceActivity - a.daysSinceActivity;
-        });
-    }, [slowStudents, atRiskStudents]);
-
-    const handleCopyEmail = (email: string) => {
-        navigator.clipboard.writeText(email);
-        toast.success("Email disalin ke clipboard");
-    };
-
-    const handleBatchWarning = async () => {
-        if (allStudents.length === 0) return;
-
-        setSending(true);
-        try {
-            const thesisIds = allStudents.map(s => s.thesisId);
-            // Send as AT_RISK if there's any at-risk, or just generic SLOW for batch?
-            // User requested "batch peringatan ke semua daftar mahasiswa"
-            // We'll use SLOW as the baseline or handle based on the mix
-            await sendBatchWarnings(thesisIds, 'SLOW');
-            toast.success(`Berhasil mengirim peringatan ke ${thesisIds.length} mahasiswa`);
-        } catch (error: any) {
-            toast.error(error.message || "Gagal mengirim peringatan batch");
-        } finally {
-            setSending(false);
-        }
-    };
-
-    if (isLoading) {
-        return (
-            <Card className="h-full">
-                <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                        <Skeleton className="h-6 w-6 rounded-full" />
-                        <Skeleton className="h-6 w-48" />
-                    </CardTitle>
-                    <Skeleton className="h-4 w-64 mt-1" />
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                        <div key={i} className="p-4 border rounded-xl space-y-3">
-                            <div className="flex justify-between">
-                                <Skeleton className="h-5 w-40" />
-                                <Skeleton className="h-6 w-20" />
-                            </div>
-                            <Skeleton className="h-4 w-full" />
-                            <div className="flex gap-2">
-                                <Skeleton className="h-4 w-32" />
-                            </div>
-                        </div>
-                    ))}
-                </CardContent>
-            </Card>
-        );
+    setSending(true);
+    try {
+      // One batch for the whole list; the server words each warning for the level of that thesis.
+      const result = await sendBatchWarnings(allStudents.map((student) => student.thesisId));
+      const notSent = result.notSent ?? [];
+      if (notSent.length === 0) {
+        toast.success(result.message);
+      } else {
+        // The message of the server already says how many were sent and how many were not.
+        toast.warning(result.message, { description: `Tidak dikirim: ${summarizeNotSent(notSent)}` });
+      }
+      // What the server skipped is no longer Lambat or Berisiko: fetch the lists again.
+      void queryClient.invalidateQueries({ queryKey: monitoringKeys.all });
+    } catch (error) {
+      toast.error((error as Error)?.message || "Gagal mengirim peringatan batch");
+    } finally {
+      setSending(false);
+      setConfirmOpen(false);
     }
+  };
 
-    const displayStudents = allStudents;
+  const atRiskCount = allStudents.filter((student) => student.level === "at_risk").length;
+  const slowCount = allStudents.length - atRiskCount;
 
-    return (
-        <Card className="flex flex-col h-full overflow-hidden">
-            <CardHeader className="pb-4 border-b bg-slate-50/30">
-                <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                        <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-800">
-                            <AlertTriangle className="h-5 w-5 text-orange-500 animate-pulse" />
-                            Progress Lambat & Berisiko
-                        </CardTitle>
-                        <CardDescription className="text-slate-500">
-                            Daftar mahasiswa yang memerlukan perhatian segera
-                        </CardDescription>
-                    </div>
-                    <div className="flex gap-2">
-                        {displayStudents.length > 0 && isKadep() && (
-                            <TooltipProvider>
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            className="h-9 w-9 p-0 rounded-full shadow-sm hover:shadow-md transition-all"
-                                            onClick={handleBatchWarning}
-                                            disabled={sending}
-                                        >
-                                            <Bell className={cn("h-4 w-4", sending && "animate-bounce")} />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p>Kirim Peringatan ke Semua</p>
-                                    </TooltipContent>
-                                </Tooltip>
-                            </TooltipProvider>
-                        )}
-                        {showViewAll && allStudents.length > 5 && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 rounded-full bg-white"
-                                onClick={() => navigate("/monitoring/slow")}
-                            >
-                                Lihat Semua
-                                <ChevronRight className="h-4 w-4 ml-1" />
-                            </Button>
-                        )}
-                    </div>
-                </div>
-            </CardHeader>
-            <CardContent className="flex-1 p-0 overflow-hidden">
-                {displayStudents.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                        <div className="bg-green-50 p-4 rounded-full mb-4">
-                            <CheckCircle2 className="h-10 w-10 text-green-500" />
-                        </div>
-                        <p className="font-semibold text-slate-800">Semua Terkendali!</p>
-                        <p className="text-sm text-slate-500 mt-1">Tidak ada mahasiswa dengan progress lambat saat ini.</p>
-                    </div>
-                ) : (
-                    <div className="h-[400px] overflow-y-auto px-4 py-4 custom-scrollbar bg-slate-50/20">
-                        <div className="space-y-3">
-                            {displayStudents.map((student) => {
-                                const isAtRisk = student.isAtRisk;
-                                return (
-                                    <div
-                                        key={student.thesisId}
-                                        className={cn(
-                                            "group relative flex flex-col p-4 rounded-xl border transition-all duration-200",
-                                            isAtRisk
-                                                ? "bg-rose-50/50 border-rose-200 hover:border-rose-300 shadow-sm shadow-rose-100/50"
-                                                : "bg-white border-slate-200 hover:border-amber-300 hover:shadow-sm"
-                                        )}
-                                    >
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2 mb-0.5">
-                                                    <p className="font-bold text-slate-800 truncate text-base">
-                                                        {toTitleCaseName(student.student.name)}
-                                                    </p>
-                                                    {isAtRisk && (
-                                                        <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase tracking-wider font-bold">
-                                                            At Risk
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                <p className="text-sm font-medium text-slate-500 tracking-tight">
-                                                    {student.student.nim}
-                                                </p>
+  return (
+    <>
+      <MonitoringListCard
+        icon={AlertTriangle}
+        iconClassName="text-orange-500"
+        title="Progres Lambat & Berisiko"
+        description="Mahasiswa yang lama tanpa aktivitas dan perlu perhatian"
+        count={allStudents.length}
+        isLoading={isLoading}
+        emptyDescription="Tidak ada mahasiswa dengan progres lambat atau berisiko."
+        action={
+          allStudents.length > 0 && canSendWarning ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setConfirmOpen(true)} disabled={sending}>
+                  <Bell className="h-4 w-4" />
+                  {sending ? "Mengirim..." : "Peringatkan"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Kirim peringatan ke semua mahasiswa pada daftar ini</TooltipContent>
+            </Tooltip>
+          ) : undefined
+        }
+      >
+        {allStudents.map((student) => (
+          <MonitoringListRow
+            key={student.thesisId}
+            name={toTitleCaseName(student.student.name)}
+            identityNumber={student.student.nim}
+            trailing={
+              <>
+                <ThesisActivityBadge level={student.level} className="text-[11px]" />
+                <InactiveDaysText days={student.daysSinceActivity} />
+              </>
+            }
+          />
+        ))}
+      </MonitoringListCard>
 
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    <div className="flex items-center gap-2 text-xs text-slate-600 bg-slate-100/80 px-3 py-1.5 rounded-full border border-slate-200/50 group/copy">
-                                                        <Mail className="h-3.5 w-3.5 text-slate-400" />
-                                                        <span className="font-medium truncate max-w-[200px]">{student.student.email}</span>
-                                                        <button
-                                                            className="ml-1 p-0.5 rounded-md hover:bg-slate-200 text-slate-400 hover:text-primary transition-all"
-                                                            onClick={() => handleCopyEmail(student.student.email)}
-                                                            title="Salin Email"
-                                                        >
-                                                            <Copy className="h-3 w-3" />
-                                                        </button>
-                                                        <a
-                                                            href={`mailto:${student.student.email}?subject=Peringatan Progres Tugas Akhir&body=Halo ${toTitleCaseName(student.student.name)},%0D%0A%0D%0AAnda sudah tidak ada update progress tugas akhir selama ${student.daysSinceActivity} hari. Segera lakukan bimbingan dengan dosen pembimbing Anda sebelum deadline tugas akhir Anda berakhir.`}
-                                                            className="p-0.5 rounded-md hover:bg-slate-200 text-slate-400 hover:text-primary transition-all flex items-center justify-center"
-                                                            title="Kirim Email"
-                                                        >
-                                                            <ExternalLink className="h-3 w-3" />
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <TooltipProvider>
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <Badge
-                                                            variant="secondary"
-                                                            className={cn(
-                                                                "h-9 px-3 rounded-full font-bold border transition-colors shadow-sm",
-                                                                isAtRisk
-                                                                    ? "bg-rose-100 text-rose-700 border-rose-200"
-                                                                    : "bg-amber-100 text-amber-700 border-amber-200"
-                                                            )}
-                                                        >
-                                                            {student.daysSinceActivity} hari lalu
-                                                        </Badge>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent side="left">
-                                                        <p className="text-xs font-semibold">
-                                                            {isAtRisk ? "Tidak bimbingan sejak" : "Terakhir bimbingan"}
-                                                        </p>
-                                                    </TooltipContent>
-                                                </Tooltip>
-                                            </TooltipProvider>
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
-    );
+      <AlertDialog open={confirmOpen} onOpenChange={(open) => { if (!sending) setConfirmOpen(open); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
+              Kirim Peringatan Massal
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Peringatan akan dikirim ke <strong className="text-foreground">{allStudents.length} mahasiswa</strong> pada
+                  daftar Progres Lambat &amp; Berisiko ({atRiskCount} Berisiko, {slowCount} Lambat).
+                </p>
+                <p className="text-sm">
+                  Setiap mahasiswa menerima notifikasi push dan notifikasi di aplikasi. Peringatan yang sudah terkirim
+                  tidak dapat ditarik kembali.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={sending}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              // Stay open while sending; the dialog closes when the request settles.
+              onClick={(event) => {
+                event.preventDefault();
+                void handleBatchWarning();
+              }}
+              disabled={sending}
+              className="bg-orange-500 hover:bg-orange-600"
+            >
+              <Bell className="mr-2 h-4 w-4" />
+              {sending ? "Mengirim..." : `Kirim ke ${allStudents.length} Mahasiswa`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }

@@ -14,12 +14,11 @@ import { useMemo } from "react";
 import { useRole } from '@/hooks/shared';
 import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
-import { useAdvisorAccessState } from "./useAdvisorAccessState";
-import { useStudentEligibility } from "./useStudentEligibility";
-import { isMetopenArchiveMode } from "@/lib/metopelArchive";
+import { useLecturerApprovalInbox } from "@/hooks/thesis-proposal/useSupervisorRequests";
 import { ENV } from "@/config/env";
 
-type SidebarLeafItem = { title: string; url: string };
+/** `badge`: a count shown next to the sub-item, e.g. waiting supervisor requests. */
+type SidebarLeafItem = { title: string; url: string; badge?: number };
 type SidebarNavItem = {
   title: string;
   url: string;
@@ -51,7 +50,7 @@ const appendSharedEventMenus = (items: SidebarNavItem[]) => {
 };
 
 export const useSidebarMenu = () => {
-  const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing, isKoordinatorMetopen } = useRole();
+  const { isStudent, isDosen, isKadep, isSekdep, isGkm, isAdmin, isPembimbing, isResearchMethodCoordinator } = useRole();
   const { user: authUser } = useAuth();
 
   const isStudentRole = isStudent();
@@ -61,21 +60,13 @@ export const useSidebarMenu = () => {
   const isGkmRole = isGkm();
   const isAdminRole = isAdmin();
   const isPembimbingRole = isPembimbing();
-  const isKoordinatorMetopenRole = isKoordinatorMetopen();
+  const isResearchMethodCoordinatorRole = isResearchMethodCoordinator();
 
   const avatarBlobUrl = useAvatarBlob(authUser?.avatarUrl);
-  const isStudentUser = Boolean(authUser?.id) && isStudentRole;
-  const { canAccessMetopel, canAccessTugasAkhir, hasTugasAkhirCourse, isMetopenOnlyTrack } =
-    useStudentEligibility();
-  const { data: advisorAccess } = useAdvisorAccessState(isStudentUser && canAccessMetopel);
-  const isMetopenArchive = isMetopenArchiveMode({
-    isMetopenArchive: advisorAccess?.isMetopenArchive,
-    hasTakenMetopen: advisorAccess?.hasTakenMetopen,
-    takingThesisCourse: advisorAccess?.takingThesisCourse,
-    metopenReadOnly: advisorAccess?.metopenReadOnly,
-    requestStatus: advisorAccess?.requestStatus,
-    latestRequestStatus: advisorAccess?.latestRequest?.status,
-  });
+  // Tugas Akhir > Permohonan carries what waits for the
+  // lecturer, the supervisor requests and the lecturer's change-request steps together.
+  const { data: approvalInbox } = useLecturerApprovalInbox({ page: 1, pageSize: 1 }, isPembimbingRole);
+  const waitingRequestCount = approvalInbox?.counts.waiting ?? 0;
 
   const menuData = useMemo(() => {
     // Compute role flags once for memo dependencies
@@ -87,7 +78,7 @@ export const useSidebarMenu = () => {
       gkm: isGkmRole,
       admin: isAdminRole,
       pembimbing: isPembimbingRole,
-      koordinatorMetopen: isKoordinatorMetopenRole,
+      researchMethodCoordinator: isResearchMethodCoordinatorRole,
     };
 
     // Get user initials for avatar fallback
@@ -100,69 +91,47 @@ export const useSidebarMenu = () => {
     };
 
     /**
-     * Build menu Metopen per role.
-     *
-     * Pertimbangan canon SIMPTA v2.2:
-     * - "Inbox Pembimbing" hanya relevan untuk user yang punya role
-     *   Pembimbing 1 / Pembimbing 2. Role struktural seperti Sekdep/GKM tidak
-     *   boleh menutupi kemampuan pembimbing bila user yang sama memang
-     *   multi-role, tetapi juga tidak boleh memberi inbox ke user non-pembimbing.
-     * - "CPMK & Rubrik Penilaian" khusus Sekdep (master MetopenCpmk + rubrik
-     *   TA-03). Bukan operasional antrean; bukan bagian Kelola Tugas Akhir.
-     * - "Penilaian TA-03A" untuk Pembimbing 1 master + Pembimbing 2 co-sign
-     *   (BR-20). Antrean menggabungkan P1 pending input + P2 pending co-sign
-     *   supaya konsensus mufakat satu jendela navigasi.
-     * - "Penilaian TA-03B" tetap khusus role Koordinator Metopen
-     *   (Koordinator Metopen) sesuai BR-19.
+     * Metode Penelitian: the coordinator runs the class (Monitoring Kelas,
+     * Penilaian Proposal); Kadep and Sekdep follow it read-only in Monitoring Kelas, which has the scores.
+     * Supervisors score in Tugas Akhir > Proposal; Sekdep's master data is Kelola > Metode Penelitian.
      */
-    const buildMetopenItems = ({
-      coordinatorLabel,
-      coordinatorUrl,
-      includeInboxPembimbing = role.pembimbing,
-    }: {
-      coordinatorLabel?: string;
-      coordinatorUrl?: string;
-      /**
-       * Default mengikuti role Pembimbing 1/2 aktif. Opsi ini hanya dipakai
-       * untuk menutup inbox pada surface tertentu tanpa memberi akses baru.
-       */
-      includeInboxPembimbing?: boolean;
-    } = {}): SidebarLeafItem[] => {
-      const items: SidebarLeafItem[] = [];
-
-      if (role.sekdep) {
-        items.push({
-          title: "CPMK & Rubrik Penilaian",
-          url: "/kelola/metopen/cpmk-rubrik",
-        });
+    const buildResearchMethodItems = (): SidebarLeafItem[] => {
+      if (role.researchMethodCoordinator) {
+        return [
+          { title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" },
+          { title: "Penilaian Proposal", url: "/metode-penelitian/penilaian" },
+        ];
       }
-
-      if (coordinatorLabel && coordinatorUrl) {
-        items.push({ title: coordinatorLabel, url: coordinatorUrl });
-      }
-
-      if (role.kadep || role.sekdep) {
-        items.push({ title: "Kuota Dosen", url: "/kelola/metopen/kuota-dosen" });
-      }
-
-      if (role.pembimbing) {
-        // BR-20: antrean penilaian TA-03A — P1 input rubrik + P2 co-sign.
-        items.push({ title: "Penilaian TA-03A", url: "/kelola/metopen/ta03a" });
-      }
-
-      if (role.koordinatorMetopen) {
-        items.push({ title: "Penilaian TA-03B", url: "/kelola/metopen/ta03b" });
-        // Dashboard monitoring progress Metopen per mahasiswa eligible SIA:
-        // status pembimbing + rincian nilai 4 bucket (mirror xlsx download).
-        items.push({ title: "Monitoring Kelas", url: "/kelola/metopen/monitoring" });
-      }
-
-      if (includeInboxPembimbing && role.pembimbing) {
-        items.push({ title: "Inbox Pembimbing", url: "/dosen/inbox-pembimbing" });
-      }
-
-      return items;
+      if (role.kadep || role.sekdep) return [{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }];
+      return [];
     };
+
+    /** Tugas Akhir > Proposal for supervisors: their proposal-phase students and "Nilai Proposal". */
+    const proposalItems: SidebarLeafItem[] = role.pembimbing ? [{ title: "Proposal", url: "/tugas-akhir/proposal" }] : [];
+
+    /**
+     * A supervisor's Tugas Akhir order is Permohonan, Bimbingan, Proposal,
+     * Seminar Hasil, Sidang TA. Supervisors have no Perubahan or Evaluasi page (they act from
+     * Permohonan and Mahasiswa Bimbingan). Permohonan and Proposal are for supervisors; a
+     * lecturer without the supervisor role keeps Bimbingan, Seminar Hasil and Sidang TA.
+     */
+    const supervisorThesisItems = (): SidebarLeafItem[] => [
+      ...(role.pembimbing
+        ? [{ title: "Permohonan", url: "/tugas-akhir/permohonan", ...(waitingRequestCount > 0 ? { badge: waitingRequestCount } : {}) }]
+        : []),
+      { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+      ...proposalItems,
+      { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+      { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+    ];
+    /** The Ketua Departemen's two decision queues, last in Tugas Akhir. */
+    const KADEP_DECISION_ITEMS: SidebarLeafItem[] = [
+      { title: "Perubahan", url: "/tugas-akhir/perubahan" },
+      { title: "Evaluasi", url: "/tugas-akhir/evaluasi" },
+    ];
+    const MONITORING_ITEM: SidebarLeafItem = { title: "Monitoring", url: "/tugas-akhir/monitoring" };
+    // The submenu is "Penetapan"; its page keeps the title "Penetapan Pembimbing".
+    const PENETAPAN_ITEM: SidebarLeafItem = { title: "Penetapan", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" };
 
     // STUDENT MENU
     if (role.student) {
@@ -185,20 +154,21 @@ export const useSidebarMenu = () => {
             { title: "Seminar & Nilai", url: "/kerja-praktik/seminar" },
           ],
         },
-        ...(canAccessTugasAkhir
-          ? [
-              {
-                title: "Tugas Akhir",
-                url: "#",
-                icon: FileText,
-                items: [
-                  { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                  { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-                  { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-                ],
-              } as SidebarNavItem,
-            ]
-          : []),
+        // Tugas Akhir is always shown (Overview, Bimbingan, Proposal, Seminar Hasil, Sidang);
+        // without a thesis its pages show an empty state or actions disabled with a reason.
+        // The separate "Metode Penelitian" menu for students is gone.
+        {
+          title: "Tugas Akhir",
+          url: "#",
+          icon: FileText,
+          items: [
+            { title: "Overview", url: "/tugas-akhir" },
+            { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
+            { title: "Proposal", url: "/tugas-akhir/proposal" },
+            { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
+            { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+          ],
+        },
         // Yudisium — leaf item (no children)
         {
           title: "Yudisium",
@@ -214,39 +184,6 @@ export const useSidebarMenu = () => {
           items: [],
         },
       ];
-
-      if (canAccessMetopel || canAccessTugasAkhir) {
-        const metopenItems = [{ title: "Ringkasan", url: "/metopel" }];
-        const canOpenAdvisorSearch =
-          !isMetopenArchive &&
-          !(advisorAccess?.hasOfficialSupervisor ?? false) &&
-          (Boolean(advisorAccess?.canBrowseCatalog) || Boolean(advisorAccess?.hasBlockingRequest));
-
-        if (canOpenAdvisorSearch) {
-          metopenItems.push({ title: "Cari Pembimbing", url: "/metopel/cari-pembimbing" });
-        }
-
-        const showMetopenProposal =
-          isMetopenOnlyTrack &&
-          (Boolean(advisorAccess?.hasBookedSupervisor) || Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenArchive);
-        const showMetopenInformalLogbook =
-          isMetopenOnlyTrack &&
-          (Boolean(advisorAccess?.hasOfficialSupervisor) || isMetopenArchive);
-        if (showMetopenProposal) {
-          metopenItems.push({ title: "Proposal", url: "/metopel/proposal" });
-        }
-        if (showMetopenInformalLogbook) {
-          metopenItems.push({ title: "Catatan informal", url: "/metopel/logbook" });
-        }
-        metopenItems.push({ title: "Alur Proposal", url: "/metopel/arsip" });
-
-        studentNav.splice(2, 0, {
-          title: isMetopenArchive ? "Metode Penelitian (Arsip)" : "Metode Penelitian",
-          url: "#",
-          icon: BookOpen,
-          items: metopenItems,
-        });
-      }
 
       return {
         user: {
@@ -282,13 +219,13 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      const metopenItems = buildMetopenItems();
-      if (metopenItems.length > 0) {
+      const researchMethodItems = buildResearchMethodItems();
+      if (researchMethodItems.length > 0) {
         menuItems.push({
           title: "Metode Penelitian",
           url: "#",
           icon: BookOpen,
-          items: metopenItems,
+          items: researchMethodItems,
         });
       }
 
@@ -297,11 +234,7 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        items: [
-          { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-          { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-        ],
+        items: supervisorThesisItems(),
       });
 
       appendSharedEventMenus(menuItems);
@@ -314,14 +247,8 @@ export const useSidebarMenu = () => {
         items: [],
       });
 
-      if (role.koordinatorMetopen) {
-        menuItems.push({
-          title: "Kelola",
-          url: "#",
-          icon: Database,
-          items: [{ title: "Metode Penelitian", url: "/kelola/metode-penelitian" }],
-        });
-      }
+      // Kelola > Metode Penelitian is the Sekdep's; the coordinator's
+      // menu is Metode Penelitian > Monitoring Kelas, Penilaian Proposal.
 
       return {
         user: {
@@ -357,26 +284,23 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      menuItems.push({
-        title: "Metode Penelitian",
-        url: "#",
-        icon: BookOpen,
-        items: buildMetopenItems({
-          coordinatorLabel: "Keputusan TA-01 s.d. TA-04",
-          coordinatorUrl: "/kelola/tugas-akhir/kadep",
-        }),
-      });
+      const kadepResearchMethodItems = buildResearchMethodItems();
+      if (kadepResearchMethodItems.length > 0) {
+        menuItems.push({
+          title: "Metode Penelitian",
+          url: "#",
+          icon: BookOpen,
+          items: kadepResearchMethodItems,
+        });
+      }
 
       menuItems.push({
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        items: [
-          { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-          { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-          { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-          { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        ],
+        // Monitoring, Penetapan Pembimbing, the supervisor's items,
+        // then the two decision queues (Perubahan, Evaluasi).
+        items: [MONITORING_ITEM, PENETAPAN_ITEM, ...supervisorThesisItems(), ...KADEP_DECISION_ITEMS],
       });
 
       appendSharedEventMenus(menuItems);
@@ -396,8 +320,7 @@ export const useSidebarMenu = () => {
         icon: Database,
         items: [
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir/master-data" },
-          // Guidance revival: persetujuan transfer mahasiswa bimbingan (baseline)
-          { title: "Pergantian Pembimbing", url: "/kelola/tugas-akhir/kadep/pergantian-pembimbing" },
+          { title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" },
           { title: "Perusahaan", url: "/kelola/perusahaan" },
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik/kadep/persetujuan" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
@@ -418,9 +341,9 @@ export const useSidebarMenu = () => {
     }
 
     // LECTURER (SEKDEP) MENU
-    // Canon SIMPTA v2.0 §4 + Q5 (audit BR-24): Sekdep adalah pengelola data
+    // Sekdep adalah pengelola data
     // master TA + monitoring read-only. Role Sekdep saja bukan pembimbing
-    // operasional dan bukan co-approver TA-04. Untuk akun multi-role, menu
+    // operasional dan tidak menerbitkan Penetapan Pembimbing (hanya membaca). Untuk akun multi-role, menu
     // operasional tetap mengikuti role tambahan yang benar-benar dimiliki.
     if (role.sekdep) {
       const menuItems = [
@@ -447,13 +370,13 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      const metopenItems = buildMetopenItems();
-      if (metopenItems.length > 0) {
+      const researchMethodItems = buildResearchMethodItems();
+      if (researchMethodItems.length > 0) {
         menuItems.push({
           title: "Metode Penelitian",
           url: "#",
           icon: BookOpen,
-          items: metopenItems,
+          items: researchMethodItems,
         });
       }
 
@@ -461,16 +384,9 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        items: [
-          ...(role.pembimbing
-            ? [
-                { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-                { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-              ]
-            : []),
-          { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        ],
+        // Monitoring first. Read-only Penetapan Pembimbing (Sekdep sees the
+        // period's batch and downloads it), then the supervisor's items for a supervising Sekdep.
+        items: [MONITORING_ITEM, PENETAPAN_ITEM, ...(role.pembimbing ? supervisorThesisItems() : [])],
       });
 
       appendSharedEventMenus(menuItems);
@@ -492,6 +408,7 @@ export const useSidebarMenu = () => {
           { title: "Kerja Praktik", url: "/kelola/kerja-praktik" },
           { title: "Metode Penelitian", url: "/kelola/metode-penelitian" },
           { title: "Tugas Akhir", url: "/kelola/tugas-akhir" },
+          { title: "Batas Bimbingan", url: "/kelola/tugas-akhir/batas-bimbingan" },
           { title: "Panduan", url: "/kelola/sop" },
           { title: "Kelompok Keilmuan", url: "/kelola/kelompok-keilmuan" },
           { title: "CPL", url: "/kelola/cpl" },
@@ -535,13 +452,13 @@ export const useSidebarMenu = () => {
         },
       ];
 
-      const metopenItems = buildMetopenItems();
-      if (metopenItems.length > 0) {
+      const researchMethodItems = buildResearchMethodItems();
+      if (researchMethodItems.length > 0) {
         menuItems.push({
           title: "Metode Penelitian",
           url: "#",
           icon: BookOpen,
-          items: metopenItems,
+          items: researchMethodItems,
         });
       }
 
@@ -552,16 +469,8 @@ export const useSidebarMenu = () => {
         title: "Tugas Akhir",
         url: "#",
         icon: FileText,
-        items: [
-          ...(role.pembimbing
-            ? [
-                { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
-                { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-                { title: "Sidang TA", url: "/tugas-akhir/sidang" },
-              ]
-            : []),
-          { title: "Monitoring", url: "/tugas-akhir/monitoring" },
-        ],
+        // Monitoring first, then the supervisor's items for a supervising GKM.
+        items: [MONITORING_ITEM, ...(role.pembimbing ? supervisorThesisItems() : [])],
       });
 
       appendSharedEventMenus(menuItems);
@@ -681,10 +590,7 @@ export const useSidebarMenu = () => {
                 title: "Data Hari Libur",
                 url: "/master-data/hari-libur",
               },
-              {
-                title: "Kuota Bimbingan",
-                url: "/master-data/kuota-bimbingan",
-              },
+              // No "Batas Bimbingan" for Admin; Kadep and Sekdep set it.
             ],
           },
           ...(ENV.ENABLE_DEV_TOOLS
@@ -724,23 +630,11 @@ export const useSidebarMenu = () => {
     // Only recompute when role flags or auth user identity change
   }, [
     // role flags
-    isStudentRole, isDosenRole, isKadepRole, isSekdepRole, isGkmRole, isAdminRole, isPembimbingRole, isKoordinatorMetopenRole,
+    isStudentRole, isDosenRole, isKadepRole, isSekdepRole, isGkmRole, isAdminRole, isPembimbingRole, isResearchMethodCoordinatorRole,
     // user deps
     authUser?.fullName, authUser?.email,
     avatarBlobUrl,
-    advisorAccess?.canBrowseCatalog,
-    advisorAccess?.hasBlockingRequest,
-    advisorAccess?.hasBookedSupervisor,
-    advisorAccess?.hasOfficialSupervisor,
-    advisorAccess?.isMetopenArchive,
-    advisorAccess?.hasTakenMetopen,
-    advisorAccess?.takingThesisCourse,
-    advisorAccess?.metopenReadOnly,
-    canAccessMetopel,
-    canAccessTugasAkhir,
-    isMetopenArchive,
-    hasTugasAkhirCourse,
-    isMetopenOnlyTrack,
+    waitingRequestCount,
   ]);
 
   return menuData;

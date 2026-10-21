@@ -33,6 +33,8 @@ export interface ResearchMethodCpmk {
   createdAt: string;
   updatedAt: string;
   criteriaCount?: number;
+  /** The semester has Penilaian Proposal details (draft or sent): deleting is locked. */
+  hasAssessmentDetails?: boolean;
 }
 
 export interface ResearchMethodCpmkWithRubrics extends ResearchMethodCpmk {
@@ -86,6 +88,10 @@ export interface ResearchMethodWeightSummary {
   remainingScore: number;
   supervisor: ResearchMethodWeightSummaryDetail[];
   coordinator: ResearchMethodWeightSummaryDetail[];
+  /** Penilaian Proposal has started in the semester (a draft or a sent score). */
+  assessmentStarted?: boolean;
+  /** The semester has a final result: the minimum passing score is locked. */
+  minimumScoreLocked?: boolean;
 }
 
 async function parseValue<T>(
@@ -289,4 +295,25 @@ export async function reorderResearchMethodRubrics(
     },
   );
   await parseValue(response, "Gagal menyimpan urutan rubrik");
+}
+
+/** What "Salin Template" created in the target period. */
+export interface ResearchMethodCopyResult {
+  cpmk: number;
+  supervisorCriteria: number;
+  supervisorRubrics: number;
+  coordinatorCriteria: number;
+  coordinatorRubrics: number;
+}
+
+/** Copy the CPMK, criteria and rubrics of another period into an empty period (Sekdep). */
+export async function copyResearchMethodCpmkTemplate(payload: {
+  sourceAcademicYearId: string;
+  targetAcademicYearId: string;
+}): Promise<ResearchMethodCopyResult> {
+  const response = await apiRequest(
+    getApiUrl(API_CONFIG.ENDPOINTS.RESEARCH_METHOD.CPMK_COPY_TEMPLATE),
+    { method: "POST", body: JSON.stringify(payload) },
+  );
+  return parseValue(response, "Gagal menyalin CPMK Metode Penelitian");
 }

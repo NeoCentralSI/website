@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 
 import Mahasiswa from './Mahasiswa';
@@ -37,6 +37,9 @@ vi.mock('@/services/admin.service', async () => {
     adminUpdateStudentAPI: vi.fn(),
   };
 });
+
+const siaStatus = vi.hoisted(() => ({ configured: true }));
+vi.mock('@/services/sia.service', () => ({ getSiaSyncStatus: vi.fn(async () => ({ configured: siaStatus.configured, lastRun: null, periodSnapshots: null })) }));
 
 vi.mock('@/components/layout/CustomTable', () => ({
   default: ({
@@ -89,7 +92,7 @@ describe('Mahasiswa page', () => {
     vi.clearAllMocks();
     vi.mocked(useRole).mockReturnValue({
       isAdmin: () => true,
-      isKoordinatorMetopen: () => false,
+      isResearchMethodCoordinator: () => false,
       isLoading: false,
     } as ReturnType<typeof useRole>);
     vi.mocked(getAcademicYearsAPI).mockResolvedValue({
@@ -120,28 +123,14 @@ describe('Mahasiswa page', () => {
         sksCompleted: 120,
         status: 'active',
         activeTheses: [],
-        metopenEligibility: {
-          eligibleMetopen: true,
-          hasExternalStatus: true,
+        semesterFlags: {
+          academicYearId: 'ay-active',
+          academicYearLabel: 'Genap 2025',
+          takingResearchMethod: true,
+          takingThesisCourse: false,
           source: 'sia',
-          updatedAt: '2026-04-23T10:00:00.000Z',
-          readOnly: false,
-          canAccess: true,
-          canSubmit: true,
-          thesisId: null,
-          thesisTitle: null,
-          thesisStatus: null,
+          capturedAt: '2026-04-23T10:00:00.000Z',
         },
-        visibleAcademicYear: {
-          id: 'ay-active',
-          year: 2025,
-          semester: 'genap',
-          label: 'Genap 2025',
-          isActive: true,
-          sources: ['metopen', 'ta'],
-        },
-        isInMetopen: true,
-        hasActiveThesis: true,
       },
     };
 
@@ -162,5 +151,23 @@ describe('Mahasiswa page', () => {
     expect(await screen.findByText('Genap 2025')).toBeInTheDocument();
     expect(screen.getByText('Ilham Nugraha')).toBeInTheDocument();
     expect(screen.getByText('Aktif')).toBeInTheDocument();
+    // Program column = SIA flags of the period (rencana 10.6), not the old menu access flag.
+    expect(screen.getByText('Metode Penelitian')).toBeInTheDocument();
+    expect(screen.queryByText('Tugas Akhir')).not.toBeInTheDocument();
+  });
+
+  it('Without SIA_BASE_URL the "Sinkronkan data SIA" button is disabled with the reason', async () => {
+    siaStatus.configured = false;
+    vi.mocked(getStudentsAPI).mockResolvedValue({
+      students: [],
+      meta: { page: 1, pageSize: 10, total: 0, totalPages: 0 },
+      academicYearContext: { id: 'ay-active', year: 2025, semester: 'genap', label: 'Genap 2025', isActive: true },
+    } as never);
+    render(<Mahasiswa />, { wrapper: createWrapper() });
+    const button = await screen.findByRole('button', { name: 'Sinkronisasi data SIA' });
+    await waitFor(() => expect(button).toBeDisabled());
+    expect(button.parentElement).toHaveAttribute('title', 'Sinkronisasi SIA belum tersedia.');
+    siaStatus.configured = true;
   });
 });
+

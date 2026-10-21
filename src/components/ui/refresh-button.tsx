@@ -28,7 +28,8 @@ export function RefreshButton({
       onClick={onClick}
       disabled={isRefreshing}
       className={cn("gap-2", className)}
-      title="Refresh data"
+      title="Muat Ulang"
+      aria-label={showText ? undefined : "Muat Ulang"}
     >
       <RefreshCw
         className={cn(

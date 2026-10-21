@@ -7,7 +7,7 @@ import {
   FileDown,
 } from "lucide-react";
 import { getCompletedGuidanceHistory, type CompletedGuidance } from "@/services/studentGuidance.service";
-import { toTitleCaseName } from "@/lib/text";
+import { formatLecturerName } from "@/lib/text";
 import GuidanceExportDialog from "./GuidanceExportDialog";
 import BatchExportDialog from "./BatchExportDialog";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
@@ -109,7 +109,7 @@ export default function CompletedGuidanceHistory() {
       header: "Pembimbing",
       render: (row) => (
         <span className="text-sm">
-          {toTitleCaseName(row.supervisorName || "-")}
+          {formatLecturerName(row.supervisorName || "-")}
         </span>
       ),
     },

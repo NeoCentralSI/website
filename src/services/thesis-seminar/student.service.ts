@@ -44,5 +44,17 @@ export const studentSeminarService = {
 export const getStudentSeminarOverview = studentSeminarService.getOverview;
 export const getStudentSeminarHistory = studentSeminarService.getHistory;
 export const getStudentAttendanceHistory = studentSeminarService.getAttendanceHistory;
+export const generateAttendanceLogPdf = async (seminarIds: string[]): Promise<Blob> => {
+  const response = await apiRequest(getApiUrl(`${API_CONFIG.ENDPOINTS.THESIS_SEMINAR.ME_ATTENDANCE}/generate-log`), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ seminarIds }),
+  });
+  if (!response.ok) {
+    const result = await response.json();
+    throw new Error(result.message || 'Gagal membuat PDF daftar kehadiran');
+  }
+  return response.blob();
+};
 export const getSeminarAnnouncements = studentSeminarService.getAnnouncements;
 

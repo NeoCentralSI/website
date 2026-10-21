@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useRole } from '@/hooks/shared/useRole';
+import { useSiaAvailability } from '@/hooks/shared/useSiaAvailability';
+import { StudentPeriodFlagsImportDialog } from '@/components/master-data/StudentPeriodFlagsImportDialog';
 import {
   getStudentsAPI,
   getAcademicYearsAPI,
@@ -14,9 +16,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import { Eye, RefreshCw, Pencil, Check, X } from 'lucide-react';
+import { Eye, RefreshCw, Pencil, Check, X, Upload } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { SEARCH_DEBOUNCE_MS, useDebounce } from '@/hooks/useDebounce';
 import { adminUpdateStudentAPI } from '@/services/admin.service';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -25,11 +28,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { getStudentStatusLabel } from '@/lib/thesisLabels';
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
-  const { isAdmin, isKoordinatorMetopen, isLoading: isRoleLoading } = useRole();
-  const showSyncButton = () => isAdmin() && !isKoordinatorMetopen();
+  const { isAdmin, isResearchMethodCoordinator, isLoading: isRoleLoading } = useRole();
+  const showSyncButton = () => isAdmin() && !isResearchMethodCoordinator();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const queryClient = useQueryClient();
 
@@ -37,6 +41,8 @@ export default function Mahasiswa() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
+  // The server is asked after the typing pause; the input itself stays instant.
+  const debouncedSearch = useDebounce(searchValue.trim(), SEARCH_DEBOUNCE_MS);
   const [programFilter, setProgramFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [enrollmentYearFilter] = useState('');
@@ -72,10 +78,10 @@ export default function Mahasiswa() {
 
   useEffect(() => {
     if (isRoleLoading) return;
-    if (!(isAdmin() || isKoordinatorMetopen())) {
+    if (!(isAdmin() || isResearchMethodCoordinator())) {
       navigate('/dashboard');
     }
-  }, [isAdmin, isKoordinatorMetopen, isRoleLoading, navigate]);
+  }, [isAdmin, isResearchMethodCoordinator, isRoleLoading, navigate]);
 
   // Fetch academic years for filter dropdown
   const { data: ayData } = useQuery({
@@ -89,11 +95,11 @@ export default function Mahasiswa() {
 
   // Use TanStack Query for server state management
   const { data, isLoading, isFetching, refetch, error } = useQuery({
-    queryKey: ['students', { page, pageSize, search: searchValue, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder }],
+    queryKey: ['students', { page, pageSize, search: debouncedSearch, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder }],
     queryFn: () => getStudentsAPI({
       page,
       pageSize,
-      search: searchValue,
+      search: debouncedSearch,
       programFilter: programFilter || undefined,
       statusFilter: statusFilter || undefined,
       enrollmentYearFilter: enrollmentYearFilter || undefined,
@@ -127,6 +133,9 @@ export default function Mahasiswa() {
     onError: (err: Error) => toast.error(err.message),
   });
 
+  const sia = useSiaAvailability(showSyncButton());
+  // Impor Keikutsertaan (Admin).
+  const [importOpen, setImportOpen] = useState(false);
   const syncMutation = useMutation({
     mutationFn: triggerSiaSyncAPI,
     onSuccess: (result) => {
@@ -155,7 +164,7 @@ export default function Mahasiswa() {
   // Reset to page 1 when search changes
   useEffect(() => {
     setPage(1);
-  }, [searchValue, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder]);
+  }, [debouncedSearch, programFilter, statusFilter, enrollmentYearFilter, academicYearFilter, sortBy, sortOrder]);
 
   const columns: Column<Student>[] = [
     {
@@ -251,29 +260,30 @@ export default function Mahasiswa() {
         onChange: setProgramFilter,
         options: [
           { value: '', label: 'Semua' },
-          { value: 'metopen', label: 'Metopen tanpa TA aktif' },
-          { value: 'ta', label: 'TA tanpa Metopen' },
-          { value: 'both', label: 'Metopen + TA aktif' },
-          { value: 'none', label: 'Tidak ada TA/Metopen aktif' },
+          { value: 'research-method', label: 'Metode Penelitian saja' },
+          { value: 'thesis', label: 'Tugas Akhir saja' },
+          { value: 'both', label: 'Metode Penelitian + Tugas Akhir' },
+          { value: 'none', label: 'Tidak keduanya' },
         ],
         placeholder: 'Filter program',
       },
+      // SIA flags of the listed period (rencana 10.6): mata kuliah yang diambil semester itu.
       render: (row: Student) => {
-        const activeTheses = row.student?.activeTheses ?? [];
-        const metopenEligibility = row.student?.metopenEligibility;
-        const inMetopen = Boolean(metopenEligibility?.canAccess);
-        const inTA = activeTheses.some((thesis) => thesis.status && String(thesis.status).toLowerCase() !== 'metopel');
-        if (!inMetopen && !inTA) return <span className="text-muted-foreground">—</span>;
+        const flags = row.student?.semesterFlags;
+        if (!flags?.takingResearchMethod && !flags?.takingThesisCourse) return <span className="text-muted-foreground">—</span>;
+        // An Admin or DevTools value is named; otherwise it is SIA's.
+        const manual = [flags.researchMethodSource, flags.thesisCourseSource, flags.source];
+        const source = manual.includes('admin') ? ' (diisi Admin)' : manual.includes('devtools') ? ' (diubah lewat DevTools)' : '';
         return (
-          <div className="flex flex-wrap gap-1">
-            {inMetopen && (
+          <div className="flex flex-wrap gap-1" title={`Keikutsertaan ${flags.academicYearLabel}${source}`}>
+            {flags.takingResearchMethod && (
               <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-100">
-                {metopenEligibility?.readOnly ? 'Metopen Arsip' : 'Metopen'}
+                Metode Penelitian
               </Badge>
             )}
-            {inTA && (
+            {flags.takingThesisCourse && (
               <Badge variant="secondary" className="text-xs bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
-                TA
+                Tugas Akhir
               </Badge>
             )}
           </div>
@@ -292,7 +302,7 @@ export default function Mahasiswa() {
           { value: '', label: 'Semua' },
           { value: 'active', label: 'Aktif' },
           { value: 'lulus', label: 'Lulus' },
-          { value: 'bss', label: 'Cuti' },
+          { value: 'bss', label: 'Cuti (BSS)' },
           { value: 'dropout', label: 'Drop Out' },
           { value: 'mengundurkan_diri', label: 'Mengundurkan Diri' },
         ],
@@ -300,12 +310,7 @@ export default function Mahasiswa() {
       },
       render: (row: Student) => {
         const rawStatus = row.student?.status || '-';
-        const displayStatus = rawStatus === 'active' ? 'Aktif'
-          : rawStatus === 'lulus' ? 'Lulus'
-            : rawStatus === 'bss' ? 'Cuti (BSS)'
-              : rawStatus === 'dropout' ? 'Drop Out'
-                : rawStatus === 'mengundurkan_diri' ? 'Mengundurkan Diri'
-                  : rawStatus;
+        const displayStatus = rawStatus === '-' ? '-' : getStudentStatusLabel(rawStatus);
         return (
           <Badge variant={rawStatus === 'active' ? 'default' : 'secondary'}>
             {displayStatus}
@@ -388,18 +393,21 @@ export default function Mahasiswa() {
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => syncMutation.mutate()}
-                      disabled={syncMutation.isPending}
-                      aria-label="Sinkronisasi data SIA"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
-                    </Button>
+                    {/* A disabled button gets no pointer events, so the tooltip sits on its wrapper. */}
+                    <span className="inline-flex" title={sia.reason ?? undefined}>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => syncMutation.mutate()}
+                        disabled={syncMutation.isPending || !sia.configured}
+                        aria-label="Sinkronisasi data SIA"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${syncMutation.isPending ? 'animate-spin' : ''}`} />
+                      </Button>
+                    </span>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{syncMutation.isPending ? 'Menyinkronkan...' : 'Sinkronkan data SIA'}</p>
+                    <p>{sia.reason ?? (syncMutation.isPending ? 'Menyinkronkan...' : 'Sinkronkan data SIA')}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -417,6 +425,7 @@ export default function Mahasiswa() {
         columns={columns}
         data={students}
         loading={isLoading}
+        subtleRefresh
         isRefreshing={(isFetching && !isLoading) || (showSyncButton() && syncMutation.isPending)}
         total={total}
         page={page}
@@ -474,6 +483,12 @@ export default function Mahasiswa() {
                 </SelectContent>
               </Select>
             </div>
+            {isAdmin() && (
+              // The opener of the Data TA import: the same icon and label.
+              <Button variant="outline" size="sm" onClick={() => setImportOpen(true)} title="Impor Keikutsertaan per semester">
+                <Upload className="mr-2 h-4 w-4" /> Import Excel
+              </Button>
+            )}
             <RefreshButton
               onClick={() => refetch()}
               isRefreshing={isFetching && !isLoading}
@@ -481,6 +496,7 @@ export default function Mahasiswa() {
           </div>
         }
       />
+      {isAdmin() && importOpen && <StudentPeriodFlagsImportDialog open={importOpen} onOpenChange={setImportOpen} />}
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent>

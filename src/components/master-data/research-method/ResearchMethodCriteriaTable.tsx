@@ -16,6 +16,12 @@ import type {
     CreateResearchMethodRubricPayload, UpdateResearchMethodRubricPayload,
 } from '@/services/researchMethodAssessment.service';
 import { ResearchMethodRubricItemFormDialog } from './ResearchMethodRubricItemFormDialog';
+import { LOCKED_DELETE_REASON, LOCKED_SCORE_REASON } from './researchMethodLocks';
+
+/** A disabled button keeps its reason in a tooltip (the wrapper, as a disabled button gets no hover). */
+function WithReason({ reason, children }: { reason: string | null; children: React.ReactNode }) {
+    return <span title={reason ?? undefined} className="inline-flex">{children}</span>;
+}
 
 interface ResearchMethodCriteriaTableProps {
     data: ResearchMethodCpmkWithRubrics[];
@@ -36,14 +42,18 @@ interface ResearchMethodCriteriaTableProps {
     isDeletingRubric: boolean;
     onGoToCatalog?: () => void;
     catalogCount?: number;
+    /** Penilaian Proposal has started in the semester: no delete, no new criterion or rubric, no score change. */
+    locked?: boolean;
 }
 
 export function ResearchMethodCriteriaTable({
     data, isLoading, isFetching, onRefresh, onAddCriteria, onEditCriteria,
     onDeleteCriteria, onDeleteCpmk, onCreateRubric, onUpdateRubric, onDeleteRubric,
     onReorderCriteria, onReorderRubrics, isDeletingCriteria, isRemovingCpmk, isDeletingRubric,
-    onGoToCatalog, catalogCount = 0,
+    onGoToCatalog, catalogCount = 0, locked = false,
 }: ResearchMethodCriteriaTableProps) {
+    const deleteReason = locked ? LOCKED_DELETE_REASON : null;
+    const scoreReason = locked ? LOCKED_SCORE_REASON : null;
     const [deleteCpmkId, setDeleteCpmkId] = useState<string | null>(null);
     const [deleteCriteriaId, setDeleteCriteriaId] = useState<string | null>(null);
     const [deleteRubricId, setDeleteRubricId] = useState<string | null>(null);
@@ -165,29 +175,35 @@ export function ResearchMethodCriteriaTable({
                                                 <p className="text-xs text-muted-foreground">Total skor kriteria: <strong>{skor}</strong></p>
                                                 <div className="flex items-center gap-2 flex-wrap">
                                                     {cpmk.assessmentCriterias.length > 0 && (
+                                                        <WithReason reason={deleteReason}>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="h-7 border-red-200 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                                disabled={locked}
+                                                                onClick={(event) => {
+                                                                    event.stopPropagation();
+                                                                    setDeleteCpmkId(cpmk.id);
+                                                                }}
+                                                            >
+                                                                <Trash2 className="mr-1 h-3 w-3" /> Hapus Semua
+                                                            </Button>
+                                                        </WithReason>
+                                                    )}
+                                                    <WithReason reason={scoreReason}>
                                                         <Button
                                                             variant="outline"
                                                             size="sm"
-                                                            className="h-7 border-red-200 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                            className="h-7 text-xs"
+                                                            disabled={locked}
                                                             onClick={(event) => {
                                                                 event.stopPropagation();
-                                                                setDeleteCpmkId(cpmk.id);
+                                                                onAddCriteria(cpmk.id);
                                                             }}
                                                         >
-                                                            <Trash2 className="mr-1 h-3 w-3" /> Hapus Semua
+                                                            <Plus className="mr-1 h-3 w-3" /> Kriteria
                                                         </Button>
-                                                    )}
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="h-7 text-xs"
-                                                        onClick={(event) => {
-                                                            event.stopPropagation();
-                                                            onAddCriteria(cpmk.id);
-                                                        }}
-                                                    >
-                                                        <Plus className="mr-1 h-3 w-3" /> Kriteria
-                                                    </Button>
+                                                    </WithReason>
                                                 </div>
                                             </div>
                                             {cpmk.assessmentCriterias.length === 0 ? (
@@ -212,10 +228,14 @@ export function ResearchMethodCriteriaTable({
                                                                     onClick={() => handleMoveCriteria(cpmk, criteria.id, 'down')}><ArrowDown className="h-3 w-3" /></Button>
                                                                 <Button variant="ghost" size="icon" className="h-7 w-7" title="Ubah kriteria"
                                                                     onClick={() => onEditCriteria(criteria, cpmk)}><Pencil className="h-3.5 w-3.5" /></Button>
-                                                                <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50 hover:text-red-700" title="Hapus kriteria"
-                                                                    onClick={() => setDeleteCriteriaId(criteria.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                                                                <Button variant="outline" size="sm" className="h-7 text-xs"
-                                                                    onClick={() => handleAddRubric(criteria)}><Plus className="mr-1 h-3 w-3" /> Rubrik</Button>
+                                                                <WithReason reason={deleteReason}>
+                                                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50 hover:text-red-700" title="Hapus kriteria" aria-label="Hapus kriteria"
+                                                                        disabled={locked} onClick={() => setDeleteCriteriaId(criteria.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                                                                </WithReason>
+                                                                <WithReason reason={scoreReason}>
+                                                                    <Button variant="outline" size="sm" className="h-7 text-xs" disabled={locked}
+                                                                        onClick={() => handleAddRubric(criteria)}><Plus className="mr-1 h-3 w-3" /> Rubrik</Button>
+                                                                </WithReason>
                                                             </div>
                                                         </div>
                                                         {criteria.assessmentRubrics.length > 0 ? (
@@ -239,8 +259,10 @@ export function ResearchMethodCriteriaTable({
                                                                                             onClick={() => handleMoveRubric(criteria, rubric.id, 'down')}><ArrowDown className="h-3 w-3" /></Button>
                                                                                         <Button variant="ghost" size="icon" className="h-7 w-7" title="Ubah rubrik"
                                                                                             onClick={() => handleEditRubric(rubric, criteria.maxScore)}><Pencil className="h-3.5 w-3.5" /></Button>
-                                                                                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50 hover:text-red-700" title="Hapus rubrik"
-                                                                                            onClick={() => setDeleteRubricId(rubric.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                                                                                        <WithReason reason={deleteReason}>
+                                                                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50 hover:text-red-700" title="Hapus rubrik" aria-label="Hapus rubrik"
+                                                                                                disabled={locked} onClick={() => setDeleteRubricId(rubric.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                                                                                        </WithReason>
                                                                                     </div>
                                                                                 </TableCell>
                                                                             </TableRow>
@@ -264,7 +286,7 @@ export function ResearchMethodCriteriaTable({
             )}
 
             <ResearchMethodRubricItemFormDialog open={rubricFormOpen} onOpenChange={setRubricFormOpen}
-                criteriaMaxScore={rubricFormCriteriaMaxScore} editData={editRubric}
+                criteriaMaxScore={rubricFormCriteriaMaxScore} editData={editRubric} rangeLockedReason={scoreReason}
                 onSubmit={editRubric
                     ? (d: UpdateResearchMethodRubricPayload) => onUpdateRubric(editRubric.id, d)
                     : (d: CreateResearchMethodRubricPayload) => onCreateRubric(rubricFormCriteriaId, d)} />

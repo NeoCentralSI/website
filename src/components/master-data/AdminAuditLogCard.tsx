@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import CustomTable from '@/components/layout/CustomTable';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { getAdminAuditLogsAPI, type AdminAuditLog } from '@/services/admin.service';
 import { formatDateId, toTitleCaseName } from '@/lib/text';
 
@@ -10,15 +11,14 @@ const ACTION_LABEL: Record<string, string> = {
   USER_ROLES_UPDATED: 'Ubah peran',
   ACADEMIC_YEAR_CREATED: 'Buat periode akademik',
   ACADEMIC_YEAR_UPDATED: 'Ubah periode akademik',
-  QUOTA_DEFAULT_UPDATED: 'Ubah kuota default',
-  QUOTA_LECTURER_UPDATED: 'Ubah kuota dosen',
+  SUPERVISION_LIMIT_UPDATED: 'Ubah batas bimbingan',
 };
 
 export function AdminAuditLogCard() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const { data, isLoading, isFetching } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['admin-audit-logs', { page, pageSize }],
     queryFn: () => getAdminAuditLogsAPI({ page, pageSize }),
     placeholderData: (previousData) => previousData,
@@ -71,6 +71,8 @@ export function AdminAuditLogCard() {
         columns={columns}
         loading={isLoading}
         isRefreshing={isFetching && !isLoading}
+        subtleRefresh
+        actions={<RefreshButton onClick={() => void refetch()} isRefreshing={isFetching && !isLoading} />}
         emptyText="Belum ada jejak audit otorisasi"
         page={page}
         pageSize={pageSize}

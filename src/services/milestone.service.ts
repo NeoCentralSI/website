@@ -1,3 +1,4 @@
+import type { ThesisPhase } from "@/lib/thesisLabels";
 import { getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
 import type {
@@ -33,8 +34,7 @@ import type {
   DefenceReadinessApprovalResult,
   StudentReadyForDefence,
   DefenceReadinessNotesDto,
-  RequestDefenceDto,
-  RequestDefenceResult,
+  ReadinessRequestResult,
 } from "@/types/milestone.types";
 
 // API Endpoints
@@ -70,8 +70,8 @@ const ENDPOINTS = {
   DEFENCE_READINESS: (thesisId: string) => `/milestones/thesis/${thesisId}/defence-readiness`,
   DEFENCE_READINESS_APPROVE: (thesisId: string) => `/milestones/thesis/${thesisId}/defence-readiness/approve`,
   DEFENCE_READINESS_REVOKE: (thesisId: string) => `/milestones/thesis/${thesisId}/defence-readiness/revoke`,
-  REQUEST_DEFENCE: (thesisId: string) => `/milestones/thesis/${thesisId}/request-defence`,
-  SEMINAR_REMIND: (thesisId: string) => `/milestones/thesis/${thesisId}/seminar-readiness/remind`,
+  SEMINAR_READINESS_REQUEST: (thesisId: string) => `/milestones/thesis/${thesisId}/seminar-readiness/request`,
+  DEFENCE_READINESS_REQUEST: (thesisId: string) => `/milestones/thesis/${thesisId}/defence-readiness/request`,
 };
 
 // ============================================
@@ -84,6 +84,8 @@ const ENDPOINTS = {
 export interface TemplateListOptions {
   /** Template management (Sekdep) also needs deactivated templates. */
   includeInactive?: boolean;
+  /** `proposal` reads the general proposal templates; default thesis-phase templates. */
+  phase?: ThesisPhase;
 }
 
 export async function getTemplates(topicId?: string, options: TemplateListOptions = {}): Promise<MilestoneTemplate[]> {
@@ -93,6 +95,9 @@ export async function getTemplates(topicId?: string, options: TemplateListOption
   }
   if (options.includeInactive) {
     url.searchParams.set("includeInactive", "true");
+  }
+  if (options.phase) {
+    url.searchParams.set("phase", options.phase);
   }
 
   const response = await apiRequest(url.toString());
@@ -229,13 +234,27 @@ export async function bulkDeleteTemplates(templateIds: string[]): Promise<{ coun
 /**
  * Get all milestones for a thesis
  */
+export interface MilestoneList {
+  milestones: Milestone[];
+  progress: MilestoneProgress;
+  /** The listed phase (the current phase unless asked otherwise, 10.7). */
+  phase?: ThesisPhase;
+  currentPhase?: ThesisPhase;
+  /** Set when the listed phase is not the current one: the list is read-only. */
+  readOnlyReason?: string | null;
+}
+
 export async function getMilestones(
   thesisId: string,
-  status?: MilestoneStatus
-): Promise<{ milestones: Milestone[]; progress: MilestoneProgress }> {
+  status?: MilestoneStatus,
+  phase?: ThesisPhase,
+): Promise<MilestoneList> {
   const url = new URL(getApiUrl(ENDPOINTS.THESIS_MILESTONES(thesisId)));
   if (status) {
     url.searchParams.set("status", status);
+  }
+  if (phase) {
+    url.searchParams.set("phase", phase);
   }
 
   const response = await apiRequest(url.toString());
@@ -248,6 +267,9 @@ export async function getMilestones(
   return {
     milestones: result.data,
     progress: result.progress,
+    phase: result.phase,
+    currentPhase: result.currentPhase,
+    readOnlyReason: result.readOnlyReason ?? null,
   };
 }
 
@@ -767,38 +789,18 @@ export async function getStudentsReadyForDefence(): Promise<StudentReadyForDefen
 }
 
 /**
- * Request defence (student uploads final thesis and requests defence)
+ * "Minta Persetujuan": the student asks the supervisors who have not approved yet. Only a
+ * notification is sent; nothing is uploaded.
  */
-export async function requestDefence(
-  thesisId: string,
-  data: RequestDefenceDto
-): Promise<RequestDefenceResult> {
-  const response = await apiRequest(getApiUrl(ENDPOINTS.REQUEST_DEFENCE(thesisId)), {
-    method: "POST",
-    body: JSON.stringify(data),
-  });
-
+export async function requestReadinessApproval(
+  kind: "seminar" | "defence",
+  thesisId: string
+): Promise<{ message: string; data: ReadinessRequestResult }> {
+  const endpoint = kind === "seminar" ? ENDPOINTS.SEMINAR_READINESS_REQUEST : ENDPOINTS.DEFENCE_READINESS_REQUEST;
+  const response = await apiRequest(getApiUrl(endpoint(thesisId)), { method: "POST" });
+  const result = await response.json().catch(() => ({}));
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Gagal mengajukan permintaan sidang");
+    throw new Error(result.message || "Gagal meminta persetujuan pembimbing");
   }
-
-  const result = await response.json();
-  return result.data;
-}
-
-/**
- * Send reminder to supervisors for seminar readiness approval
- */
-export async function remindSeminarApproval(thesisId: string): Promise<{ success: boolean; message: string }> {
-  const response = await apiRequest(getApiUrl(ENDPOINTS.SEMINAR_REMIND(thesisId)), {
-    method: "POST",
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || "Gagal mengirim pengingat");
-  }
-
-  return response.json();
+  return result;
 }

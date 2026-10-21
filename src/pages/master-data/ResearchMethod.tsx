@@ -1,92 +1,53 @@
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useOutletContext } from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate, useOutletContext, useParams } from "react-router-dom";
 
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
 import { ResearchMethodCpmkManagementPanel } from "@/components/master-data/research-method/ResearchMethodCpmkManagementPanel";
 import { ResearchMethodRubricManagementPanel } from "@/components/master-data/research-method/ResearchMethodRubricManagementPanel";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { LocalTabsNav } from "@/components/ui/tabs-nav";
-import {
-  getAcademicYearsAPI,
-  getActiveAcademicYearAPI,
-} from "@/services/admin.service";
+import { TemplateManagementPanel } from "@/components/milestone/TemplateManagementPanel";
+import { PageHeading } from "@/components/shared/PageHeading";
+import { TabsNav } from "@/components/ui/tabs-nav";
 
-const TAB_ITEMS = [
-  { label: "CPMK", value: "cpmk" },
-  { label: "Rubrik Penilaian", value: "rubric" },
-];
+/**
+ * Kelola > Metode Penelitian: one address per tab, as Kelola Tugas Akhir.
+ * The page and its master data are the Sekretaris Departemen's
+ * only (route guard in App.tsx): Template Milestone (fase proposal, umum), CPMK and Rubrik
+ * Penilaian, the last two with their own period select inside the panel.
+ */
+const TABS = [
+  { value: "milestone", label: "Template Milestone", to: "/kelola/metode-penelitian/milestone" },
+  { value: "cpmk", label: "CPMK", to: "/kelola/metode-penelitian/cpmk" },
+  { value: "rubrik", label: "Rubrik Penilaian", to: "/kelola/metode-penelitian/rubrik" },
+] as const;
 
 export default function ResearchMethod() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
-  const [tab, setTab] = useState<"cpmk" | "rubric">("cpmk");
-  const [selectedYear, setSelectedYear] = useState<string>();
-
-  const years = useQuery({
-    queryKey: ["research-method-academic-years"],
-    queryFn: () => getAcademicYearsAPI({ page: 1, pageSize: 100 }),
-  });
-  const active = useQuery({
-    queryKey: ["research-method-active-academic-year"],
-    queryFn: getActiveAcademicYearAPI,
-  });
-
-  const academicYearId = selectedYear || active.data?.academicYear?.id;
-  const breadcrumbs = useMemo(
-    () => [{ label: "Kelola" }, { label: "Metode Penelitian" }],
-    [],
-  );
+  const { tab } = useParams();
+  const active = TABS.find((t) => t.value === tab) ?? null;
 
   useEffect(() => {
-    setBreadcrumbs(breadcrumbs);
+    setBreadcrumbs([
+      { label: "Kelola" },
+      { label: "Metode Penelitian", href: "/kelola/metode-penelitian" },
+      { label: active?.label ?? "Template Milestone" },
+    ]);
     setTitle("Kelola Metode Penelitian");
-  }, [breadcrumbs, setBreadcrumbs, setTitle]);
+  }, [active?.label, setBreadcrumbs, setTitle]);
+
+  if (!active) return <Navigate to="/kelola/metode-penelitian/milestone" replace />;
 
   return (
     <div className="space-y-6 p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Kelola Metode Penelitian</h1>
-          <p className="text-muted-foreground">
-            Kelola CPMK serta kriteria dan rubrik penilaian proposal secara
-            terstruktur
-          </p>
-        </div>
-        <div className="w-full md:w-[260px]">
-          <Select value={academicYearId || ""} onValueChange={setSelectedYear}>
-            <SelectTrigger>
-              <SelectValue placeholder="Pilih tahun ajaran" />
-            </SelectTrigger>
-            <SelectContent>
-              {(years.data?.academicYears || []).map((item) => (
-                <SelectItem key={item.id} value={item.id}>
-                  {item.semester === "ganjil" ? "Ganjil" : "Genap"}{" "}
-                  {item.year || ""}
-                  {item.isActive ? " (Aktif)" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <LocalTabsNav
-        tabs={TAB_ITEMS}
-        activeTab={tab}
-        onTabChange={(value) => setTab(value as "cpmk" | "rubric")}
+      <PageHeading
+        title="Kelola Metode Penelitian"
+        subtitle="Template milestone fase proposal, CPMK, serta kriteria dan rubrik Penilaian Proposal"
       />
 
-      {tab === "cpmk" ? (
-        <ResearchMethodCpmkManagementPanel academicYearId={academicYearId} />
-      ) : (
-        <ResearchMethodRubricManagementPanel academicYearId={academicYearId} />
-      )}
+      <TabsNav tabs={TABS.map((t) => ({ label: t.label, to: t.to }))} />
+
+      {active.value === "milestone" && <TemplateManagementPanel phase="proposal" />}
+      {active.value === "cpmk" && <ResearchMethodCpmkManagementPanel />}
+      {active.value === "rubrik" && <ResearchMethodRubricManagementPanel />}
     </div>
   );
 }

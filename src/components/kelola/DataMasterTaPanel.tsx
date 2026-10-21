@@ -21,7 +21,8 @@ import { ExportExcelDialog } from "./ExportExcelDialog";
 import { ImportMasterDataDialog } from "./ImportMasterDataDialog";
 import { Upload } from "lucide-react";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
-import { ThesisRatingBadge } from "@/components/shared/ThesisRatingBadge";
+import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
+import { SearchableCombobox, type ComboboxOption } from "@/components/shared/SearchableCombobox";
 import {
     getAllowedThesisStatusOptions,
     getTerminationReasonOptions,
@@ -38,9 +39,8 @@ interface FormState {
     thesisTopicId: string;
     academicYearId: string;
     startDate: string;
-    rating: string | null;
     status: ThesisLifecycleStatus;
-    /** Status when the dialog opened (null = new thesis); K21 transitions start from here. */
+    /** Status when the dialog opened (null = new thesis); the allowed transitions start from here. */
     originalStatus: ThesisLifecycleStatus | null;
     statusBeforeLeave: ThesisLifecycleStatus | null;
     terminationReason: ThesisTerminationReason | "none";
@@ -56,7 +56,6 @@ const emptyForm: FormState = {
     thesisTopicId: "none",
     academicYearId: "none",
     startDate: "",
-    rating: null,
     status: "research",
     originalStatus: null,
     statusBeforeLeave: null,
@@ -69,6 +68,29 @@ const emptyForm: FormState = {
 
 const terminationReasonOptions = getTerminationReasonOptions();
 const isClosedStatus = (s: ThesisLifecycleStatus | null) => s === "completed" || s === "failed";
+
+// Two lines high, so a short hint and a long one keep the two columns level.
+const FIELD_HINT_CLASS = "min-h-8 text-xs text-muted-foreground";
+const NO_LECTURER_OPTION: ComboboxOption = { value: "none", label: "-- Silahkan Pilih --" };
+// The full BSS label is too long for a one-line hint.
+const SHORT_STATUS_LABELS: Partial<Record<ThesisLifecycleStatus, string>> = { on_leave: "BSS" };
+
+/** "A", "A atau B", "A, B, atau C". */
+function joinWithOr(items: string[]): string {
+    if (items.length <= 2) return items.join(" atau ");
+    return `${items.slice(0, -1).join(", ")}, atau ${items[items.length - 1]}`;
+}
+
+/** Always-present hint under the status field, so the row keeps its height. */
+function getStatusHint(original: ThesisLifecycleStatus | null, statusBeforeLeave: ThesisLifecycleStatus | null): string {
+    if (!original) return "Status awal tugas akhir yang didata.";
+    if (isClosedStatus(original)) return `Tugas akhir berstatus "${THESIS_STATUS_LABELS[original]}" tidak dapat diubah lagi.`;
+    if (original === "on_leave") return "Dari BSS, tugas akhir hanya dapat kembali ke status sebelumnya atau dihentikan.";
+    const targets = getAllowedThesisStatusOptions(original, statusBeforeLeave)
+        .filter((option) => option.value !== original)
+        .map((option) => SHORT_STATUS_LABELS[option.value] ?? option.label);
+    return `Dapat diubah menjadi ${joinWithOr(targets)}.`;
+}
 
 export function DataMasterTaPanel() {
     const queryClient = useQueryClient();
@@ -91,9 +113,28 @@ export function DataMasterTaPanel() {
     const { data: topics = [] } = useQuery({ queryKey: ["topics"], queryFn: getTopics });
     const { data: academicYearsData } = useQuery({ queryKey: ["admin-academic-years"], queryFn: () => getAcademicYearsAPI({ pageSize: 100 }) });
 
-    const students = studentsData?.students || [];
-    const lecturers = lecturersData?.lecturers || [];
+    const students = studentsData?.students;
+    const lecturers = lecturersData?.lecturers;
     const academicYears = academicYearsData?.academicYears || [];
+
+    const studentOptions = useMemo<ComboboxOption[]>(
+        () => (students ?? []).map((s) => ({
+            value: s.id,
+            label: s.identityNumber ? `${s.fullName} (${s.identityNumber})` : s.fullName,
+        })),
+        [students],
+    );
+    const lecturerOptions = useMemo<ComboboxOption[]>(
+        () => [
+            NO_LECTURER_OPTION,
+            ...(lecturers ?? []).map((l) => ({
+                value: l.id,
+                label: l.fullName,
+                keywords: l.identityNumber ? [l.identityNumber] : undefined,
+            })),
+        ],
+        [lecturers],
+    );
 
     // Mutations
     const createMutation = useMutation({
@@ -132,6 +173,10 @@ export function DataMasterTaPanel() {
         return filteredTheses.slice(start, start + pageSize);
     }, [filteredTheses, page, pageSize]);
 
+    // While editing, the student cannot change: show them even before the student list loads.
+    const editedStudent = formState.id ? theses.find((t) => t.id === formState.id)?.student : undefined;
+    const editedStudentLabel = editedStudent ? `${editedStudent.name} (${editedStudent.nim})` : undefined;
+
     const handleStartCreate = () => {
         setFormState({ ...emptyForm });
         setDialogOpen(true);
@@ -145,7 +190,6 @@ export function DataMasterTaPanel() {
             thesisTopicId: thesis.topic?.id || "none",
             academicYearId: thesis.academicYear?.id || "none",
             startDate: thesis.startDate ? new Date(thesis.startDate).toISOString().split('T')[0] : "",
-            rating: thesis.rating ?? null,
             status: thesis.status,
             originalStatus: thesis.status,
             statusBeforeLeave: thesis.statusBeforeLeave ?? null,
@@ -178,7 +222,7 @@ export function DataMasterTaPanel() {
             return;
         }
 
-        // K21: rating is never sent (computed by the rating job); supervisors of a closed
+        // The activity level is derived and never sent; supervisors of a closed
         // thesis are not editable; status is sent only when it changes.
         const closed = isClosedStatus(formState.originalStatus);
         const payload: Record<string, unknown> = {
@@ -224,17 +268,17 @@ export function DataMasterTaPanel() {
         {
             key: "title",
             header: "Judul / Topik",
+            // The title wraps to two lines with an ellipsis (the cell is nowrap by
+            // default), the topic badge ends with an ellipsis; both keep the full text in `title`.
             render: (t) => (
                 <div className="min-w-[180px] max-w-[260px]">
-                    <div className="line-clamp-2 text-sm">{t.title || "-"}</div>
+                    <div className="line-clamp-2 whitespace-normal break-words text-sm" title={t.title || undefined}>{t.title || "-"}</div>
                     <Badge
                         variant="outline"
-                        className="mt-1 max-w-full overflow-hidden text-xs"
+                        className="mt-1 inline-block max-w-full truncate align-top text-xs"
                         title={t.topic?.name || "Tanpa Topik"}
                     >
-                        <span className="min-w-0 truncate">
-                            {t.topic?.name || "Tanpa Topik"}
-                        </span>
+                        {t.topic?.name || "Tanpa Topik"}
                     </Badge>
                 </div>
             )
@@ -251,16 +295,12 @@ export function DataMasterTaPanel() {
             )
         },
         {
-            key: "rating",
-            header: "Rating",
+            // Read-only: derived from the last activity date (only for a research thesis).
+            key: "activity",
+            header: "Aktivitas",
             width: 90,
             className: "text-center",
-            render: (t) => {
-                if (!t.rating || t.status === "completed") {
-                    return <span className="text-muted-foreground text-xs font-mono">-</span>;
-                }
-                return <ThesisRatingBadge rating={t.rating} className="text-xs" />;
-            }
+            render: (t) => <ThesisActivityBadge level={t.activityLevel} className="text-xs" />
         },
         {
             key: "status",
@@ -328,7 +368,10 @@ export function DataMasterTaPanel() {
                 onPageChange={setPage}
                 onPageSizeChange={setPageSize}
                 searchValue={search}
-                onSearchChange={setSearch}
+                onSearchChange={(value) => {
+                    setSearch(value);
+                    setPage(1);
+                }}
                 emptyText="Tidak ada data tugas akhir ditemukan"
                 actions={
                     <div className="flex items-center gap-2">
@@ -350,31 +393,30 @@ export function DataMasterTaPanel() {
             />
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-x-hidden">
                     <DialogHeader>
                         <DialogTitle>{formState.id ? "Edit Data Tugas Akhir" : "Tambah Data Tugas Akhir"}</DialogTitle>
                         <DialogDescription>Isi form di bawah ini untuk mengelola master data tugas akhir.</DialogDescription>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-y-auto px-1">
+                    <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-1">
                         <div className="space-y-4 py-4 pr-3">
-                            <div className="grid gap-2">
+                            <div className="grid min-w-0 gap-2">
                                 <Label>Mahasiswa *</Label>
-                                <Select
+                                <SearchableCombobox
+                                    ariaLabel="Pilih mahasiswa"
+                                    options={studentOptions}
                                     value={formState.studentId}
-                                    onValueChange={(v) => setFormState(prev => ({ ...prev, studentId: v }))}
+                                    onChange={(v) => setFormState(prev => ({ ...prev, studentId: v }))}
                                     disabled={!!formState.id} // Disable changing student if editing
-                                >
-                                    <SelectTrigger><SelectValue placeholder="Pilih mahasiswa..." /></SelectTrigger>
-                                    <SelectContent>
-                                        {students.map(s => (
-                                            <SelectItem key={s.id} value={s.id}>{s.fullName} ({s.identityNumber})</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    placeholder="Pilih mahasiswa..."
+                                    searchPlaceholder="Cari nama atau NIM..."
+                                    emptyText="Mahasiswa tidak ditemukan."
+                                    fallbackLabel={editedStudentLabel}
+                                />
                             </div>
 
-                            <div className="grid gap-2">
+                            <div className="grid min-w-0 gap-2">
                                 <Label>Judul Tugas Akhir</Label>
                                 <Input
                                     value={formState.title}
@@ -383,14 +425,14 @@ export function DataMasterTaPanel() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="grid gap-2">
+                            <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                <div className="grid min-w-0 content-start gap-2">
                                     <Label>Topik</Label>
                                     <Select
                                         value={formState.thesisTopicId}
                                         onValueChange={(v) => setFormState(prev => ({ ...prev, thesisTopicId: v }))}
                                     >
-                                        <SelectTrigger><SelectValue placeholder="Pilih topik..." /></SelectTrigger>
+                                        <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Pilih topik..." /></SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="none">-- Tanpa Topik --</SelectItem>
                                             {topics.map(t => (
@@ -400,13 +442,13 @@ export function DataMasterTaPanel() {
                                     </Select>
                                 </div>
                                 {formState.id && (
-                                    <div className="grid gap-2">
+                                    <div className="grid min-w-0 content-start gap-2">
                                         <Label>Tahun Ajaran</Label>
                                         <Select
                                             value={formState.academicYearId}
                                             onValueChange={(v) => setFormState(prev => ({ ...prev, academicYearId: v }))}
                                         >
-                                            <SelectTrigger><SelectValue placeholder="Pilih tahun ajaran..." /></SelectTrigger>
+                                            <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Pilih tahun ajaran..." /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
                                                 {academicYears.map(ay => (
@@ -418,58 +460,40 @@ export function DataMasterTaPanel() {
                                 )}
 
                                 {formState.id && (
-                                    <>
-                                        <div className="grid gap-2">
-                                            <Label>Tanggal Mulai</Label>
-                                            <DatePicker
-                                                value={formState.startDate ? new Date(formState.startDate) : undefined}
-                                                onChange={(date) => setFormState(prev => ({ ...prev, startDate: date ? date.toISOString().split('T')[0] : "" }))}
-                                                showPastDates={true}
-                                            />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label>Rating</Label>
-                                            {/* K21: rating is computed by the rating job, shown only */}
-                                            <div className="flex h-9 items-center gap-2">
-                                                {formState.rating ? (
-                                                    <ThesisRatingBadge rating={formState.rating} />
-                                                ) : (
-                                                    <span className="text-sm text-muted-foreground">-</span>
-                                                )}
-                                                <span className="text-xs text-muted-foreground">dihitung otomatis</span>
-                                            </div>
-                                        </div>
-                                    </>
+                                    <div className="grid min-w-0 content-start gap-2">
+                                        <Label>Tanggal Mulai</Label>
+                                        <DatePicker
+                                            value={formState.startDate ? new Date(formState.startDate) : undefined}
+                                            onChange={(date) => setFormState(prev => ({ ...prev, startDate: date ? date.toISOString().split('T')[0] : "" }))}
+                                            showPastDates={true}
+                                        />
+                                        <p className={FIELD_HINT_CLASS}>
+                                            Masa bimbingan dihitung dari tanggal ini (masa BSS tidak dihitung).
+                                        </p>
+                                    </div>
                                 )}
 
-                                <div className="grid gap-2">
+                                <div className="grid min-w-0 content-start gap-2">
                                     <Label>Status Tugas Akhir</Label>
                                     <Select
                                         value={formState.status}
                                         onValueChange={(v) => setFormState(prev => ({ ...prev, status: v as ThesisLifecycleStatus }))}
                                         disabled={isClosedStatus(formState.originalStatus)}
                                     >
-                                        <SelectTrigger><SelectValue placeholder="Pilih status..." /></SelectTrigger>
+                                        <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Pilih status..." /></SelectTrigger>
                                         <SelectContent>
                                             {getAllowedThesisStatusOptions(formState.originalStatus, formState.statusBeforeLeave).map(s => (
                                                 <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    {isClosedStatus(formState.originalStatus) && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Tugas akhir berstatus "{THESIS_STATUS_LABELS[formState.originalStatus as ThesisLifecycleStatus]}" tidak dapat diubah lagi.
-                                        </p>
-                                    )}
-                                    {formState.originalStatus === "on_leave" && (
-                                        <p className="text-xs text-muted-foreground">
-                                            Dari BSS, tugas akhir hanya dapat kembali ke status sebelumnya atau dihentikan.
-                                        </p>
-                                    )}
+                                    <p className={FIELD_HINT_CLASS}>
+                                        {getStatusHint(formState.originalStatus, formState.statusBeforeLeave)}
+                                    </p>
                                 </div>
 
                                 {formState.status === "failed" && formState.originalStatus !== "failed" && (
-                                    <div className="col-span-2 grid gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                                    <div className="grid gap-3 rounded-md border border-destructive/30 bg-destructive/5 p-3 sm:col-span-2">
                                         <Alert variant="destructive" className="border-0 bg-transparent p-0">
                                             <AlertCircle className="h-4 w-4" />
                                             <AlertTitle>Hentikan tugas akhir</AlertTitle>
@@ -477,13 +501,13 @@ export function DataMasterTaPanel() {
                                                 Semua pembimbing aktif akan dilepas dan sesi bimbingan yang masih terbuka dibatalkan. Status Gagal tidak dapat diubah lagi.
                                             </AlertDescription>
                                         </Alert>
-                                        <div className="grid gap-2">
+                                        <div className="grid min-w-0 gap-2">
                                             <Label>Alasan penghentian *</Label>
                                             <Select
                                                 value={formState.terminationReason}
                                                 onValueChange={(v) => setFormState(prev => ({ ...prev, terminationReason: v as ThesisTerminationReason }))}
                                             >
-                                                <SelectTrigger><SelectValue placeholder="Pilih alasan..." /></SelectTrigger>
+                                                <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Pilih alasan..." /></SelectTrigger>
                                                 <SelectContent>
                                                     <SelectItem value="none" disabled>-- Pilih alasan --</SelectItem>
                                                     {terminationReasonOptions.map(r => (
@@ -492,7 +516,7 @@ export function DataMasterTaPanel() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="grid gap-2">
+                                        <div className="grid min-w-0 gap-2">
                                             <Label>Catatan (opsional)</Label>
                                             <Textarea
                                                 value={formState.terminationNote}
@@ -507,38 +531,32 @@ export function DataMasterTaPanel() {
 
                             <div className="border-t pt-4 mt-4">
                                 <Label className="text-base mb-4 block">Pembimbing</Label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
+                                <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+                                    <div className="grid min-w-0 content-start gap-2">
                                         <Label>Pembimbing 1 *</Label>
-                                        <Select
+                                        <SearchableCombobox
+                                            ariaLabel="Pilih pembimbing 1"
+                                            options={lecturerOptions}
                                             value={formState.pembimbing1}
-                                            onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing1: v }))}
+                                            onChange={(v) => setFormState(prev => ({ ...prev, pembimbing1: v }))}
                                             disabled={isClosedStatus(formState.originalStatus)}
-                                        >
-                                            <SelectTrigger><SelectValue placeholder="Pilih pembimbing 1..." /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
-                                                {lecturers.map(l => (
-                                                    <SelectItem key={l.id} value={l.id}>{l.fullName}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            placeholder="Pilih pembimbing 1..."
+                                            searchPlaceholder="Cari nama atau NIP..."
+                                            emptyText="Dosen tidak ditemukan."
+                                        />
                                     </div>
-                                    <div className="grid gap-2">
+                                    <div className="grid min-w-0 content-start gap-2">
                                         <Label>Pembimbing 2 (Opsional)</Label>
-                                        <Select
+                                        <SearchableCombobox
+                                            ariaLabel="Pilih pembimbing 2"
+                                            options={lecturerOptions}
                                             value={formState.pembimbing2}
-                                            onValueChange={(v) => setFormState(prev => ({ ...prev, pembimbing2: v }))}
+                                            onChange={(v) => setFormState(prev => ({ ...prev, pembimbing2: v }))}
                                             disabled={isClosedStatus(formState.originalStatus)}
-                                        >
-                                            <SelectTrigger><SelectValue placeholder="Pilih pembimbing 2..." /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
-                                                {lecturers.map(l => (
-                                                    <SelectItem key={l.id} value={l.id}>{l.fullName}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            placeholder="Pilih pembimbing 2..."
+                                            searchPlaceholder="Cari nama atau NIP..."
+                                            emptyText="Dosen tidak ditemukan."
+                                        />
                                     </div>
                                 </div>
                             </div>

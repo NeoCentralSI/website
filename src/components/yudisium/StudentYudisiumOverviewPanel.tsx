@@ -14,6 +14,7 @@ interface OverviewPanelProps {
   history: StudentYudisiumHistoryItem[];
   onDetailClick: (id: string, yudisiumId: string) => void;
   onRefetch?: () => void;
+  isFetching?: boolean;
 }
 
 export function StudentYudisiumOverviewPanel({
@@ -21,6 +22,7 @@ export function StudentYudisiumOverviewPanel({
   history,
   onDetailClick,
   onRefetch,
+  isFetching,
 }: OverviewPanelProps) {
   const navigate = useNavigate();
   const yudisium = overview.yudisium;
@@ -77,9 +79,7 @@ export function StudentYudisiumOverviewPanel({
         </div>
       </div>
 
-      {overview.cplScores && overview.cplScores.length > 0 && (
-        <StudentYudisiumCplTable cplScores={overview.cplScores} />
-      )}
+      <StudentYudisiumCplTable cplScores={overview.cplScores ?? []} onRefetch={onRefetch} isFetching={isFetching} />
 
       {historyItems.length > 0 ? (
         <section className="overflow-hidden rounded-lg border border-gray-200 bg-card">

@@ -29,12 +29,9 @@ export interface User {
     enrollmentYear: number;
     sksCompleted: number;
     status: string | null;
-    eligibleMetopen?: boolean | null;
-    metopenEligibilitySource?: 'sia' | 'devtools' | null;
-    metopenEligibilityUpdatedAt?: string | null;
+    /** SIA flags of the running semester (plan 10.6). */
+    eligibleResearchMethod?: boolean | null;
     takingThesisCourse?: boolean | null;
-    thesisCourseEnrollmentSource?: 'sia' | 'devtools' | null;
-    thesisCourseEnrollmentUpdatedAt?: string | null;
   };
   lecturer?: {
     id: string;

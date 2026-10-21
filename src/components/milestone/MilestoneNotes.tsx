@@ -1,10 +1,10 @@
-import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
+import { formatDateTimeWib, formatLecturerName } from "@/lib/text";
 
 interface MilestoneNotesProps {
   status: string;
   /** Catatan keputusan Pembimbing 1 (setujui / minta revisi). */
   supervisorNotes?: string | null;
-  /** Feedback pembimbing (P1/P2); tidak mengubah status. */
+  /** Feedback pembimbing; tidak mengubah status. */
   feedback?: string | null;
   feedbackByName?: string | null;
   feedbackAt?: string | null;
@@ -12,7 +12,7 @@ interface MilestoneNotesProps {
 }
 
 /**
- * Paket C (C9): two clearly labelled blocks. "Catatan Persetujuan" (milestone selesai) or
+ * Two clearly labelled blocks. "Catatan Persetujuan" (milestone selesai) or
  * "Catatan Revisi" comes from `supervisorNotes`; "Feedback Pembimbing" comes from
  * `feedback` with the lecturer's name and time.
  */
@@ -34,7 +34,7 @@ export function MilestoneNotes({ status, supervisorNotes, feedback, feedbackByNa
           <p className="text-xs text-amber-900 leading-relaxed whitespace-pre-wrap">{feedback}</p>
           {(feedbackByName || feedbackAt) && (
             <p className="mt-1 text-[10px] text-amber-700/80">
-              {[feedbackByName ? toTitleCaseName(feedbackByName) : null, feedbackAt ? formatDateTimeWib(feedbackAt) : null]
+              {[feedbackByName ? formatLecturerName(feedbackByName) : null, feedbackAt ? formatDateTimeWib(feedbackAt) : null]
                 .filter(Boolean)
                 .join(" · ")}
             </p>

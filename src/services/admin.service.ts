@@ -451,32 +451,8 @@ export interface Student {
     internshipCompleted?: boolean;
     kknCompleted?: boolean;
     researchMethodCompleted?: boolean;
-    metopenEligibility?: {
-      canAccess: boolean;
-      eligibleMetopen?: boolean | null;
-      hasExternalEligibility?: boolean;
-      hasExternalStatus?: boolean;
-      readOnly?: boolean;
-      metopenReadOnly?: boolean;
-      canSubmit?: boolean;
-      thesisId?: string | null;
-      thesisTitle?: string | null;
-      thesisStatus?: string | null;
-      source?: string | null;
-      metopenEligibilitySource?: string | null;
-      updatedAt?: string | null;
-      metopenEligibilityUpdatedAt?: string | null;
-    } | null;
-    visibleAcademicYear?: {
-      id?: string | null;
-      label?: string | null;
-      year?: string | number | null;
-      semester?: string | null;
-      isActive?: boolean;
-      sources?: string[];
-    } | null;
-    isInMetopen?: boolean;
-    hasActiveThesis?: boolean;
+    /** SIA flags of the listed period (the chosen one, else the operational one). */
+    semesterFlags?: StudentSemesterFlags | null;
     activeTheses: Array<{
       title: string;
       status?: string | null;
@@ -487,6 +463,75 @@ export interface Student {
     }>;
   };
 }
+
+/** SIA flags of one period: taking Metode Penelitian and/or Tugas Akhir (null = unknown). */
+export interface StudentSemesterFlags {
+  academicYearId: string;
+  academicYearLabel: string;
+  takingResearchMethod: boolean | null;
+  takingThesisCourse: boolean | null;
+  source: string | null;
+  /** The source of each flag ("sia", "admin", "devtools"); "admin" is kept by the sync. */
+  researchMethodSource?: string | null;
+  thesisCourseSource?: string | null;
+  capturedAt: string | null;
+}
+
+async function adminJson<T>(path: string, init: RequestInit, fallback: string): Promise<{ data: T; message?: string }> {
+  const response = await fetch(getApiUrl(path), {
+    ...init,
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.message || fallback);
+  return body;
+}
+
+/** The Admin sets one semester's flags (source "admin", kept by the SIA sync). null clears a flag. */
+export const setStudentPeriodFlagsAPI = (
+  studentId: string,
+  academicYearId: string,
+  flags: { eligibleResearchMethod?: boolean | null; takingThesisCourse?: boolean | null },
+) => adminJson<unknown>(`/adminfeatures/students/${studentId}/period-flags/${academicYearId}`, { method: 'PATCH', body: JSON.stringify(flags) }, 'Gagal menyimpan keikutsertaan semester');
+
+/** Impor Keikutsertaan, what the import would change (or changed). */
+export interface PeriodFlagsImportPlan {
+  academicYear: { id: string; label: string };
+  totals: { rows: number; changed: number; unchanged: number; unknownNim: number; invalid: number; nameMismatch: number };
+  changes: Array<{
+    row: number;
+    nim: string;
+    studentId: string;
+    fullName: string | null;
+    before: { eligibleResearchMethod: boolean | null; takingThesisCourse: boolean | null };
+    after: { eligibleResearchMethod: boolean | null; takingThesisCourse: boolean | null };
+  }>;
+  unknown: Array<{ row: number; nim: string }>;
+  invalid: Array<{ row: number; nim: string | null; reason: string }>;
+  /** Rows whose "Nama" does not match the NIM: skipped. */
+  nameMismatch: Array<{ row: number; nim: string; name: string; expected: string | null }>;
+  applied?: number;
+}
+
+export const PERIOD_FLAGS_TEMPLATE_URL = '/adminfeatures/student-period-flags/template';
+
+/** Imports the file at once (no separate preview step) and returns what changed and what was skipped. */
+export async function applyPeriodFlagsImportAPI(academicYearId: string, file: File): Promise<{ data: PeriodFlagsImportPlan; message?: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  const response = await fetch(getApiUrl(`/adminfeatures/student-period-flags/${academicYearId}/import`), {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
+    body,
+  });
+  const json = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(json.message || 'Gagal mengimpor keikutsertaan');
+  return json;
+}
+
+/** "Ikuti Data SIA" for one semester. */
+export const followSiaPeriodFlagsAPI = (studentId: string, academicYearId: string) =>
+  adminJson<{ fromSia: boolean }>(`/adminfeatures/students/${studentId}/period-flags/${academicYearId}/follow-sia`, { method: 'POST' }, 'Gagal mengikuti data SIA');
 
 // Lecturer interface with workload info
 export interface Lecturer {
@@ -642,21 +687,6 @@ export interface StudentDetail {
   phoneNumber?: string;
   isVerified: boolean;
   createdAt: string;
-  metopenEligibility?: {
-    canAccess: boolean;
-    eligibleMetopen?: boolean | null;
-    hasExternalEligibility?: boolean;
-    hasExternalStatus?: boolean;
-    readOnly?: boolean;
-    metopenReadOnly?: boolean;
-    canSubmit?: boolean;
-    thesisTitle?: string | null;
-    thesisStatus?: string | null;
-    source?: string | null;
-    metopenEligibilitySource?: string | null;
-    updatedAt?: string | null;
-    metopenEligibilityUpdatedAt?: string | null;
-  } | null;
   student: {
     enrollmentYear: number;
     sksCompleted: number;
@@ -669,21 +699,7 @@ export interface StudentDetail {
     internshipCompleted?: boolean | null;
     kknCompleted?: boolean | null;
     researchMethodCompleted?: boolean | null;
-    metopenEligibility?: {
-      canAccess: boolean;
-      eligibleMetopen?: boolean | null;
-      hasExternalEligibility?: boolean;
-      hasExternalStatus?: boolean;
-      readOnly?: boolean;
-      metopenReadOnly?: boolean;
-      canSubmit?: boolean;
-      thesisTitle?: string | null;
-      thesisStatus?: string | null;
-      source?: string | null;
-      metopenEligibilitySource?: string | null;
-      updatedAt?: string | null;
-      metopenEligibilityUpdatedAt?: string | null;
-    } | null;
+    semesterFlags?: StudentSemesterFlags[];
   };
   cplScores?: Array<{
     cplId: string;
@@ -704,7 +720,6 @@ export interface StudentDetail {
     status: string | null;
     topic: string | null;
     startDate: string | null;
-    deadlineDate: string | null;
     supervisors: Array<{
       id: string;
       role: string;
@@ -739,20 +754,18 @@ export interface StudentDetail {
         completedAt: string | null;
       }>;
     };
+    /** Newest first (read only); `date` is the event day, or the registration when not scheduled. */
     seminars: Array<{
       id: string;
-      type: string;
       status: string;
-      scheduledAt: string | null;
-      result: string | null;
-      score: number | null;
+      date: string | null;
+      createdAt: string;
     }>;
     defences: Array<{
       id: string;
       status: string;
-      scheduledAt: string | null;
-      result: string | null;
-      score: number | null;
+      date: string | null;
+      createdAt: string;
     }>;
   }>;
 }
@@ -803,15 +816,20 @@ export interface LecturerDetail {
       nim: string;
     };
   }>;
+  /** Seminar and defence examiner assignments (read only), newest first. */
   examining: Array<{
+    id: string;
+    kind: 'seminar' | 'defence';
+    eventId: string;
+    /** The seminar's or defence's own status. */
+    status: string;
+    date: string | null;
     thesisId: string;
-    title: string;
-    status: string | null;
-    role: string;
+    title: string | null;
     student: {
-      id: string;
-      fullName: string;
-      nim: string;
+      id: string | null;
+      fullName: string | null;
+      nim: string | null;
     };
   }>;
   recentGuidances: Array<{
@@ -867,7 +885,6 @@ export interface KadepQuickActionsStats {
 export interface FailedThesis {
   id: string;
   title: string;
-  rating: string;
   createdAt: string;
   student: {
     id: string;

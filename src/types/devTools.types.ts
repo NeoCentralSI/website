@@ -5,25 +5,45 @@
 
 export type StudentStatus = 'active' | 'dropout' | 'bss' | 'lulus' | 'mengundurkan_diri';
 
-export interface DevToolsMetopenEligibility {
-  eligibleMetopen: boolean | null;
-  hasExternalStatus: boolean;
-  source: 'sia' | 'devtools' | null;
-  updatedAt: string | null;
-  readOnly: boolean;
-  canAccess: boolean;
-  canSubmit: boolean;
-  thesisId: string | null;
-  thesisTitle: string | null;
-  thesisStatus: string | null;
+/** SIA flags of one semester (plan 10.6); the student list shows the running semester. */
+export interface DevToolsPeriodFlags {
+  academicYearId: string | null;
+  eligibleResearchMethod: boolean | null;
+  eligibilitySource: 'sia' | 'devtools' | null;
+  eligibilityCapturedAt: string | null;
+  takingThesisCourse: boolean | null;
+  thesisCourseSource: 'sia' | 'devtools' | null;
+  thesisCourseCapturedAt: string | null;
 }
 
-export interface DevToolsThesisCourseEligibility {
-  takingThesisCourse: boolean | null;
-  hasExternalStatus: boolean;
-  source: 'sia' | 'devtools' | null;
-  updatedAt: string | null;
-  canAccess: boolean;
+/** One semester row of the Proposal tab (every period, flags may be empty). */
+export interface DevToolsSemesterFlags extends DevToolsPeriodFlags {
+  academicYearLabel: string;
+  isActive: boolean;
+}
+
+/** Pengajuan Pembimbing in the Proposal tab: the sending time drives the 72-hour rule. */
+export interface DevToolsSupervisorRequest {
+  id: string;
+  status: string;
+  route: string;
+  createdAt: string;
+  withdrawAvailableAt: string;
+  proposedTitle: string | null;
+  academicYearLabel: string | null;
+  student: { fullName: string | null; nim: string | null };
+  lecturerName: string | null;
+}
+
+export interface DevToolsSupervisorRequestList {
+  data: DevToolsSupervisorRequest[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+}
+
+export interface SetPeriodFlagsDto {
+  academicYearId?: string;
+  eligibleResearchMethod?: boolean | null;
+  takingThesisCourse?: boolean | null;
 }
 
 export interface DevToolsStudent {
@@ -40,13 +60,11 @@ export interface DevToolsStudent {
   internshipCompleted: boolean;
   kknCompleted: boolean;
   currentSemester: number | null;
-  metopenEligibility: DevToolsMetopenEligibility;
-  thesisCourseEligibility: DevToolsThesisCourseEligibility;
+  periodFlags: DevToolsPeriodFlags;
   latestThesis: {
     id: string;
     status: string;
     title: string | null;
-    proposalStatus: string | null;
   } | null;
 }
 
@@ -98,33 +116,6 @@ export interface DevToolsAcademicYear {
   label: string;
 }
 
-export interface CloseMetopenPeriodResult {
-  dryRun: boolean;
-  closedAcademicYearId: string;
-  yearLabel: string;
-  items: Array<{
-    thesisId: string;
-    studentName?: string | null;
-    identityNumber?: string | null;
-    eligibleMetopen?: boolean | null;
-    requestId?: string | null;
-    currentStatus?: string | null;
-    nextStatus?: string | null;
-    scoreAction?: string | null;
-    skipReason?: string | null;
-    releaseReason?: string | null;
-  }>;
-  counts: {
-    examined: number;
-    zeroed: number;
-    ungradedFinal?: number;
-    noFinalProposal?: number;
-    released: number;
-    closed: number;
-    skipped: number;
-  };
-}
-
 export interface CreateUserDto {
   fullName: string;
   identityNumber: string;
@@ -147,4 +138,32 @@ export interface DevToolsUserListItem {
 export interface RoleOption {
   id: string;
   name: string;
+}
+
+export interface DevToolsGuidance {
+  id: string;
+  status: string;
+  phase: string;
+  requestedDate: string;
+  approvedDate: string | null;
+  summarySubmittedAt: string | null;
+  completedAt: string | null;
+  thesisId: string | null;
+  thesisTitle: string | null;
+  studentName: string | null;
+  studentNim: string | null;
+  supervisorName: string | null;
+}
+
+export interface DevToolsGuidanceList {
+  data: DevToolsGuidance[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+}
+
+/** Editable session dates (ISO). `null` clears a nullable column. */
+export interface UpdateGuidanceScheduleDto {
+  requestedDate?: string;
+  approvedDate?: string | null;
+  summarySubmittedAt?: string | null;
+  completedAt?: string | null;
 }

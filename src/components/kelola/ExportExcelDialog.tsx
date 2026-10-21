@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { MasterDataThesis } from "@/services/masterDataTa.service";
-import { getThesisRatingLabel, getThesisStatusLabel, getThesisTerminationReasonLabel, THESIS_RATING_LABELS, THESIS_STATUS_LABELS } from "@/lib/thesisLabels";
+import { getThesisActivityLabel, getThesisActivityOptions, getThesisStatusLabel, getThesisTerminationReasonLabel, THESIS_STATUS_LABELS } from "@/lib/thesisLabels";
 
 interface ExportExcelDialogProps {
     open: boolean;
@@ -17,13 +17,13 @@ interface ExportExcelDialogProps {
     academicYears: { id: string; year: string; semester: string }[];
 }
 
-const RATINGS = Object.entries(THESIS_RATING_LABELS).map(([id, label]) => ({ id, label }));
+const ACTIVITY_LEVELS = getThesisActivityOptions().map(({ value, label }) => ({ id: value as string, label }));
 const STATUS_ORDER = Object.keys(THESIS_STATUS_LABELS);
 
 export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }: ExportExcelDialogProps) {
     const [academicYearId, setAcademicYearId] = useState<string>("all");
     const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
-    const [selectedRatings, setSelectedRatings] = useState<string[]>([]);
+    const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
 
     const uniqueStatuses = useMemo(() => {
         const statuses = new Set(theses.map(t => t.status).filter(Boolean));
@@ -41,8 +41,8 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
             filtered = filtered.filter(t => selectedStatuses.includes(t.status));
         }
 
-        if (selectedRatings.length > 0) {
-            filtered = filtered.filter(t => t.rating && selectedRatings.includes(t.rating));
+        if (selectedActivities.length > 0) {
+            filtered = filtered.filter(t => t.activityLevel && selectedActivities.includes(t.activityLevel));
         }
 
         const excelData = filtered.map((t, index) => ({
@@ -52,9 +52,11 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
             "Judul Tugas Akhir": t.title || "-",
             "Topik": t.topic?.name || "-",
             "Tahun Ajaran": t.academicYear ? `${t.academicYear.year} - ${t.academicYear.semester}` : "-",
-            "Rating": getThesisRatingLabel(t.rating),
+            // Derived, read-only: ignored when the file is imported back.
+            "Aktivitas": getThesisActivityLabel(t.activityLevel),
+            "Masa Bimbingan": t.supervisionClock?.elapsedLabel ?? "-",
             "Status": getThesisStatusLabel(t.status),
-            // K21: same columns as the import, so an exported file imports back
+            // Same columns as the import, so an exported file imports back
             "Alasan Penghentian": t.terminationReason ? getThesisTerminationReasonLabel(t.terminationReason) : "-",
             "Catatan Penghentian": t.terminationNote || "-",
             "Pembimbing 1": t.supervisors.find(s => s.roleName === "Pembimbing 1")?.name || "-",
@@ -93,9 +95,9 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
         );
     };
 
-    const toggleRating = (rating: string) => {
-        setSelectedRatings(prev =>
-            prev.includes(rating) ? prev.filter(r => r !== rating) : [...prev, rating]
+    const toggleActivity = (level: string) => {
+        setSelectedActivities(prev =>
+            prev.includes(level) ? prev.filter(r => r !== level) : [...prev, level]
         );
     };
 
@@ -172,39 +174,39 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
                             )}
                         </div>
 
-                        {/* Ratings */}
+                        {/* Activity levels */}
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                                <Label className="text-base font-semibold">Rating / Kondisi</Label>
+                                <Label className="text-base font-semibold">Aktivitas</Label>
                                 <Button
                                     variant="ghost"
                                     size="sm"
                                     className="h-8 text-xs h-auto py-1"
-                                    onClick={() => setSelectedRatings([])}
+                                    onClick={() => setSelectedActivities([])}
                                 >
                                     Reset
                                 </Button>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
-                                {RATINGS.map((rating) => (
-                                    <div key={rating.id} className="flex items-center space-x-2">
+                                {ACTIVITY_LEVELS.map((level) => (
+                                    <div key={level.id} className="flex items-center space-x-2">
                                         <Checkbox
-                                            id={`rating-${rating.id}`}
-                                            checked={selectedRatings.includes(rating.id)}
-                                            onCheckedChange={() => toggleRating(rating.id)}
+                                            id={`activity-${level.id}`}
+                                            checked={selectedActivities.includes(level.id)}
+                                            onCheckedChange={() => toggleActivity(level.id)}
                                         />
                                         <Label
-                                            htmlFor={`rating-${rating.id}`}
+                                            htmlFor={`activity-${level.id}`}
                                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                                         >
-                                            {rating.label}
+                                            {level.label}
                                         </Label>
                                     </div>
                                 ))}
                             </div>
-                            {selectedRatings.length === 0 && (
+                            {selectedActivities.length === 0 && (
                                 <p className="text-xs text-muted-foreground italic">
-                                    Kosongkan untuk menyertakan semua rating.
+                                    Kosongkan untuk menyertakan semua tingkat aktivitas. Tingkat aktivitas hanya ada untuk tugas akhir berstatus Penelitian.
                                 </p>
                             )}
                         </div>

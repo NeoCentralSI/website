@@ -35,8 +35,10 @@ import type {
   CreateMilestoneDto,
   UpdateMilestoneDto,
 } from "@/types/milestone.types";
+import { ThesisClosedAlert } from "@/components/thesis/ThesisClosedAlert";
 import { ThesisActionBlockedAlert } from "@/components/thesis/ThesisActionBlockedAlert";
-import { getGuidanceActionBlockReason, getThesisStatusLabel } from "@/lib/thesisLabels";
+import { ThesisPhaseBadge } from "@/components/shared/ThesisPhaseBadge";
+import { getGuidanceActionBlockReason, type ThesisPhase } from "@/lib/thesisLabels";
 
 export default function StudentMilestonePage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -65,28 +67,40 @@ export default function StudentMilestonePage() {
     enabled: hasThesis,
   });
 
-  // The detail endpoint only returns a TA-phase thesis; a proposal-phase student gets 404.
+  // The detail endpoint answers 404 only when the student has no thesis at all.
   const isNotInThesisPhase = isThesisDetailError;
+  // The current phase is editable; the other phase is listed below, read-only.
+  const currentPhase: ThesisPhase = thesisDetail?.currentPhase ?? "research";
+  const otherPhase: ThesisPhase = currentPhase === "proposal" ? "research" : "proposal";
 
-  const isThesisInactive =
-    thesisDetail?.status === "completed" || thesisDetail?.status === "failed";
+  // A stopped or finished thesis keeps its milestones visible,
+  // read-only, under a ribbon with the day it was closed.
+  const closedStatus = thesisDetail?.status === "failed" || thesisDetail?.status === "completed" ? thesisDetail.status : null;
+  const isThesisStopped = !!closedStatus;
 
-  // K14: milestone write actions only for status `research`; buttons stay visible but disabled.
+  // Milestone writes for `research`, or `proposal` after Penetapan Pembimbing;
+  // buttons stay visible but disabled with the reason.
   const actionBlockReason = thesisDetail
-    ? getGuidanceActionBlockReason(thesisDetail.status)
+    ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", {
+        repeatingProposal: thesisDetail.repeatingProposal,
+        proposalPhaseOpen: thesisDetail.proposalPhaseOpen,
+      })
     : null;
 
   // Milestones data
 
   const { data: milestonesData, isLoading: isLoadingMilestones } =
-    useMilestones(thesisId);
+    useMilestones(thesisId, undefined, currentPhase, !!thesisDetail);
+
+  const { data: otherPhaseData } = useMilestones(thesisId, undefined, otherPhase, !!thesisDetail);
 
   const milestones = milestonesData?.milestones ?? [];
 
   const progress = milestonesData?.progress ?? null;
 
+  // Proposal templates are general; thesis-phase templates follow the topic.
   const { data: templates = [], isLoading: isLoadingTemplates } =
-    useTemplates();
+    useTemplates(undefined, { phase: currentPhase, enabled: !!thesisDetail });
 
   // Mutations
 
@@ -397,7 +411,8 @@ export default function StudentMilestonePage() {
     );
   };
 
-  const isLoading = isLoadingSupervisors || isLoadingMilestones;
+  // The milestone lists wait for the thesis detail, which says the current phase.
+  const isLoading = isLoadingSupervisors || isLoadingMilestones || (hasThesis && !thesisDetail && !isThesisDetailError);
 
   // Define tabs for reuse
 
@@ -410,8 +425,11 @@ export default function StudentMilestonePage() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Milestone Tugas Akhir</h1>
-        <p className="text-muted-foreground">Target dan capaian tugas akhir</p>
+        <h1 className="flex flex-wrap items-center gap-2 text-2xl font-bold">
+          Milestone Tugas Akhir
+          {thesisDetail && <ThesisPhaseBadge phase={currentPhase} />}
+        </h1>
+        <p className="text-muted-foreground">Target dan capaian tugas akhir pada fase berjalan</p>
       </div>
 
       <TabsNav preserveSearch tabs={tabs} />
@@ -423,51 +441,41 @@ export default function StudentMilestonePage() {
         </div>
       ) : !hasThesis || isNotInThesisPhase ? (
         <RequirementsNotMet
-          title="Syarat Mata Kuliah Belum Terpenuhi"
-          description="Anda belum memenuhi persyaratan untuk mengambil mata kuliah Tugas Akhir."
+          title="Belum Ada Tugas Akhir"
+          description="Milestone tersedia setelah Anda memiliki tugas akhir dan pembimbing."
           requirements={[
             {
-              label: "Mengambil mata kuliah Tugas Akhir",
-
+              label: "Pengajuan pembimbing disetujui",
               met: false,
-
               description:
-                "Anda harus tercatat mengambil mata kuliah Tugas Akhir (proposal disetujui).",
+                "Ajukan pembimbing di Tugas Akhir > Proposal. Milestone fase proposal terbuka setelah Ketua Departemen menerbitkan Penetapan Pembimbing.",
             },
           ]}
           homeUrl="/dashboard"
         />
       ) : (
         <>
-          {isThesisInactive ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
-              <h3 className="text-lg font-semibold mb-2">
-                Tugas Akhir Tidak Aktif
-              </h3>
-
-              <p className="text-muted-foreground">
-                Status tugas akhir Anda saat ini adalah{" "}
-                <strong>{getThesisStatusLabel(thesisDetail?.status)}</strong>. Anda tidak dapat
-                mengakses fitur milestone.
-              </p>
-            </div>
-          ) : (
+          {(
             <>
               {/* Readiness cards removed, now only shown in Overview */}
 
-              <ThesisActionBlockedAlert reason={actionBlockReason} />
+              {closedStatus ? (
+                <ThesisClosedAlert status={closedStatus} closedAt={closedStatus === "failed" ? thesisDetail?.terminatedAt : thesisDetail?.completedAt} />
+              ) : (
+                <ThesisActionBlockedAlert reason={actionBlockReason} />
+              )}
 
               <MilestoneList
                 milestones={milestones}
                 progress={progress ?? null}
                 isLoading={isLoading}
-                isOwner={true}
+                isOwner={!isThesisStopped}
                 isSupervisor={false}
                 onCreateNew={handleCreateNew}
                 onCreateFromTemplates={handleCreateFromTemplates}
                 createDisabledReason={actionBlockReason}
                 templateDisabledReason={
-                  thesisDetail && !thesisDetail.topic
+                  currentPhase === "research" && thesisDetail && !thesisDetail.topic
                     ? "Tugas akhir Anda belum memiliki topik, sehingga template belum dapat dipasang. Topik diisi oleh Admin/Sekretaris Departemen melalui Data Master Tugas Akhir."
                     : null
                 }
@@ -485,6 +493,9 @@ export default function StudentMilestonePage() {
                 onClearSelection={() => setSelectedIds([])}
                 onBulkStart={handleBulkStart}
                 isBulkStarting={isBulkStarting}
+                readOnlyMilestones={otherPhaseData?.milestones ?? []}
+                readOnlyPhase={otherPhase}
+                currentPhase={currentPhase}
               />
 
               {/* Create/Edit Dialog */}
@@ -511,6 +522,7 @@ export default function StudentMilestonePage() {
                 isLoading={isLoadingTemplates}
                 isSubmitting={createFromTemplatesMutation.isPending}
                 onSubmit={handleTemplateSubmit}
+                generalOnly={currentPhase === "proposal"}
               />
 
               {/* Start Milestone Target Date Dialog */}

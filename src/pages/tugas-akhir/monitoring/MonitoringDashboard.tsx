@@ -1,20 +1,12 @@
 import { useEffect, useState } from "react";
 import { useOutletContext, useSearchParams } from "react-router-dom";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
+import { FileDown, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
 import type { LayoutContext } from "@/components/layout/ProtectedLayout";
-import {
-  MonitoringSummaryCards,
-  StatusDistributionChart,
-  RatingDistributionChart,
-  TopicDistributionChart,
-  BatchDistributionChart,
-  ProgressDistributionChart,
-  SlowStudentsCard,
-  ReadyForSeminarCard,
-  SupervisorLoadCard,
-  ThesesTable,
-  GuidanceTrendChart,
-} from "@/components/monitoring";
-import { useMonitoringDashboard, useFilterOptions } from "@/hooks/monitoring";
+import { GuidanceMonitoringTab, ThesisEventMonitoringTab } from "@/components/monitoring";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -22,27 +14,47 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { RefreshCw, Calendar, FileDown, Loader2 } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
-import { monitoringKeys } from "@/hooks/monitoring/useMonitoring";
-import { Loading } from "@/components/ui/spinner";
+import { PageHeading } from "@/components/shared/PageHeading";
+import { LocalTabsNav } from "@/components/ui/tabs-nav";
+import { ALL_SEMESTERS, monitoringKeys, useMonitoringSemester } from "@/hooks/monitoring";
 import { downloadProgressReportPdf } from "@/services/monitoring.service";
-import { toast } from "sonner";
 
+type MonitoringTab = "bimbingan" | "seminar" | "sidang";
+
+const DEFAULT_TAB: MonitoringTab = "bimbingan";
+const TABS: { value: MonitoringTab; label: string }[] = [
+  { value: "bimbingan", label: "Bimbingan" },
+  { value: "seminar", label: "Seminar Hasil" },
+  { value: "sidang", label: "Sidang" },
+];
+
+/** Shown only when another semester than the running one is chosen: what still reflects today. */
+const NOW_NOTE: Record<MonitoringTab, string> = {
+  bimbingan: "Indikator aktivitas dan evaluasi menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
+  seminar: "Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
+  sidang: "Siap Mendaftar dan Perlu Perhatian menunjukkan kondisi saat ini, bukan kondisi pada semester tersebut.",
+};
+
+/**
+ * Tugas Akhir > Monitoring: three tabs (Bimbingan, Seminar Hasil, Sidang) for one semester. The
+ * semester select (`?semester=`, shared by the tabs) sits in the toolbar of each tab's table, as
+ * on every page; the report download is in the Bimbingan toolbar, the only tab it covers. Muat
+ * Ulang of the Bimbingan table reloads the whole tab (charts too).
+ */
 export default function MonitoringDashboard() {
-  const [searchParams] = useSearchParams();
-  const initialRating = searchParams.get("rating") || undefined;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialActivity = searchParams.get("activity") || undefined;
+  const requestedTab = searchParams.get("tab");
+  const activeTab = TABS.find((tab) => tab.value === requestedTab)?.value ?? DEFAULT_TAB;
 
-  const [selectedAcademicYear, setSelectedAcademicYear] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const queryClient = useQueryClient();
 
-  // Pass academicYear filter to hooks
-  const academicYearFilter = selectedAcademicYear === "all" ? undefined : selectedAcademicYear;
-  const { data, isLoading, isFetching, refetch } = useMonitoringDashboard(academicYearFilter);
-  const { data: filterOptions } = useFilterOptions();
+  // Semester filter (`?semester=`), shared by the three tabs; the running semester by default.
+  const semester = useMonitoringSemester();
+  const academicYearFilter = semester.academicYear;
+  const isFetchingAny = useIsFetching({ queryKey: monitoringKeys.all }) > 0;
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
 
   useEffect(() => {
@@ -53,17 +65,22 @@ export default function MonitoringDashboard() {
     setTitle("Monitoring Tugas Akhir");
   }, [setBreadcrumbs, setTitle]);
 
-  // Check if any operation is in progress
-  const isLoadingAny = isLoading || isFetching || isSyncing;
+  const isLoadingAny = isFetchingAny || isSyncing;
+
+  const handleTabChange = (tab: string) => {
+    setSearchParams((previous) => {
+      const params = new URLSearchParams(previous);
+      if (tab === DEFAULT_TAB) params.delete("tab");
+      else params.set("tab", tab);
+      return params;
+    }, { replace: true });
+  };
 
   const handleRefresh = async () => {
     setIsSyncing(true);
     try {
-      // Invalidate and refetch all monitoring data
-      await Promise.all([
-        refetch(),
-        queryClient.invalidateQueries({ queryKey: monitoringKeys.all }),
-      ]);
+      // Every monitoring query; the ones on screen are fetched again right away
+      await queryClient.invalidateQueries({ queryKey: monitoringKeys.all });
     } catch (error) {
       console.error('[Monitoring] Refresh failed:', error);
     } finally {
@@ -79,7 +96,7 @@ export default function MonitoringDashboard() {
       };
 
       const blob = await downloadProgressReportPdf(options);
-      
+
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -88,129 +105,74 @@ export default function MonitoringDashboard() {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
+
       toast.success("Laporan berhasil diunduh");
-    } catch (error: any) {
-      toast.error(error.message || "Gagal mengunduh laporan");
+    } catch (error) {
+      toast.error((error as Error)?.message || "Gagal mengunduh laporan");
     } finally {
       setIsDownloadingPDF(false);
     }
   };
 
-  const displayAcademicYear =
-    selectedAcademicYear === "all"
-      ? "Semua Semester"
-      : filterOptions?.academicYears?.find((ay) => ay.value === selectedAcademicYear)?.label || "";
-
-  // Full blank loading on browser reload (no cached data)
-  if (isLoading && !data) {
-    return (
-      <div className="flex h-[calc(100vh-200px)] items-center justify-center">
-        <Loading size="lg" text="Memuat data monitoring..." />
-      </div>
-    );
-  }
+  const nowNote = NOW_NOTE[activeTab];
+  const semesterSelect = (
+    // "" keeps the select controlled while the default semester is being resolved.
+    <Select value={semester.value ?? ""} onValueChange={semester.setSemester}>
+      {/* Wide enough for "Ganjil 2026/2027 (Berjalan)", so no choice is clamped or shifted. */}
+      <SelectTrigger className="w-64 text-left" aria-label="Semester">
+        <SelectValue placeholder="Pilih semester" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value={ALL_SEMESTERS}>Semua Semester</SelectItem>
+        {semester.semesters.map((ay) => (
+          <SelectItem key={ay.value} value={ay.value}>
+            {`${ay.label.trim()}${ay.isActive ? " (Berjalan)" : ""}`}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+  const downloadButton = (
+    <Button
+      variant="outline"
+      size="sm"
+      className="flex items-center gap-2"
+      onClick={handleDownloadPDF}
+      disabled={isDownloadingPDF || isLoadingAny || !semester.isReady}
+    >
+      {isDownloadingPDF ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
+      ) : (
+        <FileDown className="h-4 w-4" />
+      )}
+      {isDownloadingPDF ? "Mengunduh..." : "Download Laporan"}
+    </Button>
+  );
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Monitoring Tugas Akhir</h1>
-        <p className="text-muted-foreground">Pantau progres, bimbingan, dan kesiapan mahasiswa tugas akhir</p>
-      </div>
+      <PageHeading title="Monitoring Tugas Akhir" subtitle="Pantau bimbingan, seminar hasil, dan sidang tugas akhir per semester" />
 
-      {/* Academic Year Filter and Reload */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          <Calendar className="h-5 w-5 text-muted-foreground" />
-          <Select value={selectedAcademicYear} onValueChange={setSelectedAcademicYear}>
-            <SelectTrigger className="w-50">
-              <SelectValue placeholder="Pilih Tahun Ajaran" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Semester</SelectItem>
-              {filterOptions?.academicYears?.map((ay) => (
-                <SelectItem key={ay.value} value={ay.value}>
-                  {ay.label} {ay.isActive && "(Aktif)"}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-muted-foreground">
-            Menampilkan: <span className="font-medium text-foreground">{displayAcademicYear}</span>
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={isLoadingAny}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingAny ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
-          <Button
-            variant="outline"
-            className="flex items-center gap-2"
-            onClick={handleDownloadPDF}
-            disabled={isDownloadingPDF || isLoadingAny}
-          >
-            {isDownloadingPDF ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <FileDown className="h-4 w-4" />
-            )}
-            {isDownloadingPDF ? "Mengunduh..." : "Download Laporan"}
-          </Button>
-        </div>
-      </div>
+      <LocalTabsNav tabs={TABS} activeTab={activeTab} onTabChange={handleTabChange} />
+      {semester.isPastOrOtherSemester && <p className="text-sm text-amber-700">{nowNote}</p>}
 
-
-      {/* Summary Cards */}
-      <MonitoringSummaryCards summary={data?.summary} isLoading={isLoadingAny} />
-
-      {/* Distribution Charts */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <StatusDistributionChart
-          statusDistribution={data?.statusDistribution}
-          isLoading={isLoadingAny}
+      {activeTab === "bimbingan" && (
+        <GuidanceMonitoringTab
+          academicYear={academicYearFilter}
+          enabled={semester.isReady}
+          isSyncing={isSyncing}
+          initialActivity={initialActivity}
+          semesterSelect={semesterSelect}
+          extraActions={downloadButton}
+          onRefresh={() => void handleRefresh()}
         />
-        <RatingDistributionChart
-          ratingDistribution={data?.ratingDistribution}
-          isLoading={isLoadingAny}
-        />
-        <ProgressDistributionChart
-          progressDistribution={data?.progressDistribution}
-          isLoading={isLoadingAny}
-        />
-        <TopicDistributionChart
-          topicDistribution={data?.topicDistribution}
-          isLoading={isLoadingAny}
-        />
-        <BatchDistributionChart
-          batchDistribution={data?.batchDistribution}
-          isLoading={isLoadingAny}
-        />
-        <GuidanceTrendChart
-          guidanceTrend={data?.guidanceTrend}
-          isLoading={isLoadingAny}
-        />
-      </div>
-
-      {/* Quick Lists */}
-      <div className="grid gap-6 md:grid-cols-3">
-        <SlowStudentsCard
-          slowStudents={data?.slowStudents}
-          atRiskStudents={data?.atRiskStudents}
-          isLoading={isLoadingAny}
-        />
-        <SupervisorLoadCard
-          loads={data?.supervisorLoads}
-          isLoading={isLoadingAny}
-        />
-        <ReadyForSeminarCard
-          students={data?.readyForSeminar}
-          isLoading={isLoadingAny}
-        />
-      </div>
-
-      {/* Full Table */}
-      <ThesesTable isSyncing={isSyncing} academicYear={academicYearFilter} initialRating={initialRating} />
+      )}
+      {activeTab === "seminar" && (
+        <ThesisEventMonitoringTab kind="seminar" academicYear={academicYearFilter} enabled={semester.isReady} semesterSelect={semesterSelect} />
+      )}
+      {activeTab === "sidang" && (
+        <ThesisEventMonitoringTab kind="defence" academicYear={academicYearFilter} enabled={semester.isReady} semesterSelect={semesterSelect} />
+      )}
     </div>
   );
 }

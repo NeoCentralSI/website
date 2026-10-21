@@ -7,7 +7,7 @@ interface ThesisActionBlockedAlertProps {
   className?: string;
 }
 
-/** Alasan terlihat untuk aksi bimbingan/milestone yang dinonaktifkan (K14). */
+/** Alasan terlihat untuk aksi bimbingan/milestone yang dinonaktifkan. */
 export function ThesisActionBlockedAlert({ reason, className }: ThesisActionBlockedAlertProps) {
   if (!reason) return null;
   return (

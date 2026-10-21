@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import * as milestoneService from "@/services/milestone.service";
+import type { ThesisPhase } from "@/lib/thesisLabels";
 import type {
   MilestoneStatus,
   CreateMilestoneDto,
@@ -25,8 +26,8 @@ export const milestoneKeys = {
   templateTopics: () => [...milestoneKeys.templates(), "topics"] as const,
   topics: () => [...milestoneKeys.all, "topics"] as const,
   thesis: (thesisId: string) => [...milestoneKeys.all, "thesis", thesisId] as const,
-  thesisMilestones: (thesisId: string, status?: MilestoneStatus) =>
-    [...milestoneKeys.thesis(thesisId), { status }] as const,
+  thesisMilestones: (thesisId: string, status?: MilestoneStatus, phase?: ThesisPhase) =>
+    [...milestoneKeys.thesis(thesisId), { status, phase }] as const,
   thesisProgress: (thesisId: string) => [...milestoneKeys.thesis(thesisId), "progress"] as const,
   detail: (milestoneId: string) => [...milestoneKeys.all, "detail", milestoneId] as const,
 };
@@ -38,11 +39,13 @@ export const milestoneKeys = {
 /**
  * Hook to fetch milestone templates
  */
-export function useTemplates(topicId?: string, options: milestoneService.TemplateListOptions = {}) {
+export function useTemplates(topicId?: string, options: milestoneService.TemplateListOptions & { enabled?: boolean } = {}) {
   const includeInactive = Boolean(options.includeInactive);
+  const phase = options.phase;
   return useQuery({
-    queryKey: [...milestoneKeys.templates(), { topicId, includeInactive }],
-    queryFn: () => milestoneService.getTemplates(topicId, { includeInactive }),
+    queryKey: [...milestoneKeys.templates(), { topicId, includeInactive, phase }],
+    queryFn: () => milestoneService.getTemplates(topicId, { includeInactive, phase }),
+    enabled: options.enabled ?? true,
   });
 }
 
@@ -168,11 +171,11 @@ export function useBulkDeleteTemplates() {
 /**
  * Hook to fetch milestones for a thesis
  */
-export function useMilestones(thesisId: string, status?: MilestoneStatus) {
+export function useMilestones(thesisId: string, status?: MilestoneStatus, phase?: ThesisPhase, enabled = true) {
   return useQuery({
-    queryKey: milestoneKeys.thesisMilestones(thesisId, status),
-    queryFn: () => milestoneService.getMilestones(thesisId, status),
-    enabled: !!thesisId,
+    queryKey: milestoneKeys.thesisMilestones(thesisId, status, phase),
+    queryFn: () => milestoneService.getMilestones(thesisId, status, phase),
+    enabled: !!thesisId && enabled,
   });
 }
 
@@ -667,10 +670,10 @@ export function useRevokeSeminarReadiness() {
       queryClient.invalidateQueries({
         queryKey: [...milestoneKeys.all, "lecturer-completion-status"],
       });
-      toast.success("Persetujuan kesiapan seminar berhasil dicabut");
+      toast.success("Persetujuan kesiapan seminar berhasil dibatalkan");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Gagal mencabut persetujuan kesiapan seminar");
+      toast.error(error.message || "Gagal membatalkan persetujuan kesiapan seminar");
     },
   });
 }
@@ -780,31 +783,10 @@ export function useRevokeDefenceReadiness() {
       queryClient.invalidateQueries({
         queryKey: [...milestoneKeys.all, "lecturer-completion-status"],
       });
-      toast.success("Persetujuan kesiapan sidang berhasil dicabut");
+      toast.success("Persetujuan kesiapan sidang berhasil dibatalkan");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Gagal mencabut persetujuan kesiapan sidang");
-    },
-  });
-}
-
-/**
- * Hook for student to request defence
- */
-export function useRequestDefence() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ thesisId, documentId }: { thesisId: string; documentId: string }) =>
-      milestoneService.requestDefence(thesisId, { documentId }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: [...milestoneKeys.all, "defence-readiness", variables.thesisId],
-      });
-      toast.success("Permintaan sidang berhasil diajukan");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Gagal mengajukan permintaan sidang");
+      toast.error(error.message || "Gagal membatalkan persetujuan kesiapan sidang");
     },
   });
 }
@@ -844,16 +826,16 @@ export function useDefenceReadinessManagement(thesisId?: string) {
 }
 
 /**
- * Hook to send reminder for seminar readiness approval
+ * Hook for the student's "Minta Persetujuan" (seminar or defence readiness)
  */
-export function useRemindSeminarApproval() {
+export function useRequestReadinessApproval(kind: "seminar" | "defence") {
   return useMutation({
-    mutationFn: (thesisId: string) => milestoneService.remindSeminarApproval(thesisId),
-    onSuccess: (data: { success: boolean; message: string }) => {
-      toast.success(data.message || "Pengingat berhasil dikirim ke pembimbing");
+    mutationFn: (thesisId: string) => milestoneService.requestReadinessApproval(kind, thesisId),
+    onSuccess: (result) => {
+      toast.success(result.message || "Permintaan persetujuan berhasil dikirim ke pembimbing");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Gagal mengirim pengingat");
+      toast.error(error.message || "Gagal meminta persetujuan pembimbing");
     },
   });
 }

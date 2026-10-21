@@ -30,7 +30,7 @@ interface ReasonDialogProps {
   onSubmit: (reason: string) => Promise<boolean>;
 }
 
-/** K19: a dialog whose text field is mandatory (cancel, summary revision notes). */
+/** A dialog whose text field is mandatory (cancel, summary revision notes). */
 export function ReasonDialog({
   open,
   onOpenChange,
@@ -102,7 +102,7 @@ interface RejectRequestDialogProps {
   onSubmit: (data: { reason: string; suggestedDate: string | null }) => Promise<boolean>;
 }
 
-/** K19: reject a request with a mandatory reason and an optional suggested time. */
+/** Reject a request with a mandatory reason and an optional suggested time. */
 export function RejectRequestDialog({ open, onOpenChange, studentName, onSubmit }: RejectRequestDialogProps) {
   const [reason, setReason] = useState('');
   const [suggested, setSuggested] = useState<Date | null>(null);
@@ -179,7 +179,7 @@ interface LecturerRescheduleDialogProps {
   onSubmit: (data: { newDate: string; reason: string }) => Promise<boolean>;
 }
 
-/** K19: the lecturer moves an accepted session; the new time applies immediately. */
+/** The lecturer moves an accepted session; the new time applies immediately. */
 export function LecturerRescheduleDialog({ open, onOpenChange, currentDateText, onSubmit }: LecturerRescheduleDialogProps) {
   const [when, setWhen] = useState<Date | null>(null);
   const [reason, setReason] = useState('');

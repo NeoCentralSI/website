@@ -33,7 +33,7 @@ import {
 import { PdfViewer } from "@/components/pdf";
 import { useAuthenticatedBlobUrl } from "@/hooks/useAuthenticatedBlobUrl";
 import { getStudentGuidanceDetail, submitSessionSummary } from "@/services/studentGuidance.service";
-import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
+import { formatDateTimeWib, formatLecturerName } from "@/lib/text";
 import { getApiUrl } from "@/config/api";
 import { getGuidanceStatusLabel } from "@/lib/thesisLabels";
 import { getGuidanceStatusContext } from "@/lib/guidanceTableColumns";
@@ -140,7 +140,7 @@ export default function GuidanceSessionPage() {
   const documentPreview = useAuthenticatedBlobUrl(documentUrl, activeTab === "document");
 
   // Status check
-  // K19: the lecturer may ask for a revised summary (summary_rejected); the student revises
+  // The lecturer may ask for a revised summary (summary_rejected); the student revises
   // and resubmits it. Legacy "rescheduled" is a scheduled session like "accepted".
   const isSummaryRejected = guidance?.status === "summary_rejected";
   const isScheduled = guidance?.status === "accepted" || guidance?.status === "rescheduled";
@@ -200,7 +200,7 @@ export default function GuidanceSessionPage() {
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Sesi Bimbingan</h1>
             <p className="text-muted-foreground">
-              {toTitleCaseName(guidance.supervisorName || "Dosen Pembimbing")}
+              {formatLecturerName(guidance.supervisorName || "Dosen Pembimbing")}
             </p>
           </div>
         </div>
@@ -251,11 +251,11 @@ export default function GuidanceSessionPage() {
                 <CardContent className="px-5 py-5">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-orange-100 text-sm font-semibold text-primary">
-                      {toTitleCaseName(guidance.supervisorName || "Dosen Pembimbing").slice(0, 1)}
+                      {formatLecturerName(guidance.supervisorName || "Dosen Pembimbing").slice(0, 1)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">
-                        {toTitleCaseName(guidance.supervisorName || "Dosen Pembimbing")}
+                        {formatLecturerName(guidance.supervisorName || "Dosen Pembimbing")}
                       </p>
                       <p className="text-sm text-muted-foreground">Pembimbing</p>
                     </div>

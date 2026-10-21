@@ -5,22 +5,24 @@ import type { MyStudentItem } from "@/services/lecturerGuidance.service";
 import { getMyStudents, sendWarningToStudent, type MyStudentsFilter, type WarningType } from "@/services/lecturerGuidance.service";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// K21: default "Aktif" (research + on_leave); finished and failed students stay reachable.
+// Default "Aktif" (research + on_leave); finished and failed students stay reachable.
+// "Fase Proposal" lists the students whose proposal guidance this lecturer supervises.
 const STUDENT_FILTERS: { value: MyStudentsFilter; label: string }[] = [
   { value: "active", label: "Aktif" },
+  { value: "proposal", label: "Fase Proposal" },
   { value: "completed", label: "Selesai" },
   { value: "failed", label: "Gagal" },
   { value: "all", label: "Semua" },
 ];
 import { TabsNav } from "@/components/ui/tabs-nav";
 import CustomTable, { type Column } from "@/components/layout/CustomTable";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { toTitleCaseName, formatDateShortId, formatDateTimeWib } from "@/lib/text";
 import { STICKY_ACTION_COLUMN_CLASS } from "@/lib/guidanceCells";
+import { CLIP_CELL } from "@/lib/tableColumnWidths";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Tooltip,
   TooltipContent,
@@ -37,47 +39,56 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Eye, Clock, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { Eye, CalendarCheck, Milestone, Bell, AlertTriangle, ArrowRightLeft, ClipboardCheck, FilePenLine, FileSearch } from "lucide-react";
+import { DETAIL_SECTIONS } from "@/components/tugas-akhir/lecturer/studentDetailPending";
+import { Checkbox } from "@/components/ui/checkbox";
+import { TableIconAction } from "@/components/shared/TableIconAction";
+import { useAuth } from "@/hooks/shared";
+import {
+  LecturerTransferStudentsDialog,
+  toSupervisorPosition,
+  toTransferStudents,
+} from "@/components/thesis-change-request/LecturerTransferStudentsDialog";
+import {
+  OpenThesisChangeRequestLauncher,
+  ThesisChangeRequestFormLauncher,
+} from "@/components/thesis-change-request/ThesisChangeRequestLaunchers";
+import { EvaluationFormLauncher } from "@/components/thesis-guidance-evaluation/EvaluationFormLauncher";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { Supervisor2RequestsSection } from "@/components/bimbingan/Supervisor2RequestsSection";
-import { IncomingTransfersSection } from "@/components/bimbingan/IncomingTransfersSection";
-import { TransferStudentsDialog } from "@/components/bimbingan/TransferStudentsDialog";
 import { MyStudentsCharts } from "@/components/bimbingan/MyStudentsCharts";
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
-import { THESIS_RATING_LABELS } from '@/lib/thesisLabels';
+import { ThesisActivityBadge } from '@/components/shared/ThesisActivityBadge';
+import { SupervisionClockCell } from '@/components/shared/SupervisionClockCell';
 
-const getDaysRemaining = (deadlineDate?: string | null) => {
-  if (!deadlineDate) return null;
-  const deadline = new Date(deadlineDate);
-  const now = new Date();
-  const diffTime = deadline.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays;
-};
+/**
+ * Fixed layout: every column but "Mahasiswa" has a width, so the table fills the card. The
+ * minimum width keeps "Mahasiswa" as wide as its longest badge ("Berhenti Studi
+ * Sementara (BSS)", MY_STUDENTS_NAME_MIN_WIDTH) next to the fixed columns (782 px, Aksi with four
+ * icons); below it the table scrolls, with the action column pinned to the right.
+ */
+const MY_STUDENTS_TABLE_CLASS = "table-fixed min-w-[1014px]";
 
-const getRatingConfig = (rating?: string) => {
-  switch (rating) {
-    case "ONGOING":
-      return { variant: "outline" as const, label: THESIS_RATING_LABELS.ONGOING, className: "border-green-500 text-green-600 bg-green-50", needsWarning: false };
-    case "SLOW":
-      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.SLOW, className: "bg-yellow-100 text-yellow-700 hover:bg-yellow-200", needsWarning: true };
-    case "AT_RISK":
-      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.AT_RISK, className: "", needsWarning: true };
-    case "FAILED":
-      return { variant: "destructive" as const, label: THESIS_RATING_LABELS.FAILED, className: "bg-red-500 text-white hover:bg-red-600", needsWarning: true };
-    case "CANCELLED":
-      return { variant: "secondary" as const, label: THESIS_RATING_LABELS.CANCELLED, className: "bg-slate-500 text-white hover:bg-slate-600", needsWarning: false };
-    default:
-      return { variant: "secondary" as const, label: "-", className: "", needsWarning: false };
-  }
-};
+/** A warning can be sent while the activity level is Lambat or Berisiko. */
+const needsWarning = (level?: string | null): level is WarningType => level === "slow" || level === "at_risk";
+
+/** An active relation of this lecturer (a replaced supervisor's row is read-only). */
+const isActiveSupervisor = (row: MyStudentItem) => (row.supervisorStatus ?? "active") === "active" && !row.noLongerSupervising;
+
+/**
+ * "Ajukan Perubahan" for an active Pembimbing 1 or 2 (disabled with the
+ * reason when a rule blocks it); "Isi Evaluasi" only when the evaluation is due and the viewer is
+ * Pembimbing 1.
+ */
+const canAskChange = (row: MyStudentItem) => !!row.thesisId && !!row.changeRequest && isActiveSupervisor(row) && !!toSupervisorPosition(row.roles?.[0]);
+const canFillEvaluation = (row: MyStudentItem) =>
+  !!row.thesisId && isActiveSupervisor(row) && !!row.supervisionClock?.evaluationDue && toSupervisorPosition(row.roles?.[0]) === "pembimbing_1";
 
 export default function LecturerMyStudentsPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const breadcrumb = useMemo(() => [{ label: "Tugas Akhir" }, { label: "Bimbingan", href: "/tugas-akhir/bimbingan/lecturer/requests" }, { label: "Mahasiswa Bimbingan" }], []);
 
   useEffect(() => {
@@ -88,17 +99,19 @@ export default function LecturerMyStudentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const queryClient = useQueryClient();
-
-  // Student selection state for transfer
-  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
 
   // Warning dialog state
   const [warningDialog, setWarningDialog] = useState<{
     open: boolean;
     student: MyStudentItem | null;
   }>({ open: false, student: null });
+
+  // Row actions and the "Alihkan" bulk action.
+  const [selectedThesisIds, setSelectedThesisIds] = useState<Set<string>>(new Set());
+  const [transferOpen, setTransferOpen] = useState(false);
+  const [changeFormThesisId, setChangeFormThesisId] = useState<string | null>(null);
+  const [openRequestThesisId, setOpenRequestThesisId] = useState<string | null>(null);
+  const [evaluationThesisId, setEvaluationThesisId] = useState<string | null>(null);
 
   const [studentFilter, setStudentFilter] = useState<MyStudentsFilter>("active");
   const { data, isLoading, isFetching, refetch } = useQuery({
@@ -121,22 +134,22 @@ export default function LecturerMyStudentsPage() {
 
   const handleSendWarning = () => {
     const student = warningDialog.student;
-    if (!student?.thesisId || !student?.thesisRating) return;
+    if (!student?.thesisId || !needsWarning(student.activityLevel)) return;
     sendWarningMutation.mutate({
       thesisId: student.thesisId,
-      warningType: student.thesisRating as WarningType,
+      warningType: student.activityLevel,
     });
   };
 
-  // Filter data based on search query
+  // Filter data based on search query: name, NIM, thesis title (and email, as before)
   const filteredData = useMemo(() => {
     if (!data?.students) return [];
-    if (!searchQuery.trim()) return data.students;
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return data.students;
 
-    const query = searchQuery.toLowerCase();
     return data.students.filter((student: MyStudentItem) =>
-      toTitleCaseName(student.fullName).toLowerCase().includes(query) ||
-      student.email?.toLowerCase().includes(query)
+      [student.fullName, student.identityNumber, student.thesisTitle, student.email]
+        .some((value) => value?.toLowerCase().includes(query))
     );
   }, [data?.students, searchQuery]);
 
@@ -147,73 +160,104 @@ export default function LecturerMyStudentsPage() {
     return filteredData.slice(startIndex, endIndex);
   }, [filteredData, page, pageSize]);
 
+  // Ticked students that may still be handed over (the list reloads after every change).
+  const transferStudents = useMemo(
+    () => toTransferStudents((data?.students ?? []).filter((row) => row.thesisId && selectedThesisIds.has(row.thesisId))),
+    [data?.students, selectedThesisIds],
+  );
+  const selectableOnPage = paginatedData.filter((row) => row.thesisId && row.changeRequest?.canTransfer);
+  const allOnPageSelected = selectableOnPage.length > 0 && selectableOnPage.every((row) => selectedThesisIds.has(row.thesisId as string));
+  const toggleSelected = (thesisIds: string[], checked: boolean) =>
+    setSelectedThesisIds((previous) => {
+      const next = new Set(previous);
+      for (const thesisId of thesisIds) {
+        if (checked) next.add(thesisId);
+        else next.delete(thesisId);
+      }
+      return next;
+    });
+
   const columns: Column<MyStudentItem>[] = useMemo(() => [
     {
+      // Only the students that may be handed over can be ticked.
       key: 'select',
-      header: () => {
-        const allSelected = paginatedData.length > 0 && paginatedData.every(s => selectedStudentIds.has(s.studentId));
-        return (
-          <Checkbox
-            checked={allSelected}
-            onCheckedChange={(checked) => {
-              const next = new Set(selectedStudentIds);
-              if (checked) {
-                paginatedData.forEach(s => next.add(s.studentId));
-              } else {
-                paginatedData.forEach(s => next.delete(s.studentId));
-              }
-              setSelectedStudentIds(next);
-            }}
-          />
-        );
-      },
-      render: (row) => (
+      header: () => (
         <Checkbox
-          checked={selectedStudentIds.has(row.studentId)}
-          onCheckedChange={(checked) => {
-            const next = new Set(selectedStudentIds);
-            if (checked) {
-              next.add(row.studentId);
-            } else {
-              next.delete(row.studentId);
-            }
-            setSelectedStudentIds(next);
-          }}
+          checked={allOnPageSelected}
+          disabled={selectableOnPage.length === 0}
+          onCheckedChange={(checked) => toggleSelected(selectableOnPage.map((row) => row.thesisId as string), !!checked)}
+          aria-label="Pilih semua mahasiswa yang dapat dialihkan di halaman ini"
         />
       ),
+      width: 44,
+      render: (row) => {
+        const reason = row.changeRequest?.transferBlockReason ?? (row.changeRequest ? null : "Mahasiswa ini tidak dapat dialihkan.");
+        const disabled = !row.thesisId || !row.changeRequest?.canTransfer;
+        return (
+          <span className="inline-flex" title={disabled ? reason ?? undefined : "Pilih untuk dialihkan"}>
+            <Checkbox
+              checked={!!row.thesisId && selectedThesisIds.has(row.thesisId)}
+              disabled={disabled}
+              onCheckedChange={(checked) => row.thesisId && toggleSelected([row.thesisId], !!checked)}
+              aria-label={`Pilih ${toTitleCaseName(row.fullName)}`}
+            />
+          </span>
+        );
+      },
     },
     {
+      // The only column without a width: it takes what the fixed columns leave.
       key: 'fullName',
       header: 'Mahasiswa',
+      className: CLIP_CELL,
       render: (row) => (
-        <div className="space-y-0.5">
-          <div className="font-medium">{toTitleCaseName(row.fullName)}</div>
-          <div className="text-xs text-muted-foreground">{row.identityNumber || '-'}</div>
-        </div>
-      ),
-    },
-    {
-      key: 'thesisTitle',
-      header: 'Judul Tugas Akhir',
-      render: (row) => (
-        <div className="space-y-1">
-          <div className="max-w-[220px] whitespace-normal break-words line-clamp-2 font-medium" title={row.thesisTitle}>
-            {row.thesisTitle || '-'}
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex min-w-0 items-baseline gap-2">
+            <span className="truncate font-semibold" title={toTitleCaseName(row.fullName)}>{toTitleCaseName(row.fullName)}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">{row.identityNumber || '-'}</span>
           </div>
-          {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="text-xs" />}
+          {row.thesisTitle ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <p className="truncate text-sm text-muted-foreground">{row.thesisTitle}</p>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-sm">{row.thesisTitle}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <p className="text-sm text-muted-foreground">Judul belum ditentukan</p>
+          )}
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+            {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="max-w-full truncate text-xs" />}
+            {/* A running change request; the marker opens its detail. */}
+            {row.changeRequest?.hasOpenRequest && row.thesisId && (
+              <button
+                type="button"
+                onClick={() => setOpenRequestThesisId(row.thesisId as string)}
+                title="Lihat pengajuan perubahan yang sedang berjalan"
+              >
+                <Badge variant="warning" className="max-w-full truncate whitespace-nowrap text-xs">Perubahan berjalan</Badge>
+              </button>
+            )}
+            {/* A replaced supervisor reads the student under "Semua" only. */}
+            {row.noLongerSupervising && (
+              <Badge variant="outline" className="max-w-full truncate text-xs text-muted-foreground">Tidak lagi membimbing</Badge>
+            )}
+          </div>
         </div>
       ),
     },
     {
       key: 'progress',
-      header: 'Progress Milestone',
+      header: 'Milestone',
+      width: 140,
+      className: CLIP_CELL,
       render: (row) => {
         const total = row.totalMilestones || 0;
         const completed = row.completedMilestones || 0;
         const progress = row.milestoneProgress || 0;
 
         return (
-          <div className="space-y-1.5 min-w-24">
+          <div className="min-w-0 space-y-1.5">
             <div className="flex items-center justify-between text-xs">
               <span className="flex items-center gap-1 text-muted-foreground">
                 <Milestone className="h-3 w-3" />
@@ -223,7 +267,7 @@ export default function LecturerMyStudentsPage() {
             </div>
             <Progress value={progress} className="h-2" />
             {row.latestMilestone && (
-              <div className="text-xs text-muted-foreground truncate max-w-28" title={row.latestMilestone}>
+              <div className="truncate text-xs text-muted-foreground" title={row.latestMilestone}>
                 {row.latestMilestone}
               </div>
             )}
@@ -234,15 +278,18 @@ export default function LecturerMyStudentsPage() {
     {
       key: 'guidanceCount',
       header: 'Bimbingan',
+      width: 140,
+      className: CLIP_CELL,
       render: (row) => (
-        <div className="space-y-0.5 text-sm">
+        <div className="min-w-0 space-y-1 text-sm">
           <div className="flex items-center gap-1">
             <CalendarCheck className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="font-medium">{row.completedGuidanceCount || 0}x</span>
+            <span className="font-medium">{row.completedGuidanceCount || 0} sesi</span>
           </div>
           {row.lastGuidanceAt || row.lastGuidanceDate ? (
-            <div className="text-xs text-muted-foreground" title={formatDateTimeWib(row.lastGuidanceAt)}>
-              Terakhir: {row.lastGuidanceAt ? formatDateShortId(row.lastGuidanceAt) : row.lastGuidanceDate}
+            <div className="flex flex-wrap gap-x-1 text-xs text-muted-foreground" title={formatDateTimeWib(row.lastGuidanceAt)}>
+              <span>Terakhir:</span>
+              <span className="whitespace-nowrap">{row.lastGuidanceAt ? formatDateShortId(row.lastGuidanceAt) : row.lastGuidanceDate}</span>
             </div>
           ) : (
             <div className="text-xs text-muted-foreground">Belum pernah</div>
@@ -251,65 +298,57 @@ export default function LecturerMyStudentsPage() {
       ),
     },
     {
-      key: 'deadline',
-      header: 'Sisa Waktu',
-      render: (row) => {
-        const days = getDaysRemaining(row.deadlineDate);
-        if (days === null) return <span className="text-muted-foreground">-</span>;
-
-        if (days < 0) {
-          return (
-            <Badge variant="destructive" className="items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Lewat {Math.abs(days)} hari
-            </Badge>
-          );
-        }
-
-        if (days <= 30) {
-          return (
-            <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50 items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {days} hari
-            </Badge>
-          );
-        }
-
-        return (
-          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Clock className="h-3 w-3" />
-            <span>{days} hari</span>
-          </div>
-        );
-      }
+      key: 'supervisionClock',
+      header: 'Masa Bimbingan',
+      width: 170,
+      className: CLIP_CELL,
+      render: (row) => <SupervisionClockCell clock={row.supervisionClock} wrap />,
     },
     {
-      key: 'thesisRating',
-      header: 'Rating',
-      render: (row) => {
-        const config = getRatingConfig(row.thesisRating);
-        return (
-          <div className="flex items-center gap-2">
-            <Badge variant={config.variant} className={cn("whitespace-nowrap", config.className)}>
-              {config.label}
-            </Badge>
-            {config.needsWarning && (
-              <AlertTriangle className="h-4 w-4 text-orange-500 animate-pulse" />
-            )}
-          </div>
-        );
-      },
+      key: 'activity',
+      header: 'Aktivitas',
+      width: 124,
+      className: CLIP_CELL,
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <ThesisActivityBadge level={row.activityLevel} className="whitespace-nowrap" />
+          {needsWarning(row.activityLevel) && (
+            <AlertTriangle className="h-4 w-4 text-orange-500" aria-label="Perlu perhatian" />
+          )}
+        </div>
+      ),
     },
     {
       key: 'actions',
       header: 'Aksi',
+      // Four icons at most: Isi Evaluasi, Ajukan Perubahan, Kirim Peringatan, Detail.
+      width: 164,
       className: STICKY_ACTION_COLUMN_CLASS,
       render: (row) => {
-        const config = getRatingConfig(row.thesisRating);
-        // Only an active supervisor relation may send a warning (backend rule).
-        const canWarn = config.needsWarning && (row.supervisorStatus ?? "active") === "active";
+        // Only an active supervisor relation may send a warning (backend rule); a replaced
+        // supervisor's row is read-only.
+        const canWarn = needsWarning(row.activityLevel) && (row.supervisorStatus ?? "active") === "active" && !row.noLongerSupervising;
         return (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center justify-end gap-1">
+            {row.proposalRevisionPending && (
+              <TableIconAction
+                icon={FileSearch}
+                label="Tinjau Proposal Revisi"
+                onClick={() => navigate(`/tugas-akhir/bimbingan/lecturer/my-students/${row.thesisId}#${DETAIL_SECTIONS.revision}`)}
+              />
+            )}
+            {canFillEvaluation(row) && (
+              <TableIconAction icon={ClipboardCheck} label="Isi Evaluasi" onClick={() => setEvaluationThesisId(row.thesisId as string)} />
+            )}
+            {canAskChange(row) && (
+              <TableIconAction
+                icon={FilePenLine}
+                label="Ajukan Perubahan"
+                disabled={!row.changeRequest?.canSubmit}
+                disabledReason={row.changeRequest?.blockReason}
+                onClick={() => setChangeFormThesisId(row.thesisId as string)}
+              />
+            )}
             {canWarn && (
               <TooltipProvider>
                 <Tooltip>
@@ -352,13 +391,7 @@ export default function LecturerMyStudentsPage() {
         );
       }
     }
-  ], [navigate, selectedStudentIds, paginatedData]);
-
-  // Get selected student items
-  const selectedStudents = useMemo(() => {
-    if (!data?.students) return [];
-    return data.students.filter((s: MyStudentItem) => selectedStudentIds.has(s.studentId));
-  }, [data?.students, selectedStudentIds]);
+  ], [navigate, allOnPageSelected, selectableOnPage, selectedThesisIds]);
 
   // Define tabs for reuse
   const tabs = [
@@ -375,16 +408,11 @@ export default function LecturerMyStudentsPage() {
 
       <TabsNav tabs={tabs} />
 
-      {/* Distribution Charts */}
+      {/* Only the summary and the students table; Permohonan has its own page.
+          "Ajukan Perubahan", "Isi Evaluasi" and "Alihkan" act on the rows. */}
       {!isLoading && data?.students && data.students.length > 0 && (
         <MyStudentsCharts students={data.students} />
       )}
-
-      {/* Incoming Transfer Requests Section */}
-      <IncomingTransfersSection />
-
-      {/* Pembimbing 2 Requests Section */}
-      <Supervisor2RequestsSection />
 
       {/* Loading state - tabs tetap render, loading di content */}
       {isLoading ? (
@@ -397,12 +425,14 @@ export default function LecturerMyStudentsPage() {
           data={paginatedData}
           loading={isLoading}
           isRefreshing={isFetching && !isLoading}
+          tableClassName={MY_STUDENTS_TABLE_CLASS}
           total={filteredData.length}
           page={page}
           pageSize={pageSize}
           onPageChange={setPage}
           onPageSizeChange={setPageSize}
           searchValue={searchQuery}
+          searchPlaceholder="Cari nama, NIM, atau judul..."
           onSearchChange={(val) => {
             setSearchQuery(val);
             setPage(1); // Reset to page 1 on search
@@ -411,12 +441,18 @@ export default function LecturerMyStudentsPage() {
           rowKey={(row) => row.thesisId ?? row.studentId}
           actions={
             <div className="flex items-center gap-2">
+              {/* Appears with the number of ticked students. */}
+              {transferStudents.length > 0 && (
+                <Button variant="outline" className="h-9 gap-1.5" onClick={() => setTransferOpen(true)}>
+                  <ArrowRightLeft className="h-4 w-4" />
+                  Alihkan ({transferStudents.length})
+                </Button>
+              )}
               <Select
                 value={studentFilter}
                 onValueChange={(v) => {
                   setStudentFilter(v as MyStudentsFilter);
                   setPage(1);
-                  setSelectedStudentIds(new Set());
                 }}
               >
                 <SelectTrigger className="h-9 w-32" aria-label="Filter status tugas akhir">
@@ -430,17 +466,6 @@ export default function LecturerMyStudentsPage() {
                   ))}
                 </SelectContent>
               </Select>
-              {selectedStudents.length > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5"
-                  onClick={() => setTransferDialogOpen(true)}
-                >
-                  <ArrowRightLeft className="h-4 w-4" />
-                  Transfer ({selectedStudents.length})
-                </Button>
-              )}
               <RefreshButton
                 onClick={() => refetch()}
                 isRefreshing={isFetching && !isLoading}
@@ -448,6 +473,23 @@ export default function LecturerMyStudentsPage() {
             </div>
           }
         />
+      )}
+
+      <LecturerTransferStudentsDialog
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        students={transferStudents}
+        currentLecturerId={user?.id}
+        onSuccess={() => setSelectedThesisIds(new Set())}
+      />
+      {changeFormThesisId && (
+        <ThesisChangeRequestFormLauncher thesisId={changeFormThesisId} onClose={() => setChangeFormThesisId(null)} />
+      )}
+      {openRequestThesisId && (
+        <OpenThesisChangeRequestLauncher thesisId={openRequestThesisId} onClose={() => setOpenRequestThesisId(null)} />
+      )}
+      {evaluationThesisId && (
+        <EvaluationFormLauncher thesisId={evaluationThesisId} onClose={() => setEvaluationThesisId(null)} />
       )}
 
       {/* Warning Confirmation Dialog */}
@@ -468,13 +510,8 @@ export default function LecturerMyStudentsPage() {
                   <p className="text-sm">{warningDialog.student?.identityNumber}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span>Status saat ini:</span>
-                  <Badge
-                    variant={getRatingConfig(warningDialog.student?.thesisRating).variant}
-                    className={getRatingConfig(warningDialog.student?.thesisRating).className}
-                  >
-                    {getRatingConfig(warningDialog.student?.thesisRating).label}
-                  </Badge>
+                  <span>Aktivitas saat ini:</span>
+                  <ThesisActivityBadge level={warningDialog.student?.activityLevel} />
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Mahasiswa akan menerima notifikasi push dan in-app notification untuk mengingatkan progress tugas akhir mereka.
@@ -505,16 +542,6 @@ export default function LecturerMyStudentsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Transfer Students Dialog */}
-      <TransferStudentsDialog
-        open={transferDialogOpen}
-        onOpenChange={setTransferDialogOpen}
-        selectedStudents={selectedStudents}
-        onSuccess={() => {
-          setSelectedStudentIds(new Set());
-          queryClient.invalidateQueries({ queryKey: ['lecturer-my-students'] });
-        }}
-      />
     </div>
   );
 }

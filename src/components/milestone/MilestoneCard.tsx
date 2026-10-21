@@ -5,6 +5,8 @@ import { Slider } from "@/components/ui/slider";
 import { Spinner } from "@/components/ui/spinner";
 
 import { MilestoneStatusBadge } from "./MilestoneStatusBadge";
+import { ThesisPhaseBadge } from "@/components/shared/ThesisPhaseBadge";
+import type { ThesisPhase } from "@/lib/thesisLabels";
 import type { Milestone, MilestoneStatus } from "@/types/milestone.types";
 import { formatDateShortId, formatDateTimeWib } from "@/lib/text";
 import { MilestoneNotes } from "./MilestoneNotes";
@@ -40,6 +42,8 @@ export interface MilestoneCardProps {
   draggable?: boolean;
   isProgressUpdating?: boolean;
   isStatusUpdating?: boolean;
+  /** A milestone of the other phase shows its phase badge (read-only). */
+  phase?: ThesisPhase;
 }
 
 export function MilestoneCard({
@@ -56,6 +60,7 @@ export function MilestoneCard({
   draggable = false,
   isProgressUpdating = false,
   isStatusUpdating = false,
+  phase,
 }: MilestoneCardProps) {
   const [localProgress, setLocalProgress] = useState(milestone.progressPercentage);
   const [showProgressSlider, setShowProgressSlider] = useState(false);
@@ -134,6 +139,7 @@ export function MilestoneCard({
           >
             {milestone.title}
           </h4>
+          {phase && <ThesisPhaseBadge phase={phase} className="shrink-0" />}
           <MilestoneStatusBadge status={milestone.status} className="shrink-0" />
           <Button
             variant="ghost"

@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { Download } from "lucide-react";
 import { getGuidanceForExport, generateGuidanceLogPdf } from "@/services/studentGuidance.service";
-import { toTitleCaseName } from "@/lib/text";
+import { toTitleCaseName, formatLecturerName } from "@/lib/text";
 import { toast } from "sonner";
 
 interface BatchExportDialogProps {
@@ -106,7 +106,7 @@ export default function BatchExportDialog({
                 </div>
                 <div>
                   <span className="text-muted-foreground">Dosen Pembimbing:</span>
-                  <p className="font-semibold">{toTitleCaseName(studentInfo?.supervisorName || "-")}</p>
+                  <p className="font-semibold">{formatLecturerName(studentInfo?.supervisorName || "-")}</p>
                 </div>
                 {studentInfo?.thesisTitle && (
                   <div className="col-span-2">

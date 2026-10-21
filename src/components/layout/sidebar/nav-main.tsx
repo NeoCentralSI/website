@@ -20,6 +20,8 @@ export interface NavSubItem {
   title: string
   url: string
   isActive?: boolean
+  /** Count shown at the right of the sub-item; hidden when absent or 0. */
+  badge?: number
 }
 
 export interface NavItem {
@@ -142,7 +144,7 @@ export function NavMain({
                     <SidebarMenuSub>
                       {item.items!.map((subItem) => {
                         // Only the most specific matching sub-item should be active.
-                        // E.g. /metopel/tugas must not highlight Overview (/metopel).
+                        // E.g. /tugas-akhir/proposal must not highlight Overview (/tugas-akhir).
                         const matches =
                           hasExplicitActive
                             ? subItem.isActive
@@ -161,6 +163,14 @@ export function NavMain({
                             <SidebarMenuSubButton asChild isActive={isSubActive}>
                               <Link to={subItem.url}>
                                 <span className="truncate">{subItem.title}</span>
+                                {!!subItem.badge && (
+                                  <span
+                                    className="ml-auto inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold leading-none text-primary-foreground"
+                                    aria-label={`${subItem.badge} menunggu`}
+                                  >
+                                    {subItem.badge}
+                                  </span>
+                                )}
                               </Link>
                             </SidebarMenuSubButton>
                           </SidebarMenuSubItem>

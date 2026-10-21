@@ -30,16 +30,18 @@ interface TemplateSelectorDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   templates: MilestoneTemplate[];
-  /** K20: templates follow the thesis topic (set by Admin/Sekdep in the data master). */
+  /** Templates follow the thesis topic (set by Admin/Sekdep in the data master). */
   thesisTopicId: string | null;
   thesisTopicName?: string | null;
   isLoading?: boolean;
   isSubmitting?: boolean;
   onSubmit: (templateIds: string[], topicId: string) => void;
+  /** Proposal phase: general templates without a topic; the thesis topic is not needed. */
+  generalOnly?: boolean;
 }
 
 /**
- * K20: the student applies active TA-phase templates of the thesis topic (plus general
+ * The student applies active TA-phase templates of the thesis topic (plus general
  * templates without a topic) while the milestones are still empty. The topic is never
  * chosen here; the backend uses the thesis topic.
  */
@@ -52,16 +54,21 @@ export function TemplateSelectorDialog({
   isLoading,
   isSubmitting,
   onSubmit,
+  generalOnly = false,
 }: TemplateSelectorDialogProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
+  const needsTopic = !generalOnly;
   const topicTemplates = useMemo(() => {
+    if (generalOnly) {
+      return templates.filter((t) => !t.topicId && t.isActive !== false).sort((a, b) => a.orderIndex - b.orderIndex);
+    }
     if (!thesisTopicId) return [];
     return templates
       .filter((t) => (t.topicId === thesisTopicId || !t.topicId) && t.isActive !== false)
       .sort((a, b) => a.orderIndex - b.orderIndex);
-  }, [templates, thesisTopicId]);
+  }, [templates, thesisTopicId, generalOnly]);
 
   // Pre-select every template of the topic when the dialog opens
   useEffect(() => {
@@ -77,13 +84,17 @@ export function TemplateSelectorDialog({
   const toggleSelectAll = () => setSelectedIds(allSelected ? [] : topicTemplates.map((t) => t.id));
 
   const handleConfirmedSubmit = () => {
-    if (selectedIds.length > 0 && thesisTopicId) {
-      onSubmit(selectedIds, thesisTopicId);
+    if (selectedIds.length > 0 && (thesisTopicId || !needsTopic)) {
+      onSubmit(selectedIds, thesisTopicId ?? '');
       setConfirmDialogOpen(false);
     }
   };
 
   const topicLabel = thesisTopicName || "topik tugas akhir Anda";
+  // The phase is written out in the dialog.
+  const phaseLabel = generalOnly
+    ? "Template fase Proposal"
+    : `Template fase Penelitian · topik ${thesisTopicName || "belum diisi"}`;
 
   return (
     <>
@@ -94,8 +105,11 @@ export function TemplateSelectorDialog({
               <FileText className="h-5 w-5" />
               Pilih Template Milestone
             </DialogTitle>
+            <p className="text-sm font-medium" data-testid="template-phase">{phaseLabel}</p>
             <DialogDescription>
-              Template untuk topik "{topicLabel}". Milestone yang dibuat dapat Anda ubah atau hapus setelahnya.
+              {generalOnly
+                ? 'Template berlaku umum untuk semua mahasiswa fase proposal. Milestone yang dibuat dapat Anda ubah atau hapus setelahnya.'
+                : `Template sesuai topik "${topicLabel}". Milestone fase proposal yang sudah ada tidak menghalangi. Milestone yang dibuat dapat Anda ubah atau hapus setelahnya.`}
             </DialogDescription>
           </DialogHeader>
 
@@ -103,7 +117,7 @@ export function TemplateSelectorDialog({
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : !thesisTopicId ? (
+          ) : needsTopic && !thesisTopicId ? (
             <EmptyState
               size="sm"
               title="Topik Belum Diisi"
@@ -113,7 +127,9 @@ export function TemplateSelectorDialog({
             <EmptyState
               size="sm"
               title="Tidak Ada Template"
-              description="Belum ada template aktif untuk topik ini. Hubungi Sekretaris Departemen atau tambahkan milestone secara manual."
+              description={generalOnly
+                ? "Belum ada template milestone proposal yang aktif. Hubungi Sekretaris Departemen atau tambahkan milestone secara manual."
+                : "Belum ada template aktif untuk topik ini. Hubungi Sekretaris Departemen atau tambahkan milestone secara manual."}
             />
           ) : (
             <ScrollArea className="max-h-[50vh] pr-4">
@@ -172,7 +188,7 @@ export function TemplateSelectorDialog({
               </Button>
               <Button
                 onClick={() => setConfirmDialogOpen(true)}
-                disabled={isSubmitting || selectedIds.length === 0 || !thesisTopicId}
+                disabled={isSubmitting || selectedIds.length === 0 || (needsTopic && !thesisTopicId)}
               >
                 {isSubmitting && <Spinner className="mr-2 h-4 w-4" />}
                 Buat {selectedIds.length} Milestone
@@ -190,9 +206,10 @@ export function TemplateSelectorDialog({
               Konfirmasi Pembuatan Milestone
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Anda akan membuat <strong>{selectedIds.length} milestone</strong> dari template topik{" "}
-              <strong>"{topicLabel}"</strong>. Template hanya dapat dipasang sekali, saat milestone masih kosong;
-              setelah itu milestone ditambahkan satu per satu.
+              Anda akan membuat <strong>{selectedIds.length} milestone</strong> dari{" "}
+              <strong>{generalOnly ? "template fase Proposal" : `template fase Penelitian (topik "${topicLabel}")`}</strong>. Template hanya
+              dapat dipasang sekali per fase, saat milestone fase {generalOnly ? "proposal" : "penelitian"} masih kosong; setelah itu
+              milestone ditambahkan satu per satu.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

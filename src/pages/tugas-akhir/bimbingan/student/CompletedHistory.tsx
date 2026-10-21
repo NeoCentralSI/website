@@ -6,6 +6,7 @@ import CompletedGuidanceHistory from '@/components/thesis/CompletedGuidanceHisto
 import { useQuery } from '@tanstack/react-query';
 import { getStudentSupervisors } from '@/services/studentGuidance.service';
 import { getThesisStatusLabel } from '@/lib/thesisLabels';
+import { ThesisClosedAlert } from '@/components/thesis/ThesisClosedAlert';
 
 export default function CompletedHistoryPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -32,7 +33,10 @@ export default function CompletedHistoryPage() {
     enabled: hasThesis,
   });
 
-  const isThesisInactive = thesisDetail?.status === "completed" || thesisDetail?.status === "failed";
+  // A thesis made Selesai by its defence keeps its history readable (with the
+  // closed notice, as on the Bimbingan and Milestone pages); a stopped thesis (Gagal) does not.
+  const isThesisInactive = thesisDetail?.status === "failed";
+  const isThesisCompleted = thesisDetail?.status === "completed";
 
   useEffect(() => {
     setBreadcrumbs(breadcrumb);
@@ -60,7 +64,10 @@ export default function CompletedHistoryPage() {
           <p className="text-muted-foreground">Status tugas akhir Anda saat ini adalah <strong>{getThesisStatusLabel(thesisDetail?.status)}</strong>. Anda tidak dapat mengakses riwayat bimbingan.</p>
         </div>
       ) : (
-        <CompletedGuidanceHistory />
+        <>
+          {isThesisCompleted && <ThesisClosedAlert status="completed" closedAt={thesisDetail?.completedAt} />}
+          <CompletedGuidanceHistory />
+        </>
       )}
     </div>
   );

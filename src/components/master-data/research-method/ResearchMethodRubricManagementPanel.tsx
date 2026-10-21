@@ -1,9 +1,14 @@
 import { useMemo, useState } from "react";
+import { Eye, Settings } from "lucide-react";
+
+import { MinimumScoreDialog } from "@/components/master-data/MinimumScoreDialog";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAssessmentForm, useSetMinimumScore } from "@/hooks/research-method/useResearchMethod";
 
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -18,19 +23,31 @@ import { cn } from "@/lib/utils";
 
 import { ResearchMethodCriteriaFormDialog } from "./ResearchMethodCriteriaFormDialog";
 import { ResearchMethodCriteriaTable } from "./ResearchMethodCriteriaTable";
+import { ResearchMethodRubricPreviewDialog } from "./ResearchMethodRubricPreviewDialog";
+import { LOCKED_MINIMUM_REASON, LOCKED_SCORE_REASON } from "./researchMethodLocks";
+import { academicYearOptionLabel, useResearchMethodPeriod } from "./useResearchMethodPeriod";
 
 const ASSESSOR_OPTIONS: { value: ResearchMethodAssessor; label: string }[] = [
   { value: "supervisor", label: "Dosen Pembimbing" },
   { value: "coordinator", label: "Koordinator Metode Penelitian" },
 ];
 
-export function ResearchMethodRubricManagementPanel({
-  academicYearId,
-}: {
-  academicYearId?: string;
-}) {
+/**
+ * Tab "Rubrik Penilaian" di Kelola > Metode Penelitian, meniru rubrik sidang:
+ * pilihan periode di dalam panel, pratinjau form, dan nilai minimum lulus periode itu
+ * (`academic_years.research_method_minimum_score`). Dua pihak penilai dengan ringkasan bobot
+ * (total maksimal 100). Hanya Sekretaris Departemen.
+ */
+export function ResearchMethodRubricManagementPanel() {
+  const period = useResearchMethodPeriod();
+  const academicYearId = period.academicYearId;
   const [assessor, setAssessor] = useState<ResearchMethodAssessor>("supervisor");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [minimumOpen, setMinimumOpen] = useState(false);
   const hook = useResearchMethodAssessment(assessor, academicYearId);
+  const form = useAssessmentForm("supervisor", academicYearId, Boolean(academicYearId));
+  const saveMinimum = useSetMinimumScore();
+  const minimumScore = form.data?.minimumScore;
   const [dialogOpen, setDialogOpen] = useState(false);
   const [targetCpmk, setTargetCpmk] =
     useState<ResearchMethodCpmkWithRubrics | null>(null);
@@ -52,6 +69,8 @@ export function ResearchMethodRubricManagementPanel({
   }, [hook.allCpmks, hook.cpmks]);
 
   const summary = hook.weightSummary;
+  const assessmentStarted = Boolean(summary?.assessmentStarted);
+  const minimumLocked = Boolean(summary?.minimumScoreLocked);
   const supervisorTotal = summary?.supervisorTotal ?? 0;
   const coordinatorTotal = summary?.coordinatorTotal ?? 0;
   const combinedTotal = summary?.totalScore ?? 0;
@@ -60,14 +79,6 @@ export function ResearchMethodRubricManagementPanel({
   const remainingScore = Math.max(0, 100 - combinedTotal);
   const assessorLabel =
     ASSESSOR_OPTIONS.find((item) => item.value === assessor)?.label ?? assessor;
-
-  if (!academicYearId) {
-    return (
-      <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-        Pilih tahun ajaran untuk mengelola rubrik.
-      </div>
-    );
-  }
 
   const openCreate = (cpmkId: string) => {
     setTargetCpmk(merged.find((item) => item.id === cpmkId) ?? null);
@@ -90,12 +101,41 @@ export function ResearchMethodRubricManagementPanel({
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <CardTitle>Rubrik Penilaian Metode Penelitian</CardTitle>
-            <CardDescription>
-              Kelola kriteria dan rentang rubrik penilaian proposal berdasarkan
-              CPMK serta peran penilai.
-            </CardDescription>
+            <div className="mt-3 w-full sm:w-[240px]">
+              <Select value={academicYearId ?? ""} onValueChange={period.setAcademicYearId}>
+                <SelectTrigger aria-label="Tahun ajaran">
+                  <SelectValue placeholder="Pilih tahun ajaran" />
+                </SelectTrigger>
+                <SelectContent>
+                  {period.years.map((year) => (
+                    <SelectItem key={year.id} value={year.id}>{academicYearOptionLabel(year)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex" title={merged.some((cpmk) => cpmk.assessmentCriterias.length > 0) ? undefined : "Belum ada kriteria untuk dipratinjau."}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-fit py-2"
+              onClick={() => setPreviewOpen(true)}
+              disabled={!merged.some((cpmk) => cpmk.assessmentCriterias.length > 0)}
+            >
+              <Eye className="mr-2 h-4 w-4" />
+              Pratinjau Form Penilaian
+            </Button>
+          </span>
+          {academicYearId && minimumScore !== undefined && (
+            <span className="inline-flex" title={minimumLocked ? LOCKED_MINIMUM_REASON : undefined}>
+              <Button variant="outline" size="sm" className="h-fit py-2" disabled={minimumLocked} onClick={() => setMinimumOpen(true)}>
+                <Settings className="mr-2 h-4 w-4" />
+                Min Lulus: {minimumScore}
+              </Button>
+            </span>
+          )}
           {summary ? (
             <div
               className={cn(
@@ -122,10 +162,26 @@ export function ResearchMethodRubricManagementPanel({
               </span>
             </div>
           ) : null}
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {!academicYearId && (
+          <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Pilih tahun ajaran untuk mengelola rubrik.</p>
+        )}
+        {academicYearId && !hook.isCpmkLoading && hook.allCpmks.length === 0 && (
+          <p className="text-sm text-muted-foreground">
+            Periode ini belum punya CPMK. Tambahkan CPMK atau salin dari periode lain di tab CPMK.
+          </p>
+        )}
+        {summary && combinedTotal !== 100 && (
+          <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            {combinedTotal > 100
+              ? `Jumlah bobot pembimbing dan koordinator ${combinedTotal}, melebihi 100. Kurangi skor maksimum kriteria.`
+              : `Jumlah bobot pembimbing (${supervisorTotal}) dan koordinator (${coordinatorTotal}) baru ${combinedTotal} dari 100; nilai akhir tertinggi hanya ${combinedTotal}. Lengkapi kriteria sampai tepat 100.`}
+          </p>
+        )}
         <div className="flex flex-col gap-4 rounded-lg border bg-muted/20 p-4 md:flex-row md:items-center md:justify-between">
           <div className="flex w-fit gap-1 rounded-lg border bg-background p-1 shadow-sm">
             {ASSESSOR_OPTIONS.map((option) => (
@@ -179,6 +235,7 @@ export function ResearchMethodRubricManagementPanel({
           isRemovingCpmk={hook.isRemovingConfiguration}
           isDeletingRubric={hook.isDeletingRubric}
           catalogCount={hook.allCpmks.length}
+          locked={assessmentStarted}
         />
       </CardContent>
 
@@ -190,6 +247,7 @@ export function ResearchMethodRubricManagementPanel({
         role={assessor}
         roleCap={100}
         editData={editCriteria}
+        scoreLockedReason={assessmentStarted ? LOCKED_SCORE_REASON : null}
         remainingScore={
           editCriteria
             ? remainingScore + (editCriteria.maxScore ?? 0)
@@ -201,6 +259,24 @@ export function ResearchMethodRubricManagementPanel({
                 hook.updateCriteria(editCriteria.id, data)
             : hook.createCriteria
         }
+      />
+      <MinimumScoreDialog
+        open={minimumOpen}
+        onOpenChange={setMinimumOpen}
+        currentScore={minimumScore ?? 0}
+        isLoading={saveMinimum.isPending}
+        onSubmit={(score) => {
+          if (academicYearId) saveMinimum.mutate({ academicYearId, minimumScore: score });
+        }}
+      />
+      <ResearchMethodRubricPreviewDialog
+        open={previewOpen}
+        onOpenChange={setPreviewOpen}
+        cpmks={merged}
+        assessor={assessor}
+        supervisorTotal={supervisorTotal}
+        coordinatorTotal={coordinatorTotal}
+        minimumPassingScore={minimumScore ?? 0}
       />
     </Card>
   );

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import {
+  copyResearchMethodCpmkTemplate,
   createResearchMethodCpmk,
   createResearchMethodCriteria,
   createResearchMethodRubric,
@@ -195,6 +196,22 @@ export function useResearchMethodAssessment(
     onError: (error: Error) => toast.error(error.message),
   });
 
+  // "Salin Template" into this (empty) period.
+  const copyTemplateMutation = useMutation({
+    mutationFn: (sourceAcademicYearId: string) =>
+      copyResearchMethodCpmkTemplate({
+        sourceAcademicYearId,
+        targetAcademicYearId: academicYearId as string,
+      }),
+    onSuccess: (result) => {
+      invalidateAll();
+      toast.success(
+        `Disalin: ${result.cpmk} CPMK, ${result.supervisorCriteria + result.coordinatorCriteria} kriteria, ${result.supervisorRubrics + result.coordinatorRubrics} rubrik`,
+      );
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   return {
     cpmks: configuration.data ?? [],
     allCpmks: cpmks.data ?? [],
@@ -247,5 +264,7 @@ export function useResearchMethodAssessment(
     isDeletingCriteria: deleteCriteriaMutation.isPending,
     isRemovingConfiguration: removeConfigurationMutation.isPending,
     isDeletingRubric: deleteRubricMutation.isPending,
+    copyTemplate: copyTemplateMutation.mutateAsync,
+    isCopyingTemplate: copyTemplateMutation.isPending,
   };
 }

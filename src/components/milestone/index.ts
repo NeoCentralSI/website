@@ -9,7 +9,7 @@ export { TargetDateDialog } from "./TargetDateDialog";
 
 // Student components
 export { SeminarReadinessStatusCard } from "./student/SeminarReadinessStatusCard";
-export { DefenceRequestCard } from "./student/DefenceRequestCard";
+export { DefenceReadinessStatusCard } from "./student/DefenceReadinessStatusCard";
 
 // Lecturer components
 export { SeminarReadinessCard } from "./lecturer/SeminarReadinessCard";

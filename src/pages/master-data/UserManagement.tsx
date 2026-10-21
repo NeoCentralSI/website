@@ -11,6 +11,7 @@ import { createUserAPI, updateUserAPI, importStudentsCsvAPI, importUsersExcelAPI
 import { toTitleCaseName } from '@/lib/text';
 import { assignableRoleOptions, formatRoleName, roleOptions, ROLES } from '@/lib/roles';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { SEARCH_DEBOUNCE_MS, useDebounce } from '@/hooks/useDebounce';
 import { UserFormDialog, ImportStudentDialog, AdminAuditLogCard } from '@/components/master-data';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import * as XLSX from 'xlsx';
@@ -29,6 +30,8 @@ export default function UserManagementPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchValue, setSearchValue] = useState('');
+  // The server is asked after the typing pause; the input itself stays instant.
+  const debouncedSearch = useDebounce(searchValue.trim(), SEARCH_DEBOUNCE_MS);
   
   // Server-side filters
   const [identityTypeFilter, setIdentityTypeFilter] = useState('');
@@ -68,7 +71,7 @@ export default function UserManagementPage() {
     queryKey: ['users', { 
       page, 
       pageSize, 
-      search: searchValue,
+      search: debouncedSearch,
       identityType: identityTypeFilter,
       role: roleFilter,
       isVerified: isVerifiedFilter
@@ -76,7 +79,7 @@ export default function UserManagementPage() {
     queryFn: () => getUsersAPI({ 
       page, 
       pageSize, 
-      search: searchValue,
+      search: debouncedSearch,
       identityType: identityTypeFilter || undefined,
       role: roleFilter || undefined,
       isVerified: isVerifiedFilter
@@ -95,7 +98,7 @@ export default function UserManagementPage() {
   // Reset page to 1 when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchValue, identityTypeFilter, roleFilter, statusFilter]);
+  }, [debouncedSearch, identityTypeFilter, roleFilter, statusFilter]);
 
   // Extract users from query data (no client-side filtering needed)
   const users = data?.users || [];
@@ -319,6 +322,7 @@ export default function UserManagementPage() {
         data={users}
         columns={columns as any}
         loading={isLoading}
+        subtleRefresh
         isRefreshing={isFetching && !isLoading}
         emptyText="Belum ada data user"
         page={page}

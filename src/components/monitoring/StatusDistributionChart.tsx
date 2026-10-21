@@ -5,6 +5,7 @@ import type { StatusDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
 import { getThesisStatusLabel, THESIS_STATUS_CHART_COLORS, type ThesisLifecycleStatus } from "@/lib/thesisLabels";
+import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 
 interface StatusDistributionChartProps {
   statusDistribution: StatusDistribution[] | undefined;
@@ -18,7 +19,7 @@ function getColor(status: string, index: number): string {
 export function StatusDistributionChart({ statusDistribution, isLoading }: StatusDistributionChartProps) {
   if (isLoading) {
     return (
-      <Card>
+      <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
           <CardTitle className="text-base">Distribusi Status Tugas Akhir</CardTitle>
         </CardHeader>
@@ -41,7 +42,7 @@ export function StatusDistributionChart({ statusDistribution, isLoading }: Statu
   });
 
   return (
-    <Card>
+    <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
         <CardTitle className="text-base">Distribusi Status Tugas Akhir</CardTitle>
       </CardHeader>

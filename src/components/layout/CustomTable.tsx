@@ -59,6 +59,13 @@ export type CustomTableProps<T> = {
 	data: T[];
 	loading?: boolean;
 	isRefreshing?: boolean; // Overlay spinner saat refresh
+	/**
+	 * Server-side search: while refreshing, keep the rows (slightly dimmed) and show a small
+	 * spinner in the search box instead of the overlay.
+	 */
+	subtleRefresh?: boolean;
+	/** Extra classes for the table itself, e.g. a fixed layout with a minimum width. */
+	tableClassName?: string;
 	total: number;
 	page: number; // 1-based
 	pageSize: number;
@@ -66,6 +73,8 @@ export type CustomTableProps<T> = {
 	onPageSizeChange?: (size: number) => void;
 	searchValue?: string;
 	onSearchChange?: (value: string) => void;
+	/** Tells what the search box matches; "Cari..." when omitted. */
+	searchPlaceholder?: string;
 	enableColumnFilters?: boolean;
 	actions?: React.ReactNode;
 	emptyText?: string;
@@ -95,6 +104,8 @@ export function CustomTable<T extends object>({
 	data,
 	loading,
 	isRefreshing,
+	subtleRefresh,
+	tableClassName,
 	total,
 	page,
 	pageSize,
@@ -102,6 +113,7 @@ export function CustomTable<T extends object>({
 	onPageSizeChange,
 	searchValue,
 	onSearchChange,
+	searchPlaceholder = "Cari...",
 	enableColumnFilters,
 	actions,
 	emptyText = "Tidak ada data",
@@ -124,12 +136,12 @@ export function CustomTable<T extends object>({
 							<div className="relative w-full sm:max-w-md">
 								<SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
 								<Input
-									placeholder="Cari..."
+									placeholder={searchPlaceholder}
 									className="pl-8 pr-8"
 									value={searchValue ?? ''}
 									onChange={(e) => onSearchChange?.(e.target.value)}
 								/>
-								{loading && (
+								{(loading || (subtleRefresh && isRefreshing)) && (
 									<div className="absolute right-2 top-1/2 -translate-y-1/2">
 										<Spinner className="size-4 text-muted-foreground animate-spin" />
 									</div>
@@ -145,12 +157,15 @@ export function CustomTable<T extends object>({
 				</div>
 
 				<div className="rounded-md border border-black/10 relative overflow-x-auto">
-					{isRefreshing && !loading && (
+					{isRefreshing && !loading && !subtleRefresh && (
 						<div className="absolute inset-0 bg-white/50 z-10 flex items-center justify-center rounded-md">
 							<Spinner className="h-8 w-8" />
 						</div>
 					)}
-					<Table>
+					<Table
+						className={cn(tableClassName, subtleRefresh && isRefreshing && !loading && "opacity-60 transition-opacity")}
+						aria-busy={subtleRefresh && isRefreshing ? true : undefined}
+					>
 						<TableHeader>
 							<TableRow>
 								{columns.map((col) => (

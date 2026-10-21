@@ -3,12 +3,13 @@ import { useOutletContext } from 'react-router-dom';
 import { Plus, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { RefreshButton } from '@/components/ui/refresh-button';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AcademicYearFormDialog,
   AcademicYearTable,
-  MetopenSiaOperationsCard,
+  SiaSyncStatusCard,
 } from '@/components/master-data';
 
 import { useAcademicYears, useAcademicYearForm } from '@/hooks/master-data';
@@ -30,6 +31,8 @@ export default function AcademicYearPage() {
     academicYears,
     total,
     isLoading,
+    isFetching,
+    refetch,
     isSubmitting,
     error,
     createAcademicYear,
@@ -103,7 +106,7 @@ export default function AcademicYearPage() {
         </AlertDescription>
       </Alert>
 
-      <MetopenSiaOperationsCard canMutate />
+      <SiaSyncStatusCard canMutate />
 
       <AcademicYearTable
         data={academicYears}
@@ -119,9 +122,12 @@ export default function AcademicYearPage() {
         onSemesterFilterChange={setSemesterFilter}
         onEdit={openEditDialog}
         actions={
-          <Button variant="outline" size="sm" onClick={openCreateDialog}>
-            <Plus className="w-4 h-4 mr-2" /> Tambah
-          </Button>
+          <>
+            <Button variant="outline" size="sm" onClick={openCreateDialog}>
+              <Plus className="w-4 h-4 mr-2" /> Tambah
+            </Button>
+            <RefreshButton onClick={() => void refetch()} isRefreshing={isFetching && !isLoading} />
+          </>
         }
       />
 

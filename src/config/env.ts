@@ -5,7 +5,7 @@ export const ENV = {
   IS_DEVELOPMENT: import.meta.env.VITE_NODE_ENV === 'development',
   IS_PRODUCTION: import.meta.env.VITE_NODE_ENV === 'production',
   /**
-   * P1-01 (audit DevTools): DevTools simulator (`/admin/dev-tools`) HARUS
+   * DevTools simulator (`/admin/dev-tools`) HARUS
    * dimatikan di production. Default false; eksplisitkan VITE_ENABLE_DEV_TOOLS=true
    * di env development/staging untuk membuka surface ini. Production wajib false.
    */

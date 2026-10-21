@@ -2,7 +2,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { useThesisDetail } from '@/hooks/monitoring';
-import { toTitleCaseName, formatRoleName, formatDateShortId, formatDateTimeWib } from '@/lib/text';
+import { toTitleCaseName, formatRoleName, formatDateShortId, formatDateTimeWib, formatLecturerName } from '@/lib/text';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,6 @@ import {
   User,
   Mail,
   Phone,
-  Calendar,
   GraduationCap,
   BookOpen,
   CheckCircle2,
@@ -28,10 +27,14 @@ import {
   Download
 } from 'lucide-react';
 import { openAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
-import Lottie from 'lottie-react';
-import emptyAnimation from '@/assets/lottie/empty.json';
+import EmptyState from '@/components/ui/empty-state';
+import { ThesisEventCard } from '@/components/monitoring/ThesisEventCard';
+import { useRole } from '@/hooks/shared/useRole';
 import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
-import { getGuidanceStatusLabel, getThesisRatingLabel, getThesisStatusLabel } from '@/lib/thesisLabels';
+import { getThesisStatusLabel } from '@/lib/thesisLabels';
+import StatusBadge from '@/components/thesis/StatusBadge';
+import { ThesisActivityBadge } from '@/components/shared/ThesisActivityBadge';
+import { SupervisionClockCell } from '@/components/shared/SupervisionClockCell';
 
 const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
   completed: <CheckCircle2 className="h-4 w-4 text-green-500" />,
@@ -40,30 +43,6 @@ const MILESTONE_STATUS_ICONS: Record<string, ReactNode> = {
   revision_needed: <AlertTriangle className="h-4 w-4 text-red-500" />,
   pending_review: <Clock className="h-4 w-4 text-yellow-500" />,
 };
-
-const GUIDANCE_STATUS_COLORS: Record<string, string> = {
-  completed: 'bg-green-100 text-green-700',
-  approved: 'bg-blue-100 text-blue-700',
-  pending: 'bg-yellow-100 text-yellow-700',
-  rejected: 'bg-red-500 text-white',
-  cancelled: 'bg-gray-100 text-gray-700',
-};
-
-function EmptyState({ message, icon: Icon }: { message: string; icon: React.ElementType }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-8">
-      <Lottie
-        animationData={emptyAnimation}
-        loop
-        className="w-32 h-32 opacity-70"
-      />
-      <div className="flex items-center gap-2 text-muted-foreground mt-2">
-        <Icon className="h-4 w-4" />
-        <p className="text-sm">{message}</p>
-      </div>
-    </div>
-  );
-}
 
 export default function StudentProgressDetail() {
   const navigate = useNavigate();
@@ -82,6 +61,9 @@ export default function StudentProgressDetail() {
   }, [setBreadcrumbs, setTitle, breadcrumbs]);
 
   const { data, isLoading, isError } = useThesisDetail(thesisId!);
+  // The seminar and defence detail pages are open to admin and every lecturer role.
+  const { isAdmin, isDosen } = useRole();
+  const canOpenEventDetail = isAdmin() || isDosen();
 
   // Update breadcrumb with student name
   useEffect(() => {
@@ -145,12 +127,12 @@ export default function StudentProgressDetail() {
       </div>
 
       {/* Inactive Thesis Alert */}
-      {(data.status === 'failed' || data.rating === 'FAILED' || data.rating === 'CANCELLED') && (
+      {data.status === 'failed' && (
         <Alert variant="destructive" className="bg-red-50 border-red-200 text-red-800 dark:bg-red-950/50 dark:border-red-900 dark:text-red-200">
           <AlertTriangle className="h-5 w-5 !text-red-600 dark:!text-red-400" />
           <AlertTitle className="font-semibold">Perhatian: Tugas Akhir Tidak Aktif</AlertTitle>
           <AlertDescription className="mt-2 text-red-700 dark:text-red-300">
-            Tugas akhir ini sudah tidak aktif karena memiliki status <strong>{data.status === 'failed' ? getThesisStatusLabel(data.status) : getThesisRatingLabel(data.rating)}</strong>.
+            Tugas akhir ini sudah tidak aktif karena memiliki status <strong>{getThesisStatusLabel(data.status)}</strong>.
             Mahasiswa bersangkutan perlu mengulang pengajuan judul pada periode selanjutnya atau berkoordinasi dengan pihak prodi.
           </AlertDescription>
         </Alert>
@@ -199,7 +181,7 @@ export default function StudentProgressDetail() {
               <div>
                 <p className="text-sm text-muted-foreground">Seminar</p>
                 <p className="text-xl font-bold">{data.seminars.length}</p>
-                <p className="text-xs text-muted-foreground">terjadwal</p>
+                <p className="text-xs text-muted-foreground">pendaftaran</p>
               </div>
             </div>
           </CardContent>
@@ -213,7 +195,7 @@ export default function StudentProgressDetail() {
               <div>
                 <p className="text-sm text-muted-foreground">Sidang</p>
                 <p className="text-xl font-bold">{data.defences.length}</p>
-                <p className="text-xs text-muted-foreground">terjadwal</p>
+                <p className="text-xs text-muted-foreground">pendaftaran</p>
               </div>
             </div>
           </CardContent>
@@ -286,6 +268,7 @@ export default function StudentProgressDetail() {
                 <div>
                   <p className="text-xs text-muted-foreground">Aktivitas Terakhir</p>
                   <p className="text-sm font-medium">{formatDateTimeWib(data.lastActivity)}</p>
+                  <div className="mt-1"><ThesisActivityBadge level={data.activityLevel} /></div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -297,8 +280,8 @@ export default function StudentProgressDetail() {
                 </div>
                 <div className="flex items-center gap-2">
                   <div>
-                    <p className="text-xs text-muted-foreground">Deadline</p>
-                    <p className="text-sm font-medium">{data.deadlineDate ? formatDateShortId(data.deadlineDate) : '-'}</p>
+                    <p className="text-xs text-muted-foreground">Masa Bimbingan</p>
+                    <SupervisionClockCell clock={data.supervisionClock} className="font-medium" />
                   </div>
                 </div>
               </div>
@@ -351,7 +334,7 @@ export default function StudentProgressDetail() {
                     {data.supervisors.map((sup, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded-md">
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{toTitleCaseName(sup.name)}</p>
+                          <p className="text-sm font-medium truncate">{formatLecturerName(sup.name)}</p>
                           <p className="text-xs text-muted-foreground truncate">{sup.email}</p>
                         </div>
                         <Badge variant="outline" className="text-xs shrink-0 ml-2">
@@ -362,7 +345,7 @@ export default function StudentProgressDetail() {
                   </div>
                 </div>
               ) : (
-                <EmptyState message="Belum ada pembimbing" icon={Users} />
+                <EmptyState size="sm" title="Belum Ada Pembimbing" description="Tugas akhir ini belum memiliki pembimbing aktif." className="py-6" />
               )}
 
               {data.examiners.length > 0 && (
@@ -372,7 +355,7 @@ export default function StudentProgressDetail() {
                     {data.examiners.map((ex, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 bg-muted rounded-md">
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium truncate">{toTitleCaseName(ex.name)}</p>
+                          <p className="text-sm font-medium truncate">{formatLecturerName(ex.name)}</p>
                           <p className="text-xs text-muted-foreground truncate">{ex.email}</p>
                         </div>
                         <Badge variant="outline" className="text-xs shrink-0 ml-2">
@@ -435,7 +418,7 @@ export default function StudentProgressDetail() {
                   ))}
                 </div>
               ) : (
-                <EmptyState message="Belum ada milestone" icon={Target} />
+                <EmptyState size="sm" title="Belum Ada Milestone" description="Belum ada milestone yang tercatat." className="py-6" />
               )}
             </CardContent>
           </Card>
@@ -464,101 +447,20 @@ export default function StudentProgressDetail() {
                           {formatDateTimeWib(g.createdAt)}
                         </p>
                       </div>
-                      <Badge className={GUIDANCE_STATUS_COLORS[g.status] || 'bg-gray-100 text-gray-700'}>
-                        {getGuidanceStatusLabel(g.status)}
-                      </Badge>
+                      <StatusBadge status={g.status} className="shrink-0" />
                     </div>
                   ))}
                 </div>
               ) : (
-                <EmptyState message="Belum ada bimbingan" icon={BookOpen} />
+                <EmptyState size="sm" title="Belum Ada Bimbingan" description="Belum ada sesi bimbingan yang tercatat." className="py-6" />
               )}
             </CardContent>
           </Card>
 
-          {/* Seminars & Defences */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Seminars */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <GraduationCap className="h-4 w-4" />
-                  Seminar
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {data.seminars.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.seminars.map((s) => (
-                      <div key={s.id} className="p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant={s.result === 'Lulus' ? 'default' : 'outline'}>
-                            {s.result || s.status}
-                          </Badge>
-                          {s.averageScore && (
-                            <span className="text-sm font-bold">{s.averageScore}</span>
-                          )}
-                        </div>
-                        {s.scheduledAt && (
-                          <p className="text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 inline mr-1" />
-                            {formatDateTimeWib(s.scheduledAt)}
-                          </p>
-                        )}
-                        {s.room && (
-                          <p className="text-xs text-muted-foreground">
-                            Ruangan: {s.room}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState message="Belum ada seminar" icon={GraduationCap} />
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Defences */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Award className="h-4 w-4" />
-                  Sidang
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {data.defences.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.defences.map((d) => (
-                      <div key={d.id} className="p-3 bg-muted/50 rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge variant={d.status === 'Lulus' ? 'default' : 'outline'}>
-                            {d.status || 'Terjadwal'}
-                          </Badge>
-                          {d.averageScore && (
-                            <span className="text-sm font-bold">{d.averageScore}</span>
-                          )}
-                        </div>
-                        {d.scheduledAt && (
-                          <p className="text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3 inline mr-1" />
-                            {formatDateTimeWib(d.scheduledAt)}
-                          </p>
-                        )}
-                        {d.room && (
-                          <p className="text-xs text-muted-foreground">
-                            Ruangan: {d.room}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState message="Belum ada sidang" icon={Award} />
-                )}
-              </CardContent>
-            </Card>
+          {/* Seminar & sidang: status, jadwal, penguji, nilai, dan revisi (baca-saja) */}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <ThesisEventCard kind="seminar" events={data.seminars} canOpenDetail={canOpenEventDetail} />
+            <ThesisEventCard kind="defence" events={data.defences} canOpenDetail={canOpenEventDetail} />
           </div>
         </div>
       </div>

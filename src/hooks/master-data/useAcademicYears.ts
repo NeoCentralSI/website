@@ -23,7 +23,7 @@ export function useAcademicYears(options: UseAcademicYearsOptions = {}) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, isFetching, refetch, error } = useQuery({
     queryKey: ['academicYears', { page, pageSize, search }],
     queryFn: () => getAcademicYearsAPI({ page, pageSize, search }),
     placeholderData: (previousData) => previousData,
@@ -75,6 +75,8 @@ export function useAcademicYears(options: UseAcademicYearsOptions = {}) {
     meta: data?.meta,
     total: data?.meta?.total || 0,
     isLoading,
+    isFetching,
+    refetch,
     isSubmitting,
     error,
     createAcademicYear,

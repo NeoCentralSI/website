@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MilestoneCard } from "./MilestoneCard";
+import type { ThesisPhase } from "@/lib/thesisLabels";
 import { MilestoneProgressCard } from "./MilestoneProgressCard";
 import { Button } from "@/components/ui/button";
 import { Loading } from "@/components/ui/spinner";
@@ -66,9 +67,17 @@ export interface MilestoneListProps {
   isSupervisor?: boolean;
   onCreateNew?: () => void;
   onCreateFromTemplates?: () => void;
-  /** K14: when set, create buttons stay visible but disabled with this reason. */
+  /** When set, create buttons stay visible but disabled with this reason. */
   createDisabledReason?: string | null;
-  /** K20: "Buat dari Template" only (e.g. the thesis has no topic yet). */
+  /**
+   * Milestones of the other phase, listed after the current phase in the same
+   * list, read-only, each with its phase badge.
+   */
+  readOnlyMilestones?: Milestone[];
+  readOnlyPhase?: ThesisPhase;
+  /** The running phase, for the template hint (proposal: general; research: topic). */
+  currentPhase?: ThesisPhase;
+  /** "Buat dari Template" only (e.g. the thesis has no topic yet). */
   templateDisabledReason?: string | null;
   onEdit?: (milestone: Milestone) => void;
   onDelete?: (milestone: Milestone) => void;
@@ -99,6 +108,9 @@ export function MilestoneList({
   onCreateFromTemplates,
   createDisabledReason = null,
   templateDisabledReason = null,
+  readOnlyMilestones = [],
+  readOnlyPhase,
+  currentPhase,
   onEdit,
   onDelete,
   onStatusChange,
@@ -319,17 +331,22 @@ export function MilestoneList({
             </Button>
           </div>
 
+          {/* A disabled button gets no pointer events, so its reason sits on the wrapper. */}
           {isOwner && milestones.length === 0 && (
-            <Button onClick={onCreateFromTemplates} disabled={!!(createDisabledReason || templateDisabledReason)} title={(createDisabledReason || templateDisabledReason) ?? undefined}>
-              <Plus className="h-4 w-4 mr-2" />
-              Buat dari Template
-            </Button>
+            <span className="inline-flex" title={(createDisabledReason || templateDisabledReason) ?? undefined}>
+              <Button onClick={onCreateFromTemplates} disabled={!!(createDisabledReason || templateDisabledReason)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Buat dari Template
+              </Button>
+            </span>
           )}
           {isOwner && milestones.length > 0 && (
-            <Button onClick={onCreateNew} disabled={!!createDisabledReason} title={createDisabledReason ?? undefined}>
-              <Plus className="h-4 w-4 mr-2" />
-              Tambah Milestone
-            </Button>
+            <span className="inline-flex" title={createDisabledReason ?? undefined}>
+              <Button onClick={onCreateNew} disabled={!!createDisabledReason}>
+                <Plus className="h-4 w-4 mr-2" />
+                Tambah Milestone
+              </Button>
+            </span>
           )}
           {isOwner && milestones.length > 0 && (
             <Button
@@ -370,7 +387,11 @@ export function MilestoneList({
           <p className="text-muted-foreground mb-6 max-w-sm">
             Milestone membantu Anda melacak progress tugas akhir dengan lebih terstruktur.
             {isOwner
-              ? " Pilih \"Buat dari Template\" untuk memasang template milestone sesuai topik tugas akhir Anda (hanya bisa saat milestone masih kosong), atau buat milestone secara manual."
+              ? currentPhase === "proposal"
+                ? " Pilih \"Buat dari Template\" untuk memasang template milestone fase proposal yang berlaku umum (hanya bisa saat milestone fase proposal masih kosong), atau buat milestone secara manual."
+                : currentPhase === "research"
+                  ? " Pilih \"Buat dari Template\" untuk memasang template milestone fase penelitian sesuai topik tugas akhir Anda (hanya bisa saat milestone fase penelitian masih kosong; milestone fase proposal tidak menghalangi), atau buat milestone secara manual."
+                  : " Pilih \"Buat dari Template\" untuk memasang template milestone sesuai topik tugas akhir Anda (hanya bisa saat milestone masih kosong), atau buat milestone secara manual."
               : " Mahasiswa memasang template sesuai topik tugas akhir, atau pembimbing menambahkan milestone satu per satu."}
           </p>
           {isOwner && templateDisabledReason && (
@@ -378,13 +399,17 @@ export function MilestoneList({
           )}
           {isOwner && (
             <div className="flex gap-3">
-              <Button onClick={onCreateFromTemplates} disabled={!!(createDisabledReason || templateDisabledReason)} title={(createDisabledReason || templateDisabledReason) ?? undefined}>
-                <Plus className="h-4 w-4 mr-2" />
-                Buat dari Template
-              </Button>
-              <Button variant="outline" onClick={onCreateNew} disabled={!!createDisabledReason} title={createDisabledReason ?? undefined}>
-                Buat Manual
-              </Button>
+              <span className="inline-flex" title={(createDisabledReason || templateDisabledReason) ?? undefined}>
+                <Button onClick={onCreateFromTemplates} disabled={!!(createDisabledReason || templateDisabledReason)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Buat dari Template
+                </Button>
+              </span>
+              <span className="inline-flex" title={createDisabledReason ?? undefined}>
+                <Button variant="outline" onClick={onCreateNew} disabled={!!createDisabledReason}>
+                  Buat Manual
+                </Button>
+              </span>
             </div>
           )}
         </div>
@@ -485,6 +510,16 @@ export function MilestoneList({
             </div>
           )}
         </div>
+      )}
+
+      {readOnlyMilestones.length > 0 && (
+        <ol className="space-y-3" aria-label="Milestone fase lain (baca saja)">
+          {readOnlyMilestones.map((milestone) => (
+            <li key={milestone.id}>
+              <MilestoneCard milestone={milestone} phase={readOnlyPhase ?? milestone.phase} />
+            </li>
+          ))}
+        </ol>
       )}
     </div>
   );

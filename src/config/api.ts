@@ -65,21 +65,6 @@ export const API_CONFIG = {
       RUBRICS_REORDER: (role: string) => `/defence-rubrics/rubrics/reorder?role=${role}`,
       WEIGHT_SUMMARY: (role: string) => `/defence-rubrics/weight-summary?role=${role}`,
     },
-    RUBRIC_METOPEN: {
-      CPMKS: (role: string) => `/rubric-metopen/cpmks?role=${role}`,
-      CPMKS_ALL: '/rubric-metopen/cpmks/all',
-      CPMKS_CREATE: '/rubric-metopen/cpmks',
-      CPMK_BY_ID: (cpmkId: string) => `/rubric-metopen/cpmks/${cpmkId}`,
-      CRITERIA: '/rubric-metopen/criteria',
-      CRITERIA_BY_ID: (criteriaId: string) => `/rubric-metopen/criteria/${criteriaId}`,
-      CPMK_CONFIG: (cpmkId: string, role: string) => `/rubric-metopen/cpmk/${cpmkId}?role=${role}`,
-      CRITERIA_RUBRICS: (criteriaId: string) => `/rubric-metopen/criteria/${criteriaId}/rubrics`,
-      RUBRIC_BY_ID: (rubricId: string) => `/rubric-metopen/rubrics/${rubricId}`,
-      CRITERIA_REORDER: '/rubric-metopen/criteria/reorder',
-      RUBRICS_REORDER: '/rubric-metopen/rubrics/reorder',
-      WEIGHT_SUMMARY: (role: string) => `/rubric-metopen/weight-summary?role=${role}`,
-      COMPOSITION: (academicYearId: string) => `/rubric-metopen/composition/${academicYearId}`,
-    },
     RESEARCH_METHOD: {
       CPMKS: '/research-method/cpmks',
       CPMK_BY_ID: (cpmkId: string) => `/research-method/cpmks/${cpmkId}`,
@@ -92,6 +77,7 @@ export const API_CONFIG = {
       CRITERIA_REORDER: '/research-method/criteria/reorder',
       RUBRICS_REORDER: '/research-method/rubrics/reorder',
       WEIGHT_SUMMARY: '/research-method/weight-summary',
+      CPMK_COPY_TEMPLATE: '/research-method/cpmks/copy-template',
     },
     EXIT_SURVEY: {
       BASE: '/exit-surveys',
@@ -185,16 +171,11 @@ export const API_CONFIG = {
       THESIS_HISTORY: '/thesisGuidance/student/thesis-history',
       PROPOSE_THESIS: '/thesisGuidance/student/propose-thesis',
       // Proposal Versioning
-      PROPOSAL_UPLOAD: '/thesisGuidance/student/proposal/upload',
-      PROPOSAL_VERSIONS: '/thesisGuidance/student/proposal/versions',
-      PROPOSAL_STATUS: '/thesisGuidance/student/proposal/status',
-      PROPOSAL_SUBMIT_FINAL: '/thesisGuidance/student/proposal/submit-final',
       // Pembimbing 2 Request
       AVAILABLE_SUPERVISORS_2: '/thesisGuidance/student/available-supervisors-2',
       REQUEST_SUPERVISOR_2: '/thesisGuidance/student/request-supervisor-2',
       PENDING_SUPERVISOR_2: '/thesisGuidance/student/pending-supervisor-2-request',
       CANCEL_SUPERVISOR_2: '/thesisGuidance/student/cancel-supervisor-2-request',
-      METOPEN_INFORMAL_LOGS: '/thesisGuidance/student/metopen/informal-logs',
     },
     THESIS_LECTURER: {
       BASE: '/thesisGuidance/lecturer',
@@ -209,7 +190,6 @@ export const API_CONFIG = {
       PROGRESS_DETAIL: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}`,
       PROGRESS_APPROVE_COMPONENTS: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}/approve`,
       PROGRESS_FINAL_APPROVAL: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}/final-approval`,
-      FAIL_THESIS: (studentId: string) => `/thesisGuidance/lecturer/progress/${studentId}/fail`,
       FEEDBACK: (guidanceId: string) => `/thesisGuidance/lecturer/feedback/${guidanceId}`,
       GUIDANCE_HISTORY: (studentId: string) => `/thesisGuidance/lecturer/guidance-history/${studentId}`,
       SUPERVISOR_ELIGIBILITY: '/thesisGuidance/lecturer/supervisor/eligibility',
@@ -227,24 +207,9 @@ export const API_CONFIG = {
     KADEP_SUPERVISOR2_REQUESTS: '/thesisGuidance/kadep/supervisor2-requests',
     KADEP_SUPERVISOR2_APPROVE: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/approve`,
     KADEP_SUPERVISOR2_REJECT: (requestId: string) => `/thesisGuidance/kadep/supervisor2-requests/${requestId}/reject`,
-        STUDENT_PROPOSAL_VERSIONS: (thesisId: string) => `/thesisGuidance/lecturer/students/${thesisId}/proposal/versions`,
-        STUDENT_INFORMAL_LOGS: (thesisId: string) =>
-          `/thesisGuidance/lecturer/students/${thesisId}/metopen/informal-logs`,
-      // Transfer mahasiswa bimbingan antar dosen (dipulihkan dari baseline guidance)
-      TRANSFER_ELIGIBLE_LECTURERS: '/thesisGuidance/lecturer/transfer/eligible-lecturers',
-      TRANSFER_REQUEST: '/thesisGuidance/lecturer/transfer/request',
-      TRANSFER_INCOMING: '/thesisGuidance/lecturer/transfer/incoming',
-      TRANSFER_APPROVE: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/approve`,
-      TRANSFER_REJECT: (notificationId: string) => `/thesisGuidance/lecturer/transfer/${notificationId}/reject`,
       },
     THESIS_MONITORING: {
       DASHBOARD: '/thesisGuidance/monitoring/dashboard',
-      // Persetujuan transfer oleh KaDep (dipulihkan dari baseline guidance)
-      TRANSFERS_PENDING: '/kadep-transfers/pending',
-      TRANSFERS_ALL: '/kadep-transfers/all',
-      TRANSFERS_REPORT_DOWNLOAD: '/kadep-transfers/report/download',
-      TRANSFER_APPROVE: (notifId: string) => `/kadep-transfers/${notifId}/approve`,
-      TRANSFER_REJECT: (notifId: string) => `/kadep-transfers/${notifId}/reject`,
     },
     THESIS_SEMINAR: {
       // --- Shared / Global ---
@@ -444,96 +409,6 @@ export const API_CONFIG = {
     },
     INTERNSHIP_PUBLIC: {
       VERIFY_LETTER: (id: string) => `/internship/public/verify-letter/${id}`,
-    },
-    METOPEN: {
-      ELIGIBILITY: '/metopen/eligibility',
-      /** Mahasiswa: status pengesahan judul + dokumen (read-only). */
-      ME_PROPOSAL_APPROVAL: '/metopen/me/proposal-approval',
-      /** Mahasiswa: snapshot eligibility seminar tanpa side effect sync. */
-      ME_SEMINAR_ELIGIBILITY: '/metopen/me/seminar-eligibility',
-      /** Mahasiswa: sinkron promosi/release TA-04 awal + ringkasan status. */
-      ME_PROPOSAL_QUEUE_SYNC: '/metopen/me/proposal-queue/sync',
-      /** Mahasiswa: riwayat penilaian TA-03 sejak skor tersedia, termasuk sebelum TA-04. */
-      ME_ASSESSMENT_HISTORY: '/metopen/me/assessment-history',
-      /** BR-23: Arsip Metopel mahasiswa pasca promosi aktif — read-only single source of truth. */
-      ME_ARCHIVE: '/metopen/me/archive',
-      /** KC-20260709-06: endpoint tetap ada tetapi menolak unduh mahasiswa (403). */
-      ME_TITLE_APPROVAL_DOCUMENT: '/metopen/me/archive/title-approval-document',
-      /** KaDep/Admin: antre judul menunggu pengesahan. */
-      KADEP_PENDING_TITLE_REPORTS: (academicYearId?: string) =>
-        academicYearId
-          ? `/metopen/kadep/title-reports/pending?academicYearId=${academicYearId}`
-          : '/metopen/kadep/title-reports/pending',
-      KADEP_TITLE_REPORT_REVIEW: (thesisId: string) =>
-        `/metopen/kadep/thesis/${thesisId}/title-report/review`,
-      /** Legacy: thesis aktif/TA-04 awal yang belum terhubung ke Formulir TA-04 batch resmi. */
-      KADEP_TITLE_REPORTS_MISSING_DOCUMENT: (academicYearId?: string) =>
-        academicYearId
-          ? `/metopen/kadep/title-reports/missing-document?academicYearId=${academicYearId}`
-          : '/metopen/kadep/title-reports/missing-document',
-      /** Riwayat TA-04 awal + legacy accepted/rejected antar-periode. */
-      KADEP_TITLE_REPORTS_HISTORY: (academicYearId?: string) =>
-        academicYearId
-          ? `/metopen/kadep/title-reports/history?academicYearId=${academicYearId}`
-          : '/metopen/kadep/title-reports/history',
-      /** Legacy: endpoint per-thesis tidak lagi menerbitkan dokumen resmi. */
-      KADEP_TITLE_REPORT_REGENERATE: (thesisId: string) =>
-        `/metopen/kadep/thesis/${thesisId}/title-report/regenerate`,
-      /** KaDep unduh Formulir TA-04 PDF untuk thesis yang sudah terhubung ke batch. */
-      KADEP_TITLE_REPORT_DOCUMENT: (thesisId: string) =>
-        `/metopen/kadep/thesis/${thesisId}/title-report/document`,
-    },
-    ASSESSMENT: {
-      // TA-03A: Supervisor scoring of Metopen proposal
-      SUPERVISOR_SCORING_QUEUE: '/assessment/supervisor/queue',
-      SUPERVISOR_SCORING_HISTORY: '/assessment/supervisor/history',
-      SUPERVISOR_SUBMIT_SCORE: (thesisId: string) => `/assessment/supervisor/${thesisId}/score`,
-      // BR-20: Pembimbing 2 co-sign endpoint
-      SUPERVISOR_CO_SIGN: (thesisId: string) => `/assessment/supervisor/${thesisId}/co-sign`,
-      // BR-20: Klasifikasi role caller (P1/P2/null) untuk UI
-      SUPERVISOR_CONTEXT: (thesisId: string) => `/assessment/supervisor/${thesisId}/context`,
-      SUPERVISOR_GET_SCORE: (thesisId: string) => `/assessment/supervisor/${thesisId}/score`,
-      // TA-03B: Metopen lecturer scoring
-      METOPEN_SCORING_QUEUE: '/assessment/metopen/queue',
-      METOPEN_SCORING_HISTORY: '/assessment/metopen/history',
-      METOPEN_ATTENDANCE_LATEST: '/assessment/metopen/attendance/latest',
-      /** F-4.2: dry-run pratinjau dampak auto-zero sebelum commit. */
-      METOPEN_ATTENDANCE_PREVIEW: '/assessment/metopen/attendance/preview',
-      METOPEN_ATTENDANCE_UPLOAD: '/assessment/metopen/attendance/upload',
-      METOPEN_ATTENDANCE_ELIGIBILITY: (thesisId: string) => `/assessment/metopen/attendance/eligibility/${thesisId}`,
-      METOPEN_SCORES_EXPORT: '/assessment/metopen/scores/export',
-      // Koordinator dashboard: monitoring progress per mahasiswa eligible Metopen.
-      METOPEN_MONITORING: '/assessment/metopen/monitoring',
-      METOPEN_SUBMIT_SCORE: (thesisId: string) => `/assessment/metopen/${thesisId}/score`,
-      METOPEN_PUBLISH: (thesisId: string) => `/assessment/metopen/${thesisId}/publish`,
-      // Shared: Get criteria by assessment form code
-      CRITERIA: (formCode: string) => `/assessment/criteria/${formCode}`,
-    },
-    ADVISOR_REQUEST: {
-      ACCESS_STATE: '/advisorRequest/access-state',
-      SUBMIT: '/advisorRequest',
-      CATALOG: '/advisorRequest/catalog',
-      MY_REQUESTS: '/advisorRequest/my',
-      WITHDRAW: (id: string) => `/advisorRequest/${id}/withdraw`,
-      LECTURER_INBOX: '/advisorRequest/inbox',
-      KADEP_INBOX: '/advisorRequest/kadep-queue',
-      DETAIL: (id: string) => `/advisorRequest/${id}`,
-      LECTURER_DECISION: (id: string) => `/advisorRequest/${id}/respond`,
-      KADEP_DECISION: (id: string) => `/advisorRequest/${id}/decide`,
-      /** @deprecated Backend selalu 400; jangan panggil dari UI baru. */
-      ASSIGN: (id: string) => `/advisorRequest/${id}/assign`,
-    },
-    QUOTA: {
-      BROWSE: '/quota/browse',
-      LECTURER_DETAIL: (lecturerId: string) => `/quota/browse/${lecturerId}`,
-      CHECK: (lecturerId: string) => `/quota/check/${lecturerId}`,
-      SCIENCE_GROUPS: '/quota/science-groups',
-      TOPICS: '/quota/topics',
-      DEFAULT_CONFIG: '/quota/config/default',
-      LECTURER_CONFIG: (lecturerId: string) => `/quota/config/lecturer/${lecturerId}`,
-      DELETE_LECTURER_CONFIG: (quotaId: string) => `/quota/config/lecturer/${quotaId}`,
-      ACCEPTING_REQUESTS: '/quota/accepting-requests',
-      MONITORING: '/quota/monitoring',
     },
   },
   TIMEOUT: 10000, // 10 detik

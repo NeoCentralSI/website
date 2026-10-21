@@ -13,6 +13,7 @@ export default function StudentYudisium() {
   const {
     data: overview,
     isLoading: isOverviewLoading,
+    isFetching: isOverviewFetching,
     isError: isOverviewError,
     error: overviewError,
     refetch: refetchOverview,
@@ -72,6 +73,7 @@ export default function StudentYudisium() {
       ) : overview ? (
         <StudentYudisiumOverviewPanel
           overview={overview}
+          isFetching={isOverviewFetching}
           history={overview.history || []}
           onDetailClick={(id, yudisiumId) =>
             navigate(`/yudisium/${yudisiumId}/peserta/${id}?from=student`, {

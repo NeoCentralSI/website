@@ -14,7 +14,12 @@ import type {
   DevToolsUserListItem,
   RoleOption,
   DevToolsAcademicYear,
-  CloseMetopenPeriodResult,
+  SetPeriodFlagsDto,
+  DevToolsGuidanceList,
+  UpdateGuidanceScheduleDto,
+  DevToolsSemesterFlags,
+  DevToolsSupervisorRequest,
+  DevToolsSupervisorRequestList,
 } from '@/types/devTools.types';
 
 const BASE = '/devtools';
@@ -119,23 +124,35 @@ export const devToolsService = {
     return parseJson<RoleOption[]>(response, 'Gagal memuat daftar role');
   },
 
-  // --- Metopen Eligibility Snapshot ---
-  setMetopenEligibility: async (studentId: string, eligibleMetopen: boolean | null): Promise<string> => {
-    const url = getApiUrl(`${BASE}/metopen-eligibility/${studentId}`);
-    const response = await apiRequest(url, {
-      method: 'PATCH',
-      body: JSON.stringify({ eligibleMetopen }),
-    });
-    return parseMsg(response, 'Gagal mengubah snapshot eligibility Metopen');
+  // --- Proposal tab (plan 10.8) ---
+  getSemesterFlags: async (studentId: string): Promise<DevToolsSemesterFlags[]> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/students/${studentId}/period-flags`));
+    return parseJson<DevToolsSemesterFlags[]>(response, 'Gagal memuat penanda SIA');
   },
 
-  setThesisCourseEligibility: async (studentId: string, takingThesisCourse: boolean | null): Promise<string> => {
-    const url = getApiUrl(`${BASE}/thesis-course-eligibility/${studentId}`);
-    const response = await apiRequest(url, {
-      method: 'PATCH',
-      body: JSON.stringify({ takingThesisCourse }),
-    });
-    return parseMsg(response, 'Gagal mengubah snapshot MK Tugas Akhir');
+  getSupervisorRequests: async (params: { search: string; page: number; pageSize: number }): Promise<DevToolsSupervisorRequestList> => {
+    const url = new URL(getApiUrl(`${BASE}/supervisor-requests`));
+    if (params.search) url.searchParams.set('search', params.search);
+    url.searchParams.set('page', String(params.page));
+    url.searchParams.set('pageSize', String(params.pageSize));
+    const response = await apiRequest(url.toString());
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error((err as { message?: string }).message || 'Gagal memuat pengajuan pembimbing');
+    }
+    return response.json() as Promise<DevToolsSupervisorRequestList>;
+  },
+
+  setSupervisorRequestTime: async (id: string, createdAt: string): Promise<DevToolsSupervisorRequest> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/supervisor-requests/${id}`), { method: 'PATCH', body: JSON.stringify({ createdAt }) });
+    return parseJson<DevToolsSupervisorRequest>(response, 'Gagal mengubah waktu pengajuan');
+  },
+
+  // --- SIA flags per semester (plan 10.6) ---
+  setPeriodFlags: async (studentId: string, data: SetPeriodFlagsDto): Promise<string> => {
+    const url = getApiUrl(`${BASE}/students/${studentId}/period-flags`);
+    const response = await apiRequest(url, { method: 'PATCH', body: JSON.stringify(data) });
+    return parseMsg(response, 'Gagal mengubah penanda SIA');
   },
 
   // --- Thesis ---
@@ -166,21 +183,22 @@ export const devToolsService = {
     return parseMsg(response, 'Gagal menandai thesis ke tahun ajaran');
   },
 
-  closeMetopenPeriod: async (
-    closedAcademicYearId: string,
-    dryRun: boolean,
-    force = false,
-  ): Promise<CloseMetopenPeriodResult> => {
-    const url = getApiUrl(`${BASE}/scenarios/close-metopen-period`);
-    const response = await apiRequest(url, {
-      method: 'POST',
-      body: JSON.stringify({ closedAcademicYearId, dryRun, force }),
-    });
+  // --- Guidance sessions ---
+  getGuidances: async (params: { search?: string; status?: string; page: number; pageSize: number }): Promise<DevToolsGuidanceList> => {
+    const query = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+    if (params.search) query.set('search', params.search);
+    if (params.status) query.set('status', params.status);
+    const response = await apiRequest(getApiUrl(`${BASE}/guidances?${query.toString()}`));
+    const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error((err as { message?: string }).message || 'Gagal menutup periode Metopel');
+      throw new Error((result as { message?: string }).message || 'Gagal memuat sesi bimbingan');
     }
-    const result = await response.json();
-    return result.data as CloseMetopenPeriodResult;
+    return { data: result.data ?? [], meta: result.meta } as DevToolsGuidanceList;
+  },
+
+  updateGuidanceSchedule: async (id: string, data: UpdateGuidanceScheduleDto): Promise<string> => {
+    const url = getApiUrl(`${BASE}/guidances/${id}`);
+    const response = await apiRequest(url, { method: 'PATCH', body: JSON.stringify(data) });
+    return parseMsg(response, 'Gagal mengubah jadwal sesi bimbingan');
   },
 };

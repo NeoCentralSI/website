@@ -15,7 +15,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import EmptyState from "@/components/ui/empty-state";
 import { toast } from "sonner";
-import { toTitleCaseName } from "@/lib/text";
+import { formatLecturerName } from "@/lib/text";
 import { cn } from "@/lib/utils";
 import {
   getAvailableSupervisors2,
@@ -24,6 +24,8 @@ import {
 } from "@/services/studentGuidance.service";
 import { UserPlus, Search, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { FieldError } from "@/components/shared/RequiredField";
+import { SoftWarning } from "@/components/shared/SoftWarning";
 
 interface RequestSupervisor2DialogProps {
   hasPembimbing2: boolean;
@@ -31,6 +33,9 @@ interface RequestSupervisor2DialogProps {
 }
 
 // Info kuota aman untuk mahasiswa (canon §7.3): hanya traffic light.
+/** A full lecturer stays selectable (the lecturer and the Ketua Departemen decide). */
+export const SUPERVISOR2_FULL_NOTE = "Beban dosen ini sudah penuh; permintaan tetap bisa dikirim dan dapat ditolak.";
+export const SUPERVISOR2_CLOSED_NOTE = "Dosen sedang menutup penerimaan permintaan.";
 const TRAFFIC_LIGHT_META: Record<string, { label: string; className: string }> = {
   green: { label: "Tersedia", className: "border-green-300 bg-green-50 text-green-700" },
   yellow: { label: "Hampir penuh", className: "border-amber-300 bg-amber-50 text-amber-700" },
@@ -44,6 +49,7 @@ export function RequestSupervisor2Dialog({
   const [open, setOpen] = useState(false);
   const [selectedLecturer, setSelectedLecturer] = useState<AvailableSupervisor2Item | null>(null);
   const [search, setSearch] = useState("");
+  const [missing, setMissing] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: lecturers, isPending: isLoadingLecturers } = useQuery({
@@ -82,8 +88,12 @@ export function RequestSupervisor2Dialog({
     );
   });
 
+  // The button is never disabled for a missing choice: the click says what is missing.
   const handleSubmit = () => {
-    if (!selectedLecturer) return;
+    if (!selectedLecturer) {
+      setMissing(true);
+      return;
+    }
     requestMutation.mutate(selectedLecturer.id);
   };
 
@@ -91,16 +101,16 @@ export function RequestSupervisor2Dialog({
   if (hasPembimbing2 || hasPendingRequest) return null;
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedLecturer(null); setSearch(""); } }}>
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) { setSelectedLecturer(null); setSearch(""); setMissing(false); } }}>
       <DialogTrigger asChild>
         <Button size="sm" className="gap-2">
           <UserPlus className="h-4 w-4" />
-          Request Pembimbing 2
+          Ajukan Pembimbing 2
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle>Request Pembimbing 2</DialogTitle>
+          <DialogTitle>Ajukan Pembimbing 2</DialogTitle>
           <DialogDescription>
             Pilih dosen yang tersedia untuk menjadi Pembimbing 2 tugas akhir Anda.
           </DialogDescription>
@@ -132,8 +142,9 @@ export function RequestSupervisor2Dialog({
           ) : (
             filteredLecturers.map((lecturer) => {
               const isSelected = selectedLecturer?.id === lecturer.id;
-              const isFull =
-                lecturer.trafficLight === "red" || lecturer.acceptingRequests === false;
+              // Only a closed intake locks the card; a full lecturer gets a warning.
+              const isClosed = lecturer.acceptingRequests === false;
+              const isFull = lecturer.trafficLight === "red";
               const trafficMeta = lecturer.trafficLight
                 ? TRAFFIC_LIGHT_META[lecturer.trafficLight]
                 : null;
@@ -144,23 +155,27 @@ export function RequestSupervisor2Dialog({
               return (
                 <Card
                   key={lecturer.id}
-                  aria-disabled={isFull}
+                  role="option"
+                  aria-selected={isSelected}
+                  aria-disabled={isClosed}
+                  aria-label={formatLecturerName(lecturer.fullName || "")}
                   className={cn(
                     "p-3 transition-all",
-                    isFull ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:shadow-sm",
+                    isClosed ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:shadow-sm",
                     isSelected
                       ? "ring-2 ring-primary bg-primary/5"
-                      : !isFull && "hover:bg-muted/50",
+                      : !isClosed && "hover:bg-muted/50",
                   )}
                   onClick={() => {
-                    if (isFull) return;
+                    if (isClosed) return;
                     setSelectedLecturer(lecturer);
+                    setMissing(false);
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">
-                        {toTitleCaseName(lecturer.fullName || "")}
+                        {formatLecturerName(lecturer.fullName || "")}
                       </p>
                       <p className="text-xs text-muted-foreground truncate">
                         {lecturer.identityNumber || ""}
@@ -190,13 +205,11 @@ export function RequestSupervisor2Dialog({
                           )}
                         </div>
                       )}
-                      {isFull && (
-                        <p className="mt-1 text-[11px] text-red-600">
-                          {lecturer.acceptingRequests === false
-                            ? "Dosen sedang menutup penerimaan permintaan."
-                            : "Kuota pembimbing penuh."}
-                        </p>
-                      )}
+                      {isClosed ? (
+                        <p className="mt-1 text-[11px] text-red-600">{SUPERVISOR2_CLOSED_NOTE}</p>
+                      ) : isFull ? (
+                        <p className="mt-1 text-[11px] text-amber-700">{SUPERVISOR2_FULL_NOTE}</p>
+                      ) : null}
                     </div>
                     {isSelected && (
                       <div className="shrink-0 ml-2 h-5 w-5 rounded-full bg-primary flex items-center justify-center">
@@ -210,13 +223,18 @@ export function RequestSupervisor2Dialog({
           )}
         </div>
 
+        {selectedLecturer?.trafficLight === "red" && (
+          <SoftWarning title="Dosen ini sudah penuh">{SUPERVISOR2_FULL_NOTE}</SoftWarning>
+        )}
+        <FieldError message={missing ? "Pilih dosen Pembimbing 2 terlebih dahulu." : null} />
+
         <DialogFooter>
           <Button variant="outline" onClick={() => setOpen(false)}>
             Batal
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!selectedLecturer || requestMutation.isPending}
+            disabled={requestMutation.isPending}
           >
             {requestMutation.isPending ? (
               <>

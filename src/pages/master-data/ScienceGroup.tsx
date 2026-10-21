@@ -4,6 +4,7 @@ import { Plus, Edit, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
+import { RefreshButton } from "@/components/ui/refresh-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import CustomTable from "@/components/layout/CustomTable";
@@ -24,7 +25,7 @@ export default function ScienceGroupPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [deletingGroup, setDeletingGroup] = useState<ScienceGroup | null>(null);
 
-    const { data: qData, isLoading } = useQuery({
+    const { data: qData, isLoading, isFetching, refetch } = useQuery({
         queryKey: ["science-groups"],
         queryFn: getScienceGroupsAPI,
     });
@@ -150,9 +151,12 @@ export default function ScienceGroupPage() {
                 pageSize={100}
                 total={filteredData.length}
                 actions={
-                    <Button onClick={() => handleOpenDialog()} className="gap-2">
-                        <Plus className="h-4 w-4" /> Tambah Baru
-                    </Button>
+                    <>
+                        <Button onClick={() => handleOpenDialog()} className="gap-2">
+                            <Plus className="h-4 w-4" /> Tambah Baru
+                        </Button>
+                        <RefreshButton onClick={() => void refetch()} isRefreshing={isFetching && !isLoading} />
+                    </>
                 }
             />
 

@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import type { BatchDistribution } from "@/services/monitoring.service";
 import EmptyState from "@/components/ui/empty-state";
 import { Loading } from "@/components/ui/spinner";
+import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 
 interface BatchDistributionChartProps {
   batchDistribution: BatchDistribution[] | undefined;
@@ -13,7 +14,7 @@ interface BatchDistributionChartProps {
 export function BatchDistributionChart({ batchDistribution, isLoading }: BatchDistributionChartProps) {
   if (isLoading) {
     return (
-      <Card>
+      <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
           <CardTitle className="text-base">Distribusi per Angkatan</CardTitle>
         </CardHeader>
@@ -31,7 +32,7 @@ export function BatchDistributionChart({ batchDistribution, isLoading }: BatchDi
   };
 
   return (
-    <Card>
+    <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
         <CardTitle className="text-base">Distribusi per Angkatan</CardTitle>
       </CardHeader>

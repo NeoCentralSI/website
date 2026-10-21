@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Loading, Spinner } from "@/components/ui/spinner";
 import { Download } from "lucide-react";
 import { getGuidanceForExport, generateGuidanceLogPdf } from "@/services/studentGuidance.service";
-import { toTitleCaseName, formatDateTimeWib } from "@/lib/text";
+import { toTitleCaseName, formatDateTimeWib, formatLecturerName } from "@/lib/text";
 import { toast } from "sonner";
 
 interface GuidanceExportDialogProps {
@@ -90,7 +90,7 @@ export default function GuidanceExportDialog({
                 </div>
                 <div>
                   <span className="text-muted-foreground">Dosen Pembimbing:</span>
-                  <p className="font-semibold">{toTitleCaseName(guidance.supervisorName || "-")}</p>
+                  <p className="font-semibold">{formatLecturerName(guidance.supervisorName || "-")}</p>
                 </div>
                 {guidance.thesisTitle && (
                   <div className="col-span-2">

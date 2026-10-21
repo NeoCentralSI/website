@@ -1,6 +1,6 @@
-import { API_CONFIG, getApiUrl } from "@/config/api";
+import { getApiUrl } from "@/config/api";
 import { apiRequest } from "./auth.service";
-import type { ThesisRating } from '@/lib/thesisLabels';
+import type { EvaluationDue, SupervisionClock, ThesisActivityLevel } from '@/lib/thesisLabels';
 
 // ========== Types ==========
 
@@ -14,6 +14,7 @@ export interface ProgressStats {
   totalReadyForSeminar: number;
   totalAtRisk: number;
   totalSlow?: number;
+  totalEvaluationDue?: number;
 }
 
 export interface StatusDistribution {
@@ -36,8 +37,21 @@ export interface AtRiskStudent {
     email: string;
   };
   status: string;
+  activityLevel?: ThesisActivityLevel | null;
   lastActivity: string;
   daysSinceActivity: number;
+  supervisionClock?: SupervisionClock | null;
+  supervisors: SupervisorInfo[];
+}
+
+/** A running thesis whose guidance evaluation is due ("Perlu Evaluasi"). */
+export interface EvaluationDueStudent {
+  thesisId: string;
+  title: string;
+  student: { name: string; nim: string; email: string };
+  activityLevel: ThesisActivityLevel | null;
+  evaluationDue: EvaluationDue;
+  supervisionClock: SupervisionClock;
   supervisors: SupervisorInfo[];
 }
 
@@ -71,7 +85,8 @@ export interface SupervisorLoad {
   students: SupervisorLoadStudent[];
 }
 
-export interface RatingDistribution {
+/** Jumlah TA berstatus Penelitian per tingkat aktivitas (nilai turunan). */
+export interface ActivityDistribution {
   id: string;
   name: string;
   value: string;
@@ -103,13 +118,14 @@ export interface GuidanceTrend {
 export interface MonitoringDashboard {
   summary: ProgressStats;
   statusDistribution: StatusDistribution[];
-  ratingDistribution: RatingDistribution[];
+  activityDistribution: ActivityDistribution[];
   topicDistribution: TopicDistribution[];
   batchDistribution: BatchDistribution[];
   progressDistribution: ProgressBucket[];
   guidanceTrend: GuidanceTrend[];
   atRiskStudents: AtRiskStudent[];
   slowStudents: AtRiskStudent[];
+  evaluationDueStudents?: EvaluationDueStudent[];
   supervisorLoads: SupervisorLoad[];
   readyForSeminar: ReadyForSeminarStudent[];
 }
@@ -117,7 +133,11 @@ export interface MonitoringDashboard {
 export interface ThesisListItem {
   id: string;
   title: string;
-  rating: ThesisRating;
+  /** Nilai turunan; null bila TA tidak berstatus Penelitian. */
+  activityLevel: ThesisActivityLevel | null;
+  daysSinceActivity: number | null;
+  supervisionClock: SupervisionClock | null;
+  startDate: string | null;
   topic: {
     id: string;
     name: string;
@@ -131,7 +151,8 @@ export interface ThesisListItem {
   };
   status: string;
   academicYear: string;
-  startSemester: string;
+  /** Semester the thesis started in (column "Mulai"); null when it started outside every semester. */
+  startSemester: string | null;
   progress: {
     completed: number;
     total: number;
@@ -149,8 +170,7 @@ export interface ThesisListItem {
     hasPembimbing2: boolean;
     isFullyApproved: boolean;
   };
-  lastActivity: string;
-  deadlineDate: string | null;
+  lastActivity: string | null;
   createdAt: string;
 }
 
@@ -180,44 +200,49 @@ export interface ThesisDetailGuidance {
   createdAt: string;
 }
 
-export interface ThesisDetailScore {
-  scorerName: string;
-  rubric: string | null;
-  score: number | null;
-}
-
-export interface ThesisDetailSeminar {
+/** Fields the Seminar and Sidang cards share (read-only, from the monitoring detail). */
+export interface ThesisDetailEvent {
   id: string;
+  /** `ThesisSeminarStatus` / `ThesisDefenceStatus`; shown through `ThesisEventStatusBadge`. */
   status: string;
-  result: string | null;
-  scheduledAt: string | null;
+  /** Calendar date (ISO, midnight UTC). */
+  date: string | null;
+  /** Time of day (ISO on 1970-01-01, read in UTC), as stored by the seminar and defence modules. */
+  startTime: string | null;
   endTime: string | null;
   room: string | null;
-  scores: ThesisDetailScore[];
+  /** Examiners that are still assigned, in order. */
+  examiners: { order: number | null; name: string | null }[];
+  finalScore: number | null;
+  resultFinalizedAt: string | null;
+  revisionFinalizedAt: string | null;
+  /** A revision is done once a supervisor has approved it. */
+  revisions: { total: number; completed: number };
+  examinerCount: number;
+  scoredCount: number;
   averageScore: number | null;
 }
 
-export interface ThesisDetailDefence {
-  id: string;
-  status: string | null;
-  scheduledAt: string | null;
-  endTime: string | null;
-  room: string | null;
-  scores: ThesisDetailScore[];
-  averageScore: number | null;
+export type ThesisDetailSeminar = ThesisDetailEvent;
+
+export interface ThesisDetailDefence extends ThesisDetailEvent {
+  grade: string | null;
+  examinerAverageScore: number | null;
+  supervisorScore: number | null;
 }
 
 export interface ThesisDetail {
   id: string;
   title: string;
   status: string | null;
-  rating: string;
+  activityLevel: ThesisActivityLevel | null;
+  daysSinceActivity: number | null;
+  supervisionClock: SupervisionClock | null;
   topic: string | null;
   academicYear: string | null;
   startDate: string | null;
-  deadlineDate: string | null;
   createdAt: string;
-  lastActivity: string;
+  lastActivity: string | null;
   seminarApproval: {
     supervisor1: boolean;
     supervisor2: boolean;
@@ -293,9 +318,88 @@ export interface ThesesFilters {
   pageSize?: number;
 }
 
+// ========== Seminar Hasil and Sidang tabs ==========
+
+export type ThesisEventKind = "seminar" | "defence";
+
+/** One seminar or defence as the monitoring tabs show it (read-only). */
+export interface MonitoringEvent {
+  id: string;
+  thesisId: string;
+  title: string | null;
+  student: { name: string | null; nim: string | null };
+  /** `ThesisSeminarStatus` / `ThesisDefenceStatus`; shown through `ThesisEventStatusBadge`. */
+  status: string;
+  /** Calendar date (ISO, midnight UTC). */
+  date: string | null;
+  /** Time of day (ISO on 1970-01-01, read in UTC). */
+  startTime: string | null;
+  endTime: string | null;
+  room: string | null;
+  /** Examiners that are still assigned, in order. */
+  examiners: { order: number | null; name: string | null }[];
+  finalScore: number | null;
+  /** Defences only. */
+  grade?: string | null;
+  registeredAt: string | null;
+  resultFinalizedAt: string | null;
+  revisionFinalizedAt: string | null;
+}
+
+export type EventAttentionReason = "document_verification" | "scheduling" | "result_finalization" | "revision";
+
+/** A seminar or defence of "Perlu Perhatian", with the reason decided by the server. */
+export interface MonitoringEventAttention extends MonitoringEvent {
+  attention: {
+    reason: EventAttentionReason;
+    reasonLabel: string;
+    /** The date the wait is counted from. */
+    since: string;
+    /** Whole days it has waited. */
+    days: number;
+  };
+}
+
+/** A thesis whose supervisors all approved readiness and that has no standing registration. */
+export interface ReadyToRegisterStudent {
+  thesisId: string;
+  title: string | null;
+  student: { name: string | null; nim: string | null };
+  supervisors: SupervisorInfo[];
+}
+
+export interface ThesisEventSummary {
+  total: number;
+  /** registered, verified, examiner_assigned */
+  inProcess: number;
+  scheduled: number;
+  /** passed and passed_with_revision */
+  passed: number;
+  /** passed_with_revision whose revision is not final; a part of `passed` */
+  revisionPending: number;
+  /** failed and cancelled */
+  notPassed: number;
+  /** Defences only: average final score of the ones that passed; null when there is none. */
+  averageFinalScore?: number | null;
+}
+
+export interface ThesisEventMonitoring {
+  kind: ThesisEventKind;
+  summary: ThesisEventSummary;
+  readyToRegister: ReadyToRegisterStudent[];
+  /** Scheduled today or later, nearest first, at most ten. */
+  upcoming: MonitoringEvent[];
+  upcomingTotal: number;
+  attention: MonitoringEventAttention[];
+  /** Every seminar or defence of the semester, latest first. */
+  items: MonitoringEvent[];
+}
+
 // ========== Endpoints ==========
 
 const ENDPOINTS = {
+  SEMINARS: "/thesisGuidance/monitoring/seminars",
+  DEFENCES: "/thesisGuidance/monitoring/defences",
   DASHBOARD: "/thesisGuidance/monitoring/dashboard",
   THESES: "/thesisGuidance/monitoring/theses",
   THESIS_DETAIL: "/thesisGuidance/monitoring/theses",
@@ -319,6 +423,21 @@ export async function getMonitoringDashboard(academicYear?: string): Promise<Mon
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.message || "Gagal mengambil data monitoring");
+  }
+  const result = await response.json();
+  return result.data;
+}
+
+/**
+ * Seminar Hasil or Sidang of a semester for the monitoring tabs (every semester without `academicYear`)
+ */
+export async function getThesisEventMonitoring(kind: ThesisEventKind, academicYear?: string): Promise<ThesisEventMonitoring> {
+  const endpoint = kind === "defence" ? ENDPOINTS.DEFENCES : ENDPOINTS.SEMINARS;
+  const url = academicYear && academicYear !== "all" ? `${endpoint}?academicYear=${academicYear}` : endpoint;
+  const response = await apiRequest(getApiUrl(url));
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || (kind === "defence" ? "Gagal mengambil data sidang" : "Gagal mengambil data seminar hasil"));
   }
   const result = await response.json();
   return result.data;
@@ -442,7 +561,8 @@ export async function getThesisDetail(thesisId: string): Promise<ThesisDetail> {
   return result.data;
 }
 
-export type WarningType = 'SLOW' | 'AT_RISK' | 'FAILED';
+/** Peringatan dikirim menurut tingkat aktivitas. */
+export type WarningType = 'slow' | 'at_risk';
 
 /**
  * Send warning notification to student about thesis progress (for monitoring role: Kadep, Sekdep, GKM)
@@ -491,7 +611,15 @@ export interface ReportThesisItem {
   title: string;
   topic: string;
   status: string;
-  rating: string;
+  /** Teks yang dicetak laporan untuk status, mis. "Penelitian". */
+  statusLabel: string;
+  activityLevel: ThesisActivityLevel | null;
+  /** "Lancar" / "Lambat" / "Berisiko"; "-" bila TA tidak berstatus Penelitian. */
+  activityLabel: string;
+  /** Masa bimbingan, mis. "7 bulan 12 hari". */
+  supervisionLabel: string;
+  evaluationDue: string | null;
+  evaluationDueLabel: string | null;
   pembimbing1: string;
   pembimbing2: string;
   guidanceTotal: number;
@@ -500,7 +628,6 @@ export interface ReportThesisItem {
   milestoneCompleted: number;
   progressPercent: number;
   startDate: string | null;
-  deadlineDate: string | null;
   createdAt: string;
 }
 
@@ -516,17 +643,19 @@ export interface ReportSummary {
 
 export interface ProgressReportData {
   academicYear: string;
+  /** Subjudul laporan, mis. "Tugas Akhir yang Berjalan pada Semester Ganjil 2026/2027". */
+  periodTitle: string;
   generatedAt: string;
   summary: ReportSummary;
   statusDistribution: StatusDistribution[];
-  ratingDistribution: RatingDistribution[];
+  activityDistribution: ActivityDistribution[];
   theses: ReportThesisItem[];
 }
 
 export interface ReportFilterOptions {
   academicYearId?: string;
   statusIds?: string[];
-  ratings?: string[];
+  activityLevels?: string[];
 }
 
 /**
@@ -536,7 +665,7 @@ export async function getProgressReport(options: ReportFilterOptions = {}): Prom
   const params = new URLSearchParams();
   if (options.academicYearId && options.academicYearId !== 'all') params.append('academicYear', options.academicYearId);
   if (options.statusIds?.length) params.append('statusIds', options.statusIds.join(','));
-  if (options.ratings?.length) params.append('ratings', options.ratings.join(','));
+  if (options.activityLevels?.length) params.append('activityLevels', options.activityLevels.join(','));
 
   const url = `${getApiUrl("/thesisGuidance/monitoring/report")}?${params.toString()}`;
 
@@ -556,7 +685,7 @@ export async function downloadProgressReportPdf(options: ReportFilterOptions = {
   const params = new URLSearchParams();
   if (options.academicYearId && options.academicYearId !== 'all') params.append('academicYear', options.academicYearId);
   if (options.statusIds?.length) params.append('statusIds', options.statusIds.join(','));
-  if (options.ratings?.length) params.append('ratings', options.ratings.join(','));
+  if (options.activityLevels?.length) params.append('activityLevels', options.activityLevels.join(','));
 
   const url = `${getApiUrl("/thesisGuidance/monitoring/report/download")}?${params.toString()}`;
 
@@ -574,16 +703,36 @@ export async function downloadProgressReportPdf(options: ReportFilterOptions = {
   return response.blob();
 }
 
+/** One thesis of a batch that received no warning, with the reason from the server. */
+export interface BatchWarningNotSent {
+  thesisId: string;
+  studentName: string | null;
+  reason: 'active' | 'not_research' | 'not_found' | 'no_student' | 'failed';
+  reasonLabel: string;
+}
+
+export interface BatchWarningResult {
+  success: boolean;
+  /** Ready to show: how many were warned per level and how many were not. */
+  message: string;
+  // The counts and lists are missing when the backend predates per-thesis levels.
+  sentCount?: number;
+  sentCounts?: Record<WarningType, number>;
+  sent?: { thesisId: string; studentName: string; warningType: WarningType }[];
+  notSent?: BatchWarningNotSent[];
+}
+
 /**
- * Send batch warning notifications to students (for management roles)
+ * Send batch warning notifications to students (for management roles). The server words
+ * each warning for the activity level of that thesis and skips the ones that need none.
  */
-export async function sendBatchWarnings(thesisIds: string[], warningType: WarningType): Promise<{ success: boolean; message: string }> {
+export async function sendBatchWarnings(thesisIds: string[]): Promise<BatchWarningResult> {
   const response = await apiRequest(
     getApiUrl(ENDPOINTS.BATCH_WARNING),
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ thesisIds, warningType }),
+      body: JSON.stringify({ thesisIds }),
     }
   );
   if (!response.ok) {
@@ -591,92 +740,4 @@ export async function sendBatchWarnings(thesisIds: string[], warningType: Warnin
     throw new Error(error.message || "Gagal mengirim peringatan batch");
   }
   return response.json();
-}
-
-// ==================== KADEP TRANSFER APPROVAL ====================
-
-export interface KadepTransferStudent {
-  thesisId: string;
-  thesisSupervisorId: string;
-  studentName: string;
-  studentNim: string;
-  thesisTitle: string;
-  role: string;
-}
-
-export interface KadepTransfer {
-  notificationId: string;
-  sourceLecturerId: string;
-  sourceLecturerName: string;
-  targetLecturerId: string;
-  targetLecturerName: string;
-  students: KadepTransferStudent[];
-  reason: string;
-  targetApproved: boolean;
-  status: 'pending' | 'approved' | 'rejected' | 'target_rejected';
-  createdAt: string;
-}
-
-export async function getKadepPendingTransfers(): Promise<{ success: boolean; count: number; transfers: KadepTransfer[] }> {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_PENDING));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat permintaan transfer");
-  return res.json();
-}
-
-export async function getKadepAllTransfers(params: {
-  page?: number;
-  pageSize?: number;
-  search?: string;
-  status?: string;
-} = {}): Promise<{
-  success: boolean;
-  data: KadepTransfer[];
-  pagination: { total: number; page: number; pageSize: number; totalPages: number };
-}> {
-  const searchParams = new URLSearchParams();
-  if (params.page) searchParams.set("page", String(params.page));
-  if (params.pageSize) searchParams.set("pageSize", String(params.pageSize));
-  if (params.search) searchParams.set("search", params.search);
-  if (params.status) searchParams.set("status", params.status);
-  const url = `${getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_ALL)}?${searchParams.toString()}`;
-  const res = await apiRequest(url);
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat data transfer");
-  return res.json();
-}
-
-export async function kadepApproveTransfer(notificationId: string): Promise<{ success: boolean; message: string }> {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFER_APPROVE(notificationId)), {
-    method: "PATCH",
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menyetujui transfer");
-  return res.json();
-}
-
-export async function kadepRejectTransfer(notificationId: string, reason?: string): Promise<{ success: boolean; message: string }> {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFER_REJECT(notificationId)), {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ reason }),
-  });
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal menolak transfer");
-  return res.json();
-}
-
-/**
- * Download supervisor transfer history report as PDF
- */
-export async function downloadTransferReportPdf(): Promise<Blob> {
-  const url = getApiUrl(API_CONFIG.ENDPOINTS.THESIS_MONITORING.TRANSFERS_REPORT_DOWNLOAD);
-  const response = await apiRequest(url);
-  if (!response.ok) {
-    let message = "Gagal mengunduh laporan transfer";
-    try {
-      const json = await response.json();
-      if (json.message) message = json.message;
-    } catch {
-      // response is not JSON
-    }
-    throw new Error(message);
-  }
-  return response.blob();
 }

@@ -1,6 +1,6 @@
 import { getApiUrl } from '@/config/api';
 import { apiRequest } from './auth.service';
-import type { ThesisLifecycleStatus, ThesisRating, ThesisTerminationReason } from '@/lib/thesisLabels';
+import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus, ThesisTerminationReason } from '@/lib/thesisLabels';
 
 export interface SupervisorData {
     lecturerId: string;
@@ -12,7 +12,9 @@ export interface SupervisorData {
 export interface MasterDataThesis {
     id: string;
     title: string | null;
-    rating: ThesisRating | null;
+    /** Nilai turunan, baca-saja; null bila TA tidak berstatus Penelitian. */
+    activityLevel: ThesisActivityLevel | null;
+    supervisionClock?: SupervisionClock | null;
     startDate: string | null;
     status: ThesisLifecycleStatus;
     statusBeforeLeave?: ThesisLifecycleStatus | null;
@@ -66,18 +68,6 @@ export const updateMasterDataThesis = async (id: string, payload: any): Promise<
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.message || "Gagal memperbarui master data tugas akhir");
-    }
-    const result = await response.json();
-    return result.data;
-};
-
-export const syncSiaData = async (): Promise<any> => {
-    const response = await apiRequest(getApiUrl(`/master-data-ta/sync-sia`), {
-        method: 'POST'
-    });
-    if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Gagal melakukan sinkronisasi dengan SIA");
     }
     const result = await response.json();
     return result.data;

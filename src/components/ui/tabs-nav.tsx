@@ -23,11 +23,11 @@ export function TabsNav({ tabs, preserveSearch }: { tabs: TabItem[]; preserveSea
             // Jika tab memiliki query param, harus cocok dengan current search
             isActive = pathname === toPath && search === toSearch;
           } else if (t.end) {
-            // Jika tidak ada query param tapi end: true (misal overview /metopel)
+            // Jika tidak ada query param tapi end: true (misal overview /tugas-akhir)
             // maka path harus persis sama, dan kalau current ada search (tab lain) maka false
             isActive = pathname === toPath && (search === "" || !!preserveSearch);
           } else {
-            // match path startsWith (misal /metopel/cari-pembimbing)
+            // match path startsWith (misal /tugas-akhir/proposal)
             isActive = pathname.startsWith(toPath) && pathname !== "/";
           }
 
@@ -63,6 +63,8 @@ export function TabsNav({ tabs, preserveSearch }: { tabs: TabItem[]; preserveSea
 export type LocalTabItem = {
   label: string;
   value: string;
+  /** Number of things waiting for the viewer on this tab; hidden when 0. */
+  badge?: number;
 };
 
 export function LocalTabsNav({
@@ -91,6 +93,14 @@ export function LocalTabsNav({
               }`}
             >
               {t.label}
+              {typeof t.badge === "number" && t.badge > 0 && (
+                <span
+                  aria-label={`${t.badge} menunggu tindakan`}
+                  className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold leading-none tabular-nums text-amber-700"
+                >
+                  {t.badge}
+                </span>
+              )}
             </button>
           );
         })}
