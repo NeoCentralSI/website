@@ -53,7 +53,7 @@ export function StudentSupervisorRequestCard({ data, overview }: { data: Student
   const actionLabel = cancelling ? 'Batalkan Pengajuan' : 'Tarik Pengajuan';
 
   return (
-    <div className="space-y-3 rounded-[10px] border border-gray-200 bg-card p-[16px_18px]">
+    <section aria-label="Kartu Pengajuan Pembimbing" className="flex flex-1 flex-col gap-3 rounded-[10px] border border-gray-200 bg-card p-[16px_18px]">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-base font-semibold text-foreground">Pengajuan Pembimbing</div>
         <Badge variant={view.variant}>{view.status}</Badge>
@@ -67,7 +67,7 @@ export function StudentSupervisorRequestCard({ data, overview }: { data: Student
       {view.kadepNote && <SoftWarning title="Catatan Ketua Departemen">{view.kadepNote}</SoftWarning>}
 
       {view.buttons.length > 0 && (
-        <div className="flex flex-wrap justify-end gap-2 border-t pt-3">
+        <div className="mt-auto flex flex-wrap justify-end gap-2 border-t pt-3">
           {view.buttons.includes('detail') && request && (
             <Button size="sm" variant="outline" onClick={() => setDetail(true)}>Lihat Detail</Button>
           )}
@@ -114,6 +114,6 @@ export function StudentSupervisorRequestCard({ data, overview }: { data: Student
           <SupervisorRequestDetails request={request} />
         </RecordDetailDialog>
       )}
-    </div>
+    </section>
   );
 }

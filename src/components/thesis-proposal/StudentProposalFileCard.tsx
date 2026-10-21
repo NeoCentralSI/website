@@ -71,13 +71,12 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** One file row in the form of the seminar document card: icon, name, status and the actions. */
-function FileRow({ title, fileName, meta, status, actions }: {
+/** File information stays above the card footer: icon, name and status. */
+function FileRow({ title, fileName, meta, status }: {
   title: string;
   fileName?: string | null;
   meta?: string | null;
   status: FileStatus;
-  actions: React.ReactNode;
 }) {
   return (
     <div className="flex items-center gap-[10px] rounded-[7px] border border-gray-200 bg-card p-[9px_10px]">
@@ -92,7 +91,6 @@ function FileRow({ title, fileName, meta, status, actions }: {
         </div>
         {meta && <div className="mt-0.5 text-[11px] text-muted-foreground">{meta}</div>}
       </div>
-      <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">{actions}</div>
     </div>
   );
 }
@@ -137,8 +135,8 @@ export function StudentProposalFileCard({ overview, kind }: { overview: StudentP
   };
 
   return (
-    <div className="rounded-[10px] border border-gray-200 bg-card p-[16px_18px]">
-      <div className="mb-[14px] flex items-center justify-between gap-3">
+    <section aria-label={`Kartu ${LABELS[kind]}`} className="flex flex-1 flex-col gap-3 rounded-[10px] border border-gray-200 bg-card p-[16px_18px]">
+      <div className="flex items-center justify-between gap-3">
         <div className="text-base font-semibold text-foreground">{LABELS[kind]}</div>
         {open && <span className="text-xs text-muted-foreground">PDF, maks. {MAX_SIZE_MB} MB</span>}
       </div>
@@ -153,22 +151,6 @@ export function StudentProposalFileCard({ overview, kind }: { overview: StudentP
             fileName={sent?.name}
             meta={sent?.at ? `Diajukan ${formatDateTimeWib(sent.at)}` : null}
             status={status}
-            actions={(
-              <>
-                {sent && (
-                  <Button type="button" variant="outline" size="sm" className={OUTLINE_PRIMARY} onClick={() => setViewer({ name: sent.name, path: sent.url })}>
-                    <Eye className="mr-2 h-4 w-4" />Lihat
-                  </Button>
-                )}
-                {!file && (
-                  <span title={blockReason ?? undefined} className="inline-flex">
-                    <Button type="button" variant="outline" size="sm" className={OUTLINE_PRIMARY} disabled={Boolean(blockReason) || submit.isPending} onClick={choose}>
-                      <Upload className="mr-2 h-4 w-4" />{sent ? 'Ganti Berkas' : 'Pilih Berkas'}
-                    </Button>
-                  </span>
-                )}
-              </>
-            )}
           />
 
           {file && (
@@ -177,21 +159,6 @@ export function StudentProposalFileCard({ overview, kind }: { overview: StudentP
               fileName={file.name}
               meta={formatFileSize(file.size)}
               status={fileProblem ? { text: 'Tidak bisa diajukan', tone: 'failed' } : { text: 'Belum dikirim', tone: 'none' }}
-              actions={(
-                <>
-                  {localUrl && (
-                    <Button type="button" variant="outline" size="sm" className={OUTLINE_PRIMARY} onClick={() => setViewer({ name: file.name, path: localUrl })}>
-                      <Eye className="mr-2 h-4 w-4" />Lihat
-                    </Button>
-                  )}
-                  <Button type="button" variant="ghost" size="sm" disabled={submit.isPending} onClick={clear} aria-label="Batalkan pilihan berkas">
-                    <X className="mr-1 h-4 w-4" />Batal
-                  </Button>
-                  <Button type="button" size="sm" disabled={Boolean(fileProblem) || submit.isPending} onClick={send}>
-                    {submit.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}Ajukan
-                  </Button>
-                </>
-              )}
             />
           )}
           {fileProblem && <p className="text-xs text-destructive">{fileProblem}</p>}
@@ -211,6 +178,38 @@ export function StudentProposalFileCard({ overview, kind }: { overview: StudentP
         </div>
       )}
 
+      {open && (
+        <div className="mt-auto flex flex-wrap items-center justify-end gap-2 border-t pt-3">
+          {sent && (
+            <Button type="button" variant="outline" size="sm" className={OUTLINE_PRIMARY} onClick={() => setViewer({ name: sent.name, path: sent.url })}>
+              <Eye className="mr-2 h-4 w-4" />Lihat
+            </Button>
+          )}
+          {!file && (
+            <span title={blockReason ?? undefined} className="inline-flex">
+              <Button type="button" variant="outline" size="sm" className={OUTLINE_PRIMARY} disabled={Boolean(blockReason) || submit.isPending} onClick={choose}>
+                <Upload className="mr-2 h-4 w-4" />{sent ? 'Ganti Berkas' : 'Pilih Berkas'}
+              </Button>
+            </span>
+          )}
+          {file && (
+            <>
+              {localUrl && (
+                <Button type="button" variant="outline" size="sm" className={OUTLINE_PRIMARY} onClick={() => setViewer({ name: file.name, path: localUrl })}>
+                  <Eye className="mr-2 h-4 w-4" />Lihat
+                </Button>
+              )}
+              <Button type="button" variant="ghost" size="sm" disabled={submit.isPending} onClick={clear} aria-label="Batalkan pilihan berkas">
+                <X className="mr-1 h-4 w-4" />Batal
+              </Button>
+              <Button type="button" size="sm" disabled={Boolean(fileProblem) || submit.isPending} onClick={send}>
+                {submit.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}Ajukan
+              </Button>
+            </>
+          )}
+        </div>
+      )}
+
       <input
         ref={inputRef}
         type="file"
@@ -226,6 +225,6 @@ export function StudentProposalFileCard({ overview, kind }: { overview: StudentP
         fileName={viewer?.name}
         filePath={viewer?.path}
       />
-    </div>
+    </section>
   );
 }

@@ -114,6 +114,53 @@ const steps = () => within(screen.getByRole('list', { name: 'Tahap proposal' }))
 beforeEach(() => vi.clearAllMocks());
 
 describe('Proposal mahasiswa', () => {
+  it.each([
+    { name: 'tidak layak', data: mine({}, { canSubmit: false, eligibleResearchMethod: false, blockedReason: NOT_ELIGIBLE }), overview: noThesis() },
+    { name: 'layak tanpa draf', data: mine(), overview: noThesis() },
+    { name: 'draf', data: mine({ draft: { proposedTitle: 'Draf judul proposal', updatedAt: '2026-10-12', lecturerId: 'l1', lecturer: null } as StudentSupervisorRequests['draft'] }), overview: noThesis() },
+    { name: 'menunggu', data: mine({ activeRequest: request(), requests: [request()] }, { canSubmit: false }), overview: noThesis() },
+    { name: 'perlu revisi', data: mine({ requests: [request({ status: 'revision_requested', kadepNotes: 'Catatan revisi panjang. '.repeat(30) })] }, { revisionRequested: true }), overview: noThesis() },
+    { name: 'diterima', data: mine({ activeRequest: request({ status: 'accepted' }) }, { canSubmit: false }), overview: noThesis() },
+    { name: 'ditetapkan', data: mine({ activeRequest: request({ status: 'assigned' }) }, { canSubmit: false }), overview: proposal() },
+    { name: 'proposal final terkirim', data: mine({ activeRequest: request({ status: 'assigned' }) }, { canSubmit: false }), overview: proposal({ finalProposal: { ...proposal().finalProposal, current: attempt() } }) },
+    { name: 'lulus dan baca-saja', data: mine({ activeRequest: request({ status: 'assigned' }) }, { canSubmit: false }), overview: proposal({
+      thesis: { ...proposal().thesis!, status: 'research' },
+      finalProposal: { ...proposal().finalProposal, canSubmit: false, blockReason: 'Penilaian proposal periode ini sudah final. Proposal final tidak dapat diganti.', current: attempt({ isFinalized: true, result: 'passed', finalScore: 82 }) },
+    }) },
+    { name: 'mengulang proposal', data: mine({ activeRequest: request({ status: 'assigned' }) }, { canSubmit: false }), overview: proposal({ proposalRevision: {
+      ...proposal().proposalRevision, applicable: true, canSubmit: true,
+      current: { id: 'r1', status: 'revision_requested', file: { fileName: 'revisi.pdf', url: '/uploads/revisi.pdf', fileSize: 10, submittedAt: '2026-10-14' }, reviewNotes: 'Catatan pembimbing panjang. '.repeat(30), reviewedAt: '2026-10-15', reviewerName: 'Dosen Satu' },
+    } }) },
+  ])('keeps both columns stretched and actions in card footers: $name', async ({ data, overview }) => {
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(data);
+    vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(overview);
+    wrap(<StudentThesisProposal />);
+    const requestCard = await screen.findByRole('region', { name: 'Kartu Pengajuan Pembimbing' });
+    const fileCard = screen.getByRole('region', { name: overview.proposalRevision.applicable ? 'Kartu Proposal Revisi' : 'Kartu Proposal Final' });
+    const right = requestCard.parentElement!;
+    const row = right.parentElement!;
+    expect(row).toHaveClass('grid', 'items-stretch', 'md:grid-cols-[260px_1fr]', 'gap-[14px]');
+    expect(right).toHaveClass('flex', 'flex-col', 'h-full', 'gap-[14px]');
+    expect(fileCard.parentElement).toBe(right);
+    for (const card of [requestCard, fileCard]) {
+      expect(card).toHaveClass('flex', 'flex-col', 'flex-1');
+      const actions = within(card).queryAllByRole('button');
+      if (actions.length) {
+        const footer = card.querySelector(':scope > .mt-auto')!;
+        expect(footer).toHaveClass('justify-end');
+        actions.forEach((action) => expect(footer).toContainElement(action));
+      }
+      expect(card.className).not.toMatch(/overflow-hidden|h-\[/);
+    }
+    const stepper = screen.getByText('Status Proposal').parentElement!;
+    expect(stepper).toHaveClass('self-stretch');
+    expect(row.firstElementChild).toContainElement(stepper);
+    expect(steps()).toHaveLength(5);
+    if (overview.thesis?.status === 'research') {
+      expect(within(fileCard).getByRole('button', { name: /Ganti Berkas/ })).toBeDisabled();
+    }
+  });
+
   it('without a request: no Informasi Proposal; a student who may not submit reads why in the Pengajuan card', async () => {
     vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({}, { canSubmit: false, eligibleResearchMethod: false, blockedReason: NOT_ELIGIBLE }));
     vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(noThesis());
@@ -241,6 +288,8 @@ describe('Proposal mahasiswa', () => {
     expect(await screen.findByText('Berkas yang akan diajukan')).toBeInTheDocument();
     expect(screen.getByText('Proposal Budi.pdf')).toHaveAttribute('title', 'Proposal Budi.pdf');
     expect(screen.getByText('1 KB')).toBeInTheDocument();
+    const fileCard = screen.getByRole('region', { name: 'Kartu Proposal Final' });
+    expect(fileCard.querySelector(':scope > .mt-auto')).toContainElement(screen.getByRole('button', { name: 'Ajukan' }));
     expect(assignments.submitFinalProposal).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ajukan' }));

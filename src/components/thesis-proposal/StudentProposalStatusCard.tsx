@@ -12,7 +12,7 @@ export function StudentProposalStatusCard({ steps }: { steps: ProposalStep[] }) 
   const progress = steps.length > 0 ? Math.round((completed / steps.length) * 100) : 0;
 
   return (
-    <div className="box-border flex h-full flex-col rounded-[10px] border border-gray-200 bg-card p-[18px_18px_14px]">
+    <div className="box-border flex h-full flex-1 self-stretch flex-col rounded-[10px] border border-gray-200 bg-card p-[18px_18px_14px]">
       <div className="mb-[18px] text-base font-semibold text-foreground">Status Proposal</div>
 
       <ol className="relative flex flex-1 flex-col pl-8" aria-label="Tahap proposal">
@@ -21,7 +21,7 @@ export function StudentProposalStatusCard({ steps }: { steps: ProposalStep[] }) 
           const isFailed = step.state === 'failed';
           const isAttention = step.state === 'attention';
           return (
-            <li key={step.key} className={cn('relative', index < steps.length - 1 ? 'pb-[22px]' : 'pb-0')} data-state={step.state}>
+            <li key={step.key} className={cn('relative', index < steps.length - 1 ? 'pb-[16px]' : 'pb-0')} data-state={step.state}>
               {index < steps.length - 1 ? (
                 <div
                   className={cn('absolute bottom-[-13px] top-[13px] z-0 w-[2px]', isDone && steps[index + 1]?.state === 'done' ? 'bg-emerald-600' : 'bg-muted')}

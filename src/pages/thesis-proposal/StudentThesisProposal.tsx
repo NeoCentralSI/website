@@ -65,11 +65,11 @@ export default function StudentThesisProposal() {
       ) : (
         <div className="flex flex-col gap-[14px]">
           <StudentProposalInfoCard overview={overview.data} requests={requests.data} />
-          <div className="grid grid-cols-1 items-start gap-[14px] md:grid-cols-[260px_1fr]">
-            <div className="self-stretch">
+          <div className="grid grid-cols-1 items-stretch gap-[14px] md:grid-cols-[260px_1fr]">
+            <div className="flex self-stretch">
               <StudentProposalStatusCard steps={buildProposalSteps(overview.data, requests.data)} />
             </div>
-            <div className="flex flex-col gap-[14px]">
+            <div className="flex h-full min-w-0 flex-col gap-[14px]">
               <StudentSupervisorRequestCard data={requests.data} overview={overview.data} />
               {overview.data && <StudentProposalFileCard overview={overview.data} kind={repeating ? 'revision' : 'final'} />}
             </div>
