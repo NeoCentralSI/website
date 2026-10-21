@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Check, X } from 'lucide-react';
+import { RefreshButton } from '@/components/ui/refresh-button';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import type { StudentYudisiumOverviewResponse } from '@/types/student-yudisium.types';
 
@@ -19,23 +20,25 @@ const formatDateTime = (date: any) => {
 
 interface StudentYudisiumCplTableProps {
   cplScores: StudentCplScore[];
+  onRefetch?: () => void;
+  isFetching?: boolean;
 }
 
-export function StudentYudisiumCplTable({ cplScores }: StudentYudisiumCplTableProps) {
+export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = false }: StudentYudisiumCplTableProps) {
   const [cplSearch, setCplSearch] = useState('');
   const [cplPage, setCplPage] = useState(1);
   const [cplPageSize, setCplPageSize] = useState(10);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const filteredCplScores = useMemo(() => {
     const term = cplSearch.trim().toLowerCase();
-    if (!term) return cplScores;
-
     return cplScores.filter((score) =>
+      (statusFilter === 'all' || (statusFilter === 'passed' ? score.passed : !score.passed)) && (
       (score.code ?? '').toLowerCase().includes(term) ||
       score.description.toLowerCase().includes(term) ||
       (score.validatedBy ?? score.verifiedBy ?? '').toLowerCase().includes(term)
-    );
-  }, [cplScores, cplSearch]);
+    )).sort((a, b) => Number(a.passed) - Number(b.passed) || a.code.localeCompare(b.code, 'id', { numeric: true }));
+  }, [cplScores, cplSearch, statusFilter]);
 
   const paginatedCplScores = useMemo(() => {
     const start = (cplPage - 1) * cplPageSize;
@@ -63,9 +66,9 @@ export function StudentYudisiumCplTable({ cplScores }: StudentYudisiumCplTablePr
     {
       key: 'description',
       header: 'Deskripsi',
-      className: 'min-w-[320px] whitespace-normal',
+      className: 'whitespace-normal',
       render: (row) => (
-        <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+        <p title={row.description} className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
           {row.description}
         </p>
       ),
@@ -87,6 +90,10 @@ export function StudentYudisiumCplTable({ cplScores }: StudentYudisiumCplTablePr
     {
       key: 'status',
       header: 'Status',
+      filter: { type: 'select', value: statusFilter, defaultValue: 'all',
+        onChange: (value) => { setStatusFilter(value); setCplPage(1); },
+        options: [{ label: 'Semua', value: 'all' }, { label: 'Lulus', value: 'passed' }, { label: 'Belum Tercapai', value: 'pending' }],
+      },
       width: 130,
       className: 'text-center',
       render: (row) => (
@@ -103,7 +110,7 @@ export function StudentYudisiumCplTable({ cplScores }: StudentYudisiumCplTablePr
     {
       key: 'verified',
       header: 'Diverifikasi',
-      width: 220,
+      width: 200,
       render: (row) => {
         const validatorName = row.validatedBy ?? row.verifiedBy ?? null;
         const validatorNip = row.validatedByNip ?? row.verifiedByNip ?? null;
@@ -124,7 +131,7 @@ export function StudentYudisiumCplTable({ cplScores }: StudentYudisiumCplTablePr
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
               <Check className="h-3.5 w-3.5" strokeWidth={3} />
-              <span>{validatorName || 'Terverifikasi'}</span>
+              <span className="line-clamp-2" title={validatorName || 'Terverifikasi'}>{validatorName || 'Terverifikasi'}</span>
             </div>
             <div className="text-[10px] text-muted-foreground">
               {validatedAt ? formatDateTime(validatedAt) : '-'}
@@ -134,13 +141,19 @@ export function StudentYudisiumCplTable({ cplScores }: StudentYudisiumCplTablePr
         );
       },
     },
-  ], [cplPage, cplPageSize]);
-
-  if (cplScores.length === 0) return null;
+  ], [cplPage, cplPageSize, statusFilter]);
 
   return (
     <section className="space-y-[14px]">
+      <h2 className="text-base font-semibold">Capaian Pembelajaran Lulusan</h2>
       <CustomTable
+        enableColumnFilters
+        tableClassName="table-fixed"
+        isRefreshing={isFetching}
+        actions={<>
+          <Badge variant="secondary">{cplScores.length} CPL</Badge>
+          {onRefetch && <RefreshButton onClick={onRefetch} isRefreshing={isFetching} />}
+        </>}
         columns={cplColumns}
         data={paginatedCplScores}
         total={filteredCplScores.length}
@@ -156,7 +169,7 @@ export function StudentYudisiumCplTable({ cplScores }: StudentYudisiumCplTablePr
           setCplSearch(value);
           setCplPage(1);
         }}
-        emptyText="Tidak ada data CPL"
+        emptyText="Nilai CPL Anda belum tersedia"
         rowKey={(row, index) => `${row.code ?? 'cpl'}-${index}`}
         className="rounded-[10px] border-gray-200 shadow-none"
       />

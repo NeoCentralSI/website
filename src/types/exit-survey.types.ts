@@ -1,5 +1,28 @@
 export type ExitSurveyQuestionType = 'short_answer' | 'paragraph' | 'single_choice' | 'multiple_choice' | 'number' | 'date';
 
+export interface ExitSurveyAnswer {
+  questionId: string;
+  questionText?: string | null;
+  optionId?: string | null;
+  optionText?: string | null;
+  answerText?: string | null;
+  answerNumber?: number | null;
+  answerDate?: string | null;
+}
+
+export interface ExitSurveyResponse {
+  id: string;
+  name: string;
+  nim: string;
+  email: string;
+  phone?: string | null;
+  enrollmentYear?: number | null;
+  yudisiumId?: string | null;
+  yudisiumName?: string | null;
+  submittedAt: string | null;
+  answers: ExitSurveyAnswer[];
+}
+
 export interface ExitSurveyOption {
   id: string;
   optionText: string;

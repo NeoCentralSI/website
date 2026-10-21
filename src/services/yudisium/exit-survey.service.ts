@@ -2,6 +2,7 @@ import { API_CONFIG, getApiUrl } from '@/config/api';
 import { apiRequest } from '../auth.service';
 import type {
   ExitSurveyForm,
+  ExitSurveyResponse,
   ExitSurveyQuestion,
   ExitSurveySession,
   CreateExitSurveyFormPayload,
@@ -33,7 +34,7 @@ export const getExitSurveyFormById = async (id: string): Promise<ExitSurveyForm>
   return handleResponse(response, 'Gagal mengambil detail form');
 };
 
-export const getExitSurveyFormResponses = async (id: string): Promise<any[]> => {
+export const getExitSurveyFormResponses = async (id: string): Promise<ExitSurveyResponse[]> => {
   const response = await apiRequest(getApiUrl(E.RESPONSES(id)));
   return handleResponse(response, 'Gagal mengambil respons form');
 };
