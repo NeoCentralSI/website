@@ -193,22 +193,14 @@ export function RequestSupervisor2Dialog({
                               {trafficMeta.label}
                             </Badge>
                           )}
-                          {lecturer.normalAvailable != null && (
-                            <span className="text-[11px] text-muted-foreground">
-                              Sisa normal: {lecturer.normalAvailable}
-                            </span>
-                          )}
-                          {lecturer.activeCount != null && (
-                            <span className="text-[11px] text-muted-foreground">
-                              Beban aktif: {lecturer.activeCount}
-                            </span>
-                          )}
+                          {lecturer.totalLimit != null && <Badge variant="outline">Semester ini {lecturer.acceptedCount ?? 0}/{lecturer.semesterQuota} · Total {lecturer.activeCount}/{lecturer.totalLimit}</Badge>}
+
                         </div>
                       )}
                       {isClosed ? (
                         <p className="mt-1 text-[11px] text-red-600">{SUPERVISOR2_CLOSED_NOTE}</p>
                       ) : isFull ? (
-                        <p className="mt-1 text-[11px] text-amber-700">{SUPERVISOR2_FULL_NOTE}</p>
+                        <SoftWarning>{SUPERVISOR2_FULL_NOTE}</SoftWarning>
                       ) : null}
                     </div>
                     {isSelected && (

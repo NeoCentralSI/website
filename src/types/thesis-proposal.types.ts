@@ -74,8 +74,9 @@ export interface SupervisorRequest {
 
 export interface SupervisorLoad {
   activeCount: number;
-  softLimit: number;
-  hardLimit: number;
+  acceptedCount: number;
+  semesterQuota: number;
+  totalLimit: number;
   limitSource?: 'period' | 'general' | 'default';
   level: SupervisionLoadLevel;
 }
@@ -190,8 +191,8 @@ export interface KadepDecisionDto {
 }
 
 export interface SupervisionLimits {
-  softLimit: number;
-  hardLimit: number;
+  semesterQuota: number;
+  totalLimit: number;
   updatedAt?: string;
 }
 
@@ -202,6 +203,8 @@ export interface LecturerLoadRow {
   scienceGroup: { id: string; name: string } | null;
   acceptingRequests: boolean;
   activeCount: number;
+  acceptedCount: number;
+  pendingCount: number;
   level: SupervisionLoadLevel;
   breakdown: {
     total: number;
@@ -216,7 +219,7 @@ export interface LecturerLoadRow {
 export interface SupervisionLoadOverview {
   academicYear: AcademicYearRef | null;
   general: SupervisionLimits | null;
-  period: SupervisionLimits | null;
+  period: Pick<SupervisionLimits, 'semesterQuota'> | null;
   applicable: SupervisionLimits & { source: 'period' | 'general' | 'default' };
   lecturers: LecturerLoadRow[];
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ImportFilePicker } from '@/components/shared/ImportFilePicker';
 import {
   Dialog,
   DialogContent,
@@ -9,10 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface ImportStudentDialogProps {
@@ -162,12 +161,6 @@ export function ImportStudentDialog({
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  };
-
   return (
     <Dialog open={open} onOpenChange={(val) => !isImporting && onOpenChange(val)}>
       <DialogContent className="max-w-md">
@@ -180,22 +173,7 @@ export function ImportStudentDialog({
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="user-file">File Excel / CSV</Label>
-            <Input
-              id="user-file"
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={(e) => onFileChange(e.target.files?.[0] || null)}
-              disabled={isImporting}
-            />
-
-            {selectedFile && (
-              <div className="flex items-center gap-2 p-2 mt-1 rounded-md bg-muted/60 border text-xs">
-                <FileText className="w-4 h-4 text-primary shrink-0" />
-                <span className="font-medium truncate flex-1">{selectedFile.name}</span>
-                <span className="text-muted-foreground shrink-0">{formatFileSize(selectedFile.size)}</span>
-              </div>
-            )}
+            <ImportFilePicker file={selectedFile} onChange={onFileChange} disabled={isImporting} label="File Excel / CSV" />
 
             {/* Loading Indicator & Progress Stage */}
             {isImporting && (

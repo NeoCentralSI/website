@@ -137,7 +137,7 @@ const groupOf = (lecturer: CatalogLecturer) => lecturer.scienceGroup?.name ?? 'K
 
 function LoadBadge({ lecturer }: { lecturer: CatalogLecturer }) {
   return lecturer.acceptingRequests
-    ? <SupervisionLoadBadge activeCount={lecturer.activeCount} hardLimit={lecturer.hardLimit} level={lecturer.level} className="shrink-0 whitespace-nowrap" />
+    ? <SupervisionLoadBadge activeCount={lecturer.activeCount} acceptedCount={lecturer.acceptedCount} semesterQuota={lecturer.semesterQuota} totalLimit={lecturer.totalLimit} level={lecturer.level} className="shrink-0 whitespace-nowrap" />
     : <Badge variant="outline" className="shrink-0 whitespace-nowrap">Ditutup Dosen</Badge>;
 }
 

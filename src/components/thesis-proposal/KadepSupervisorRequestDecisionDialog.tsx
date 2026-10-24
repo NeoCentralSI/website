@@ -51,7 +51,7 @@ export function KadepSupervisorRequestDecisionDialog({
   const options = useMemo(
     () => (assignable?.lecturers ?? []).map((lecturer) => ({
       value: lecturer.lecturerId,
-      label: `${formatLecturerName(lecturer.fullName)} · ${lecturer.activeCount}/${lecturer.hardLimit}`,
+      label: `${formatLecturerName(lecturer.fullName)} · Semester ini ${lecturer.acceptedCount}/${lecturer.semesterQuota} · Total ${lecturer.activeCount}/${lecturer.totalLimit}`,
       keywords: [lecturer.fullName ?? '', lecturer.scienceGroup?.name ?? ''],
     })),
     [assignable],
@@ -93,7 +93,7 @@ export function KadepSupervisorRequestDecisionDialog({
                   {recommendations!.alternatives.map((lecturer) => (
                     <Button key={lecturer.lecturerId} size="sm" variant={target === lecturer.lecturerId ? 'default' : 'outline'}
                       onClick={() => setTarget(lecturer.lecturerId)}>
-                      {formatLecturerName(lecturer.fullName)} ({lecturer.activeCount}/{lecturer.hardLimit})
+                      {formatLecturerName(lecturer.fullName)} (Semester ini {lecturer.acceptedCount}/{lecturer.semesterQuota} · Total {lecturer.activeCount}/{lecturer.totalLimit})
                     </Button>
                   ))}
                 </div>
@@ -104,7 +104,7 @@ export function KadepSupervisorRequestDecisionDialog({
               <Label>Dosen pembimbing</Label>
               <SearchableCombobox ariaLabel="Dosen pembimbing" options={options} value={target} onChange={setTarget}
                 placeholder="Pilih dosen" searchPlaceholder="Cari nama atau kelompok keilmuan" emptyText="Dosen tidak ditemukan" />
-              {chosen && <SupervisionLoadBadge activeCount={chosen.activeCount} hardLimit={chosen.hardLimit} level={chosen.level} />}
+              {chosen && <SupervisionLoadBadge activeCount={chosen.activeCount} acceptedCount={chosen.acceptedCount} semesterQuota={chosen.semesterQuota} totalLimit={chosen.totalLimit} level={chosen.level} />}
             </div>
           </div>
         )}

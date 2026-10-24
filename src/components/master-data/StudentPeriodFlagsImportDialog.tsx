@@ -7,7 +7,7 @@ import { PeriodSelect } from '@/components/research-method/PeriodSelect';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
+import { ImportFilePicker } from '@/components/shared/ImportFilePicker';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useActiveAcademicYear } from '@/hooks/shared/useActiveAcademicYear';
@@ -117,20 +117,7 @@ export function StudentPeriodFlagsImportDialog({ open, onOpenChange }: { open: b
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="period-flags-file">Pilih File Excel</Label>
-                <Input
-                  id="period-flags-file"
-                  type="file"
-                  accept=".xlsx,.xls,.csv"
-                  aria-label="Berkas keikutsertaan"
-                  onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-                  disabled={apply.isPending}
-                />
-                {file && (
-                  <p className="text-xs text-muted-foreground">
-                    File terpilih: <span className="font-medium text-foreground">{file.name}</span>
-                  </p>
-                )}
+                <ImportFilePicker file={file} onChange={setFile} disabled={apply.isPending} label="Berkas keikutsertaan" />
                 {(checked || file) && fileProblem && <p role="alert" className="text-xs text-destructive">{fileProblem}</p>}
               </div>
 

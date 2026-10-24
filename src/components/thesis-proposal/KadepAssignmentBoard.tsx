@@ -23,7 +23,8 @@ import { Button } from '@/components/ui/button';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { useIssueAssignment } from '@/hooks/thesis-proposal/useSupervisorAssignment';
-import { downloadAuthenticatedFileOrToast, openAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
+import AuthenticatedDocumentPreviewDialog from '@/components/thesis/AuthenticatedDocumentPreviewDialog';
+import { getApiUrl } from '@/config/api';
 import { DateTimeCell, TruncatedText } from '@/lib/guidanceCells';
 import { ACTIONS_3_WIDTH, ASSIGNMENT_BOARD_WIDTH, BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
 import { formatDateTimeWib, formatLecturerName, toTitleCaseName } from '@/lib/text';
@@ -100,7 +101,7 @@ export function getDownloadBlockReason(batch: AssignmentBatch, board: Pick<Assig
 function loadNote(row: AssignmentBoardRow): string | null {
   const load = row.request?.lecturerLoad;
   if (row.submission !== 'over_quota_waiting' || !load) return null;
-  return `Beban ${formatLecturerName(row.candidate?.fullName)} sekarang ${load.activeCount}/${load.hardLimit}; bila disetujui ${load.projectedCount}/${load.hardLimit} (lebih ${load.overBy}).`;
+  return `Beban ${formatLecturerName(row.candidate?.fullName)} Semester ini ${load.acceptedCount}/${load.semesterQuota} · Total ${load.activeCount}/${load.totalLimit}.`;
 }
 
 function DetailLine({ label, children }: { label: string; children: React.ReactNode }) {
@@ -130,6 +131,7 @@ interface TableProps {
  * Pembimbing 2. "Semua" lists what waits for a decision first. A past semester is read only.
  */
 export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKadep, isKadepOrAdmin, semesterSelect }: TableProps) {
+  const [pdf, setPdf] = useState<string | null>(null);
   const issue = useIssueAssignment();
   const [submission, setSubmission] = useState('');
   const [assignment, setAssignment] = useState('');
@@ -276,7 +278,7 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
       {semesterSelect}
       {isKadepOrAdmin && (
         <span title={previewReason ?? undefined} className="inline-flex">
-          <Button size="sm" variant="outline" disabled={Boolean(previewReason)} onClick={() => openAuthenticatedFileOrToast(assignmentPreviewUrl(board.academicYear.id))}>
+          <Button size="sm" variant="outline" disabled={Boolean(previewReason)} onClick={() => setPdf(getApiUrl(assignmentPreviewUrl(board.academicYear.id)))}>
             <FileText className="mr-2 h-4 w-4" />Pratinjau PDF
           </Button>
         </span>
@@ -326,6 +328,7 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
 
   return (
     <>
+      <AuthenticatedDocumentPreviewDialog open={Boolean(pdf)} onOpenChange={(open) => { if (!open) setPdf(null); }} filePath={pdf} fileName="Pratinjau Penetapan Pembimbing.pdf" />
       <CustomTable
         columns={columns}
         {...table.tableProps}
@@ -356,7 +359,7 @@ export function KadepAssignmentBoardTable({ board, isFetching, onRefresh, isKade
                 <DetailLine key={`${lecturer.role}-${lecturer.lecturerId}`} label={lecturer.role ?? 'Pembimbing'}>
                   <div className="flex flex-wrap items-center gap-2">
                     <span>{formatLecturerName(lecturer.fullName)}</span>
-                    {lecturer.load && <SupervisionLoadBadge activeCount={lecturer.load.activeCount} hardLimit={lecturer.load.hardLimit} level={lecturer.load.level} />}
+                    {lecturer.load && <SupervisionLoadBadge activeCount={lecturer.load.activeCount} acceptedCount={lecturer.load.acceptedCount} semesterQuota={lecturer.load.semesterQuota} totalLimit={lecturer.load.totalLimit} level={lecturer.load.level} />}
                     {!lecturer.acceptingRequests && <Badge variant="outline">Ditutup Dosen</Badge>}
                   </div>
                 </DetailLine>
@@ -426,6 +429,7 @@ export function AssignmentVersionHistoryTable({ board, isKadepOrAdmin, semesterS
   onRefresh?: () => void;
   isFetching?: boolean;
 }) {
+  const [pdf, setPdf] = useState<AssignmentBatch | null>(null);
   const table = useLocalTable(board.batches, (batch, term) => haystack(String(batch.version), batch.generatedBy?.fullName).includes(term));
   const columns: Column<AssignmentBatch>[] = [
     { key: 'version', header: 'Versi', width: 80, className: 'text-center', render: (batch) => batch.version },
@@ -448,13 +452,15 @@ export function AssignmentVersionHistoryTable({ board, isKadepOrAdmin, semesterS
         const reason = getDownloadBlockReason(batch, board, isKadepOrAdmin);
         return (
           <div className="flex items-center justify-center">
-            <TableIconAction icon={Download} label="Unduh PDF" disabled={Boolean(reason)} disabledReason={reason} onClick={() => downloadAuthenticatedFileOrToast(batch.fileUrl, batch.fileName)} />
+            <TableIconAction icon={Download} label="Unduh PDF" disabled={Boolean(reason)} disabledReason={reason} onClick={() => setPdf(batch)} />
           </div>
         );
       },
     },
   ];
   return (
+    <>
+    <AuthenticatedDocumentPreviewDialog open={Boolean(pdf)} onOpenChange={(open) => { if (!open) setPdf(null); }} filePath={pdf ? getApiUrl(pdf.fileUrl) : null} fileName={pdf?.fileName} />
     <CustomTable
       columns={columns}
       {...table.tableProps}
@@ -468,5 +474,6 @@ export function AssignmentVersionHistoryTable({ board, isKadepOrAdmin, semesterS
         </>
       )}
     />
+    </>
   );
 }

@@ -9,19 +9,17 @@ import { Label } from '@/components/ui/label';
 import { useClearPeriodLimits, useSetGeneralLimits, useSetPeriodLimits } from '@/hooks/thesis-proposal/useSupervisionQuota';
 import type { SupervisionLimits, SupervisionLoadOverview } from '@/types/thesis-proposal.types';
 
-/** Why the soft and hard limit cannot be saved, or null. */
-export function getLimitsError(soft: string, hard: string): string | null {
-  const softNumber = Number(soft);
-  const hardNumber = Number(hard);
-  if (!Number.isInteger(softNumber) || !Number.isInteger(hardNumber) || softNumber < 1 || hardNumber < 1) return 'Isi batas lunak dan batas keras (bilangan bulat).';
-  if (softNumber > hardNumber) return 'Batas lunak tidak boleh lebih besar dari batas keras.';
-  return null;
+export function getLimitsError(quota: string, total?: string): string | null {
+  const values = total == null ? [quota] : [quota, total];
+  return values.some((value) => !Number.isInteger(Number(value)) || Number(value) < 1 || Number(value) > 100)
+    ? 'Isi nilai dengan bilangan bulat 1–100.' : null;
 }
 
 interface DialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
+  scope?: 'general' | 'period';
   description?: string;
   /** The values in force (the general limit when the semester has none of its own). */
   initial: SupervisionLimits;
@@ -31,15 +29,17 @@ interface DialogProps {
   onRestoreGeneral?: () => void;
 }
 
-export function SupervisionLimitDialog({ open, onOpenChange, title, description, initial, saving, onSave, onRestoreGeneral }: DialogProps) {
-  const [soft, setSoft] = useState(String(initial.softLimit));
-  const [hard, setHard] = useState(String(initial.hardLimit));
+export function SupervisionLimitDialog({ open, onOpenChange, title, scope = 'general', description, initial, saving, onSave, onRestoreGeneral }: DialogProps) {
+  const [quota, setQuota] = useState(String(initial.semesterQuota));
+  const [total, setTotal] = useState(String(initial.totalLimit));
   useEffect(() => {
     if (!open) return;
-    setSoft(String(initial.softLimit));
-    setHard(String(initial.hardLimit));
-  }, [open, initial.softLimit, initial.hardLimit]);
-  const error = getLimitsError(soft, hard);
+    setAttempted(false);
+    setQuota(String(initial.semesterQuota));
+    setTotal(String(initial.totalLimit));
+  }, [open, initial.semesterQuota, initial.totalLimit]);
+  const [attempted, setAttempted] = useState(false);
+  const error = attempted ? getLimitsError(quota, scope === 'general' ? total : undefined) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -50,21 +50,21 @@ export function SupervisionLimitDialog({ open, onOpenChange, title, description,
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
-            <Label htmlFor="batas-lunak">Batas lunak</Label>
-            <Input id="batas-lunak" type="number" min={1} max={100} value={soft} onChange={(e) => setSoft(e.target.value)} />
+            <Label htmlFor="kuota-semester">{scope === 'general' ? 'Kuota semester bawaan' : 'Kuota semester'} <span className="text-destructive">*</span></Label>
+            <Input id="kuota-semester" type="number" min={1} max={100} value={quota} onChange={(e) => setQuota(e.target.value)} />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="batas-keras">Batas keras</Label>
-            <Input id="batas-keras" type="number" min={1} max={100} value={hard} onChange={(e) => setHard(e.target.value)} />
-          </div>
+          {scope === 'general' && <div className="space-y-1">
+            <Label htmlFor="batas-total">Batas total <span className="text-destructive">*</span></Label>
+            <Input id="batas-total" type="number" min={1} max={100} value={total} onChange={(e) => setTotal(e.target.value)} />
+          </div>}
         </div>
         {error && <p className="text-xs text-destructive">{error}</p>}
         <DialogFooter className="flex-wrap gap-2">
           <Button size="sm" variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Batal</Button>
           {onRestoreGeneral && (
-            <Button size="sm" variant="outline" onClick={onRestoreGeneral} disabled={saving}>Kembalikan ke Batas Umum</Button>
+            <Button size="sm" variant="outline" onClick={onRestoreGeneral} disabled={saving}>Ikuti Kuota Bawaan</Button>
           )}
-          <Button size="sm" disabled={Boolean(error) || saving} onClick={() => onSave({ softLimit: Number(soft), hardLimit: Number(hard) })}>
+          <Button size="sm" disabled={saving} onClick={() => { setAttempted(true); if (!getLimitsError(quota, scope === 'general' ? total : undefined)) onSave({ semesterQuota: Number(quota), totalLimit: Number(total) }); }}>
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Simpan
           </Button>
         </DialogFooter>
@@ -82,11 +82,6 @@ interface ToolbarProps {
   disabledReason?: string | null;
 }
 
-/**
- * "Batas lunak: n", "Batas keras: n" and one button above the Beban Dosen table.
- * General scope shows and edits the general limit; period scope shows the limits in force for the
- * semester and edits that semester's own limits (prefilled with the values in force).
- */
 export function SupervisionLimitToolbar({ overview, scope, canEdit, disabledReason }: ToolbarProps) {
   const [open, setOpen] = useState(false);
   const setGeneral = useSetGeneralLimits();
@@ -96,13 +91,13 @@ export function SupervisionLimitToolbar({ overview, scope, canEdit, disabledReas
   const shown = scope === 'general' ? (overview.general ?? overview.applicable) : overview.applicable;
   const periodId = overview.academicYear?.id ?? null;
   const reason = disabledReason ?? (scope === 'period' && !periodId ? 'Pilih semester terlebih dahulu.' : null);
-  const label = scope === 'general' ? 'Ubah Batas Umum' : 'Ubah Batas Semester Ini';
+  const label = scope === 'general' ? 'Ubah Batas' : 'Ubah Kuota Semester Ini';
   const done = { onSuccess: () => setOpen(false) };
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium">Batas lunak: {shown.softLimit}</Badge>
-      <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium">Batas keras: {shown.hardLimit}</Badge>
+      {scope === 'general' && <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium">Batas total: {shown.totalLimit}</Badge>}
+      <Badge variant="outline" className="h-8 whitespace-nowrap px-3 text-sm font-medium">{scope === 'general' ? 'Kuota semester bawaan' : 'Kuota semester'}: {shown.semesterQuota}</Badge>
       {canEdit && (
         <span title={reason ?? undefined} className="inline-flex">
           <Button size="sm" variant="outline" disabled={Boolean(reason)} onClick={() => setOpen(true)}>{label}</Button>
@@ -113,12 +108,13 @@ export function SupervisionLimitToolbar({ overview, scope, canEdit, disabledReas
           open={open}
           onOpenChange={setOpen}
           title={label}
+          scope={scope}
           description={scope === 'period' ? overview.academicYear?.label : undefined}
           initial={shown}
           saving={saving}
           onSave={(limits) => {
             if (scope === 'general') setGeneral.mutate(limits, done);
-            else if (periodId) setPeriod.mutate({ academicYearId: periodId, limits }, done);
+            else if (periodId) setPeriod.mutate({ academicYearId: periodId, limits: { semesterQuota: limits.semesterQuota } }, done);
           }}
           onRestoreGeneral={scope === 'period' && overview.period && periodId ? () => clearPeriod.mutate(periodId, done) : undefined}
         />

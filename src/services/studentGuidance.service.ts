@@ -529,6 +529,9 @@ export interface AvailableSupervisor2Item {
   /** Info kuota aman untuk mahasiswa (canon §7.3): traffic light + sisa normal + beban aktif. */
   trafficLight?: 'green' | 'yellow' | 'red' | null;
   normalAvailable?: number | null;
+  acceptedCount?: number | null;
+  semesterQuota?: number | null;
+  totalLimit?: number | null;
   activeCount?: number | null;
   acceptingRequests?: boolean | null;
 }

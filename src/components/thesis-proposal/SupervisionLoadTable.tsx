@@ -30,8 +30,9 @@ const COUNT_COLUMNS: { key: keyof Breakdown; header: string; title: string; widt
 
 interface Props {
   overview: SupervisionLoadOverview;
+  semesterView?: boolean;
   isFetching?: boolean;
-  /** "Batas lunak", "Batas keras" and the edit button. */
+  /** "Kuota semester", "Batas total" and the edit button. */
   toolbar?: ReactNode;
   /** Muat Ulang, at the right end of the toolbar. */
   onRefresh?: () => void;
@@ -42,17 +43,17 @@ interface Props {
  * current load against the limits in force for the overview's semester. A lecturer who closed
  * intake shows "Ditutup Dosen" under the name.
  */
-export function SupervisionLoadTable({ overview, isFetching, toolbar, onRefresh }: Props) {
+export function SupervisionLoadTable({ overview, semesterView = false, isFetching, toolbar, onRefresh }: Props) {
   const [level, setLevel] = useState<SupervisionLoadLevel | ''>('');
   const rows = useMemo(() => {
     const rank = (row: LecturerLoadRow) => LEVEL_ORDER.indexOf(row.level);
-    const sorted = [...overview.lecturers].sort((a, b) => rank(a) - rank(b) || b.activeCount - a.activeCount || (a.fullName ?? '').localeCompare(b.fullName ?? ''));
+    const sorted = [...overview.lecturers].sort((a, b) => (semesterView ? b.acceptedCount - a.acceptedCount : rank(a) - rank(b)) || b.activeCount - a.activeCount || (a.fullName ?? '').localeCompare(b.fullName ?? ''));
     return level ? sorted.filter((row) => row.level === level) : sorted;
-  }, [overview.lecturers, level]);
+  }, [overview.lecturers, level, semesterView]);
   const table = useLocalTable(rows, (row, term) => haystack(row.fullName, row.scienceGroup?.name).includes(term));
-  const hardLimit = overview.applicable.hardLimit;
+  const totalLimit = overview.applicable.totalLimit;
 
-  const columns: Column<LecturerLoadRow>[] = [
+  const detailColumns: Column<LecturerLoadRow>[] = [
     {
       key: 'lecturer',
       header: 'Dosen',
@@ -62,7 +63,7 @@ export function SupervisionLoadTable({ overview, isFetching, toolbar, onRefresh 
           <p className="truncate font-medium" title={formatLecturerName(row.fullName)}>{formatLecturerName(row.fullName)}</p>
           <div className="flex min-w-0 items-center gap-1.5">
             <p className="truncate text-xs text-muted-foreground">{row.scienceGroup?.name ?? 'Kelompok keilmuan belum diisi'}</p>
-            {!row.acceptingRequests && <Badge variant="outline" className="shrink-0 whitespace-nowrap">Ditutup Dosen</Badge>}
+            {!semesterView && !row.acceptingRequests && <Badge variant="outline" className="shrink-0 whitespace-nowrap">Ditutup Dosen</Badge>}
           </div>
         </div>
       ),
@@ -72,7 +73,7 @@ export function SupervisionLoadTable({ overview, isFetching, toolbar, onRefresh 
       header: 'Beban',
       width: BADGE_COLUMN_WIDTH.supervisionLoad,
       className: CLIP_CELL,
-      render: (row) => <SupervisionLoadBadge activeCount={row.activeCount} hardLimit={hardLimit} level={row.level} className="whitespace-nowrap" />,
+      render: (row) => <SupervisionLoadBadge activeCount={row.activeCount} totalLimit={totalLimit} level={row.level} className="whitespace-nowrap" />,
       filter: { type: 'select', value: level, onChange: (value) => { setLevel(value as SupervisionLoadLevel | ''); table.resetPage(); }, options: LEVEL_OPTIONS },
     },
     ...COUNT_COLUMNS.map<Column<LecturerLoadRow>>((column) => ({
@@ -84,6 +85,16 @@ export function SupervisionLoadTable({ overview, isFetching, toolbar, onRefresh 
     })),
   ];
 
+  const columns: Column<LecturerLoadRow>[] = semesterView ? [
+    detailColumns[0],
+    { key: 'accepted', header: 'Diterima Semester Ini', width: 175,
+      render: (row) => <Badge variant={row.acceptedCount >= overview.applicable.semesterQuota ? 'destructive' : 'outline'}>{row.acceptedCount}/{overview.applicable.semesterQuota}</Badge> },
+    { key: 'pending', header: 'Pengajuan Menunggu', width: 170, render: (row) => row.pendingCount },
+    ...(overview.academicYear?.isActive ? [{ key: 'current', header: 'Beban Saat Ini', width: 140,
+      render: (row: LecturerLoadRow) => <Badge variant="outline">{row.activeCount}/{totalLimit}</Badge> }] : []),
+    { key: 'intake', header: 'Penerimaan', width: 145, render: (row) => <Badge variant="outline">{row.acceptingRequests ? 'Dibuka' : 'Ditutup Dosen'}</Badge> },
+  ] : detailColumns;
+
   return (
     <CustomTable
       columns={columns}
@@ -91,7 +102,7 @@ export function SupervisionLoadTable({ overview, isFetching, toolbar, onRefresh 
       isRefreshing={isFetching}
       subtleRefresh
       enableColumnFilters
-      tableClassName="table-fixed min-w-[960px]"
+      tableClassName="table-fixed"
       searchPlaceholder="Cari nama dosen atau kelompok keilmuan..."
       emptyText={table.search || level ? 'Tidak ditemukan' : 'Belum ada data dosen.'}
       rowKey={(row) => row.lecturerId}

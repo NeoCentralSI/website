@@ -294,3 +294,11 @@ describe("useSidebarMenu", () => {
     }
   });
 });
+
+it("Admin has read-only Monitoring Kelas without assessment navigation", () => {
+  mockRole({ isAdmin: true });
+  const { result } = renderHook(() => useSidebarMenu());
+  expect(result.current.navMain.find((menu) => menu.title === "Metode Penelitian")?.items).toEqual([
+    { title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" },
+  ]);
+});

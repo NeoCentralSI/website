@@ -67,7 +67,7 @@ export function StudentSupervisorRequestCard({ data, overview }: { data: Student
       {view.kadepNote && <SoftWarning title="Catatan Ketua Departemen">{view.kadepNote}</SoftWarning>}
 
       {view.buttons.length > 0 && (
-        <div className="mt-auto flex flex-wrap justify-end gap-2 border-t pt-3">
+        <div className="mt-auto flex flex-wrap justify-end gap-2">
           {view.buttons.includes('detail') && request && (
             <Button size="sm" variant="outline" onClick={() => setDetail(true)}>Lihat Detail</Button>
           )}

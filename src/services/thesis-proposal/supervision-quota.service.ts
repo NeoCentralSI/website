@@ -7,7 +7,7 @@ export const getLoadOverview = (academicYearId?: string) =>
   getJson<SupervisionLoadOverview>(`${BASE}${academicYearId ? `?academicYearId=${encodeURIComponent(academicYearId)}` : ''}`, 'Gagal memuat batas bimbingan');
 export const setGeneralLimits = (limits: SupervisionLimits) =>
   send<SupervisionLoadOverview>('PUT', `${BASE}/general`, limits, 'Gagal menyimpan batas umum');
-export const setPeriodLimits = (academicYearId: string, limits: SupervisionLimits) =>
+export const setPeriodLimits = (academicYearId: string, limits: Pick<SupervisionLimits, 'semesterQuota'>) =>
   send<SupervisionLoadOverview>('PUT', `${BASE}/periods/${academicYearId}`, limits, 'Gagal menyimpan batas periode');
 export const clearPeriodLimits = (academicYearId: string) =>
   send<SupervisionLoadOverview>('DELETE', `${BASE}/periods/${academicYearId}`, undefined, 'Gagal menghapus batas periode');

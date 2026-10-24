@@ -102,7 +102,7 @@ export const useSidebarMenu = () => {
           { title: "Penilaian Proposal", url: "/metode-penelitian/penilaian" },
         ];
       }
-      if (role.kadep || role.sekdep) return [{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }];
+      if (role.kadep || role.sekdep || role.admin) return [{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }];
       return [];
     };
 
@@ -556,6 +556,7 @@ export const useSidebarMenu = () => {
             icon: GraduationCap,
             items: [],
           },
+          { title: "Metode Penelitian", url: "#", icon: BookOpen, items: buildResearchMethodItems() },
           buildAnnouncementMenu(),
           {
             title: "Master Data",

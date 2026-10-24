@@ -10,7 +10,7 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/services/studentGuidance.service', () => ({ getAvailableSupervisors2: vi.fn(), requestSupervisor2: vi.fn() }));
 
 const lecturer = (id: string, fullName: string, trafficLight: 'green' | 'yellow' | 'red', acceptingRequests = true) => ({
-  id, fullName, identityNumber: id, email: null, scienceGroup: 'Sistem Informasi', trafficLight, acceptingRequests, normalAvailable: null, activeCount: null,
+  id, fullName, identityNumber: id, email: null, scienceGroup: 'Sistem Informasi', trafficLight, acceptingRequests, normalAvailable: null, activeCount: 9, acceptedCount: 5, semesterQuota: 5, totalLimit: 10,
 });
 
 /** A full lecturer stays selectable with a warning; a closed intake stays locked. */
@@ -44,7 +44,8 @@ describe('Ajukan Pembimbing 2', () => {
 
     fireEvent.click(full);
     // The full lecturer's warning is the soft yellow box.
-    expect(screen.getByRole('note')).toHaveTextContent('Dosen ini sudah penuh');
+    expect(screen.getAllByRole('note').some((note) => note.textContent?.includes('Dosen ini sudah penuh'))).toBe(true);
+    expect(within(full).getByText('Semester ini 5/5 · Total 9/10')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Kirim Permintaan' }));
     await waitFor(() => expect(studentGuidance.requestSupervisor2).toHaveBeenCalledWith('l1'));
   });
