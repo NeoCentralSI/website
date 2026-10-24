@@ -102,6 +102,17 @@ describe('Cek Dokumen', () => {
     await waitFor(() => expect(screen.getByText(/Berkas tidak cocok dengan dokumen resmi mana pun/)).toBeInTheDocument())
   })
 
+  it('too many uploads: shows the rate limit message', async () => {
+    const limited = Object.assign(new Error('x'), {
+      isAxiosError: true,
+      response: { status: 429, data: { message: 'Terlalu banyak permintaan. Coba lagi sebentar.' } },
+    })
+    vi.mocked(service.findOfficialDocumentByFile).mockRejectedValue(limited)
+    renderAt('/cek-dokumen')
+    fireEvent.change(screen.getByLabelText('Unggah PDF'), { target: { files: [new File(['%PDF'], 'a.pdf', { type: 'application/pdf' })] } })
+    expect(await screen.findByText('Terlalu banyak permintaan. Coba lagi sebentar.')).toBeInTheDocument()
+  })
+
   it('reads a bare code, a QR link and an old verification link', () => {
     expect(service.extractDocumentToken(TOKEN)).toBe(TOKEN)
     expect(service.extractDocumentToken(`http://localhost:5173/verify/document/${TOKEN}`)).toBe(TOKEN)
