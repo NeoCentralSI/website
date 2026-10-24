@@ -3,24 +3,32 @@ import { ExternalLink, Instagram, Linkedin, Mail, MapPin, Phone, Globe } from 'l
 import logo from '@/assets/images/neocentral-logo.png';
 import { FadeIn } from './FadeIn';
 
-export function Footer() {
+/** "© 2025" in 2025, "© 2025–2026" afterwards. */
+export function copyrightYears(now = new Date()) {
+  const year = now.getFullYear();
+  return year > 2025 ? `2025–${year}` : '2025';
+}
+
+/** `showLocation`: the full-bleed campus section above the footer (landing page only). */
+export function Footer({ showLocation = true }: { showLocation?: boolean } = {}) {
   const quickLinks = [
     { name: 'Beranda', href: '/' },
-    { name: 'Tentang', href: '#about' },
-    { name: 'Topik', href: '#topics' },
-    { name: 'SOP', href: '#sop' },
+    { name: 'Tentang', href: '/#about' },
+    { name: 'Topik', href: '/#topics' },
+    { name: 'SOP', href: '/#sop' },
+    { name: 'Cek Dokumen', href: '/cek-dokumen' },
   ];
 
   const resources = [
-    { name: 'Panduan SOP', href: '#sop' },
+    { name: 'Panduan SOP', href: '/#sop' },
     { name: 'Login NeoCentral', href: '/login' },
     { name: 'Website Universitas Andalas', href: 'https://www.unand.ac.id/' },
   ];
 
   const socialLinks = [
-    { icon: Globe, href: 'https://www.unand.ac.id/', label: 'Website Universitas Andalas' },
-    { icon: Instagram, href: 'https://www.instagram.com/unandofficial/', label: 'Instagram Universitas Andalas' },
-    { icon: Linkedin, href: 'https://www.linkedin.com/school/universitas-andalas/', label: 'LinkedIn Universitas Andalas' },
+    { icon: Globe, href: 'https://si.fti.unand.ac.id/', label: 'Website Departemen Sistem Informasi' },
+    { icon: Instagram, href: 'https://www.instagram.com/official.siunand/', label: 'Instagram Sistem Informasi Unand' },
+    { icon: Linkedin, href: 'https://www.linkedin.com/school/unand/home/', label: 'LinkedIn Universitas Andalas' },
   ];
 
   const developers = [
@@ -33,7 +41,7 @@ export function Footer() {
   return (
     <>
       {/* Lokasi Kampus — full-bleed campus photo with overlaid info */}
-      <section id="contact" className="relative flex min-h-[60vh] items-center overflow-hidden">
+      {showLocation && <section id="contact" className="relative flex min-h-[60vh] items-center overflow-hidden">
         {/* Background campus photo */}
         <div className="absolute inset-0">
           <img
@@ -84,7 +92,7 @@ export function Footer() {
             </div>
           </FadeIn>
         </div>
-      </section>
+      </section>}
 
       {/* Dark footer with subtle photographic texture */}
       <footer className="relative overflow-hidden bg-gray-950 py-16 text-white">
@@ -220,7 +228,7 @@ export function Footer() {
           </div>
 
           <div className="relative z-10 mt-8 border-t border-gray-800/60 pt-6">
-            <p className="font-body text-sm text-gray-600">&copy; 2025 NeoCentral. All rights reserved.</p>
+            <p className="font-body text-sm text-gray-600">&copy; {copyrightYears()} NeoCentral. All rights reserved.</p>
           </div>
         </div>
       </footer>

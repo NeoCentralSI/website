@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
+import { Navigate, Route, BrowserRouter as Router, Routes, useParams } from 'react-router-dom'
 import { ENV } from '@/config/env'
 import { Loading } from '@/components/ui/spinner'
 import { AuthProvider, NotificationProvider } from '@/hooks/shared'
@@ -9,7 +9,7 @@ import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
 import NotFoundPage from './pages/NotFound'
 import InternshipLetterVerification from './pages/kerja-praktik/public/InternshipLetterVerification'
-import OfficialDocumentVerificationPage from './pages/public/OfficialDocumentVerification'
+import CekDokumenPage from './pages/public/CekDokumen'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import RoleGuard from './pages/guards/RoleGuard'
@@ -134,6 +134,12 @@ const FieldAssessmentLayout = lazy(() => import('./pages/kerja-praktik/public/fi
 const FieldAssessmentLogbook = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentLogbook'))
 const FieldAssessmentForm = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentForm'))
 
+/** Old QR links `/verify/document/:token` open Cek Dokumen. */
+function LegacyDocumentLinkRedirect() {
+  const { token } = useParams<{ token: string }>()
+  return <Navigate to={`/cek-dokumen/${token ?? ''}`} replace />
+}
+
 function App() {
   const [showServerError, setShowServerError] = useState(false);
 
@@ -178,7 +184,10 @@ function App() {
               <Route path="/verify/internship-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/lecturer-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/seminar-minutes/:id" element={<InternshipLetterVerification />} />
-              <Route path="/verify/document/:token" element={<OfficialDocumentVerificationPage />} />
+              {/* Cek Dokumen (public). QR links of documents issued before it keep working. */}
+              <Route path="/cek-dokumen" element={<CekDokumenPage />} />
+              <Route path="/cek-dokumen/:token" element={<CekDokumenPage />} />
+              <Route path="/verify/document/:token" element={<LegacyDocumentLinkRedirect />} />
 
               <Route path="/field-assessment/:token" element={<FieldAssessmentPortal />}>
                 <Route index element={<FieldAssessmentLogin />} />
