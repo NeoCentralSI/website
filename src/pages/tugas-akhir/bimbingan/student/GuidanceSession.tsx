@@ -73,7 +73,6 @@ export default function GuidanceSessionPage() {
       toast.success("Catatan bimbingan berhasil dikirim, menunggu approval dosen");
       queryClient.invalidateQueries({ queryKey: ["needs-summary"] });
       queryClient.invalidateQueries({ queryKey: ["student-guidances"] });
-      queryClient.invalidateQueries({ queryKey: ["completed-history"] });
       queryClient.invalidateQueries({ queryKey: ["guidance-session", guidanceId] });
       navigate("/tugas-akhir/bimbingan/student");
     },

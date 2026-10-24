@@ -133,6 +133,8 @@ export interface MonitoringDashboard {
 export interface ThesisListItem {
   id: string;
   title: string;
+  /** The student is on leave: the thesis is paused ("Cuti" badge). */
+  isOnLeave?: boolean;
   /** Nilai turunan; null bila TA tidak berstatus Penelitian. */
   activityLevel: ThesisActivityLevel | null;
   daysSinceActivity: number | null;
@@ -235,6 +237,8 @@ export interface ThesisDetail {
   id: string;
   title: string;
   status: string | null;
+  /** The student is on leave: the thesis is paused ("Cuti" badge). */
+  isOnLeave?: boolean;
   activityLevel: ThesisActivityLevel | null;
   daysSinceActivity: number | null;
   supervisionClock: SupervisionClock | null;

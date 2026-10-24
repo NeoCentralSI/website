@@ -8,6 +8,7 @@ import {
   Wrench,
   GraduationCap,
   Megaphone,
+  History,
   type LucideIcon,
 } from "lucide-react";
 import { useMemo } from "react";
@@ -16,6 +17,9 @@ import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
 import { useLecturerApprovalInbox } from "@/hooks/thesis-proposal/useSupervisorRequests";
 import { ENV } from "@/config/env";
+
+/** Log Aktivitas for the Ketua and Sekretaris Departemen: below Kelola, read-only. */
+const ACTIVITY_LOG_MENU = { title: "Log Aktivitas", url: "/master-data/log", icon: History, items: [] };
 
 /** `badge`: a count shown next to the sub-item, e.g. waiting supervisor requests. */
 type SidebarLeafItem = { title: string; url: string; badge?: number };
@@ -328,6 +332,9 @@ export const useSidebarMenu = () => {
         ],
       });
 
+      // Log Aktivitas, read-only, last item of the sidebar.
+      menuItems.push(ACTIVITY_LOG_MENU);
+
       return {
         user: {
           name: authUser?.fullName || "User",
@@ -414,6 +421,9 @@ export const useSidebarMenu = () => {
           { title: "CPL", url: "/kelola/cpl" },
         ],
       });
+
+      // Log Aktivitas, read-only, last item of the sidebar.
+      menuItems.push(ACTIVITY_LOG_MENU);
 
       return {
         user: {
@@ -578,6 +588,10 @@ export const useSidebarMenu = () => {
               {
                 title: "Kelola User",
                 url: "/master-data/user",
+              },
+              {
+                title: "Log Aktivitas",
+                url: "/master-data/log",
               },
               {
                 title: "Kelola Tahun Ajaran",

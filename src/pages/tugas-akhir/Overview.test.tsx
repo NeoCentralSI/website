@@ -255,14 +255,16 @@ describe("TugasAkhirOverviewPage", () => {
     expect(screen.getByText("Tidak ada yang jatuh tempo")).toBeInTheDocument();
   });
 
-  it("disables Ajukan Bimbingan with its reason while the thesis is on leave", async () => {
-    vi.mocked(getMyThesisDetail).mockResolvedValue(buildThesis({ status: "on_leave", activityLevel: null }));
+  it("disables Ajukan Bimbingan with its reason and shows the Cuti badge while the student is on leave", async () => {
+    const base = buildThesis({ activityLevel: null });
+    vi.mocked(getMyThesisDetail).mockResolvedValue({ ...base, status: "research", supervisionClock: { ...base.supervisionClock!, isPaused: true } });
     renderAt("/tugas-akhir");
 
     expect(await screen.findByRole("button", { name: /Ajukan Bimbingan/ })).toBeDisabled();
     expect(screen.getByText(/Ajukan Bimbingan belum tersedia:/)).toBeInTheDocument();
-    expect(screen.getByText("Berhenti Studi Sementara (BSS)")).toBeInTheDocument();
-    expect(screen.queryByText("on_leave")).not.toBeInTheDocument();
+    expect(screen.getByText(/Anda sedang cuti/)).toBeInTheDocument();
+    expect(screen.getByText("Cuti")).toBeInTheDocument();
+    expect(screen.queryByText("bss")).not.toBeInTheDocument();
   });
 
   it("shows an empty state when the student has no thesis", async () => {

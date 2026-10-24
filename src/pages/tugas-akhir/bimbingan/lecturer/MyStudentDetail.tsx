@@ -92,6 +92,7 @@ export default function LecturerMyStudentDetailPage() {
             ? getGuidanceActionBlockReason(detailData.status, "mahasiswa", {
                 repeatingProposal: detailData.repeatingProposal,
                 proposalPhaseOpen: detailData.proposalPhaseOpen,
+                onLeave: detailData.supervisionClock?.isPaused,
             })
             : null;
 
@@ -179,6 +180,7 @@ export default function LecturerMyStudentDetailPage() {
                 <StudentDetailHeader
                     student={detailData.student}
                     status={detailData.status}
+                    onLeave={detailData.supervisionClock?.isPaused}
                     onRefresh={() => void refetch()}
                     isRefreshing={isFetching && !isLoading}
                 />

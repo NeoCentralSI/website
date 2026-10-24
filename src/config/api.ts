@@ -162,7 +162,6 @@ export const API_CONFIG = {
       // Session Summary
       NEEDS_SUMMARY: '/thesisGuidance/student/needs-summary',
       SUBMIT_SUMMARY: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/submit-summary`,
-      COMPLETED_HISTORY: '/thesisGuidance/student/completed-history',
       EXPORT_GUIDANCE: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/export`,
       GENERATE_LOG: '/thesisGuidance/student/guidance/generate-log',
       // My Thesis

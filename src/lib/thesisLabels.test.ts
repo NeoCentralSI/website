@@ -142,7 +142,7 @@ describe("thesisLabels", () => {
     expect(Object.keys(THESIS_PHASE_VARIANTS).sort()).toEqual(Object.keys(THESIS_PHASE_LABELS).sort());
     expect(Object.keys(THESIS_ACTIVITY_VARIANTS).sort()).toEqual(Object.keys(THESIS_ACTIVITY_LABELS).sort());
     expect(THESIS_STATUS_VARIANTS).toMatchObject({
-      research: "info", proposal: "secondary", on_leave: "warning", completed: "success", failed: "destructive",
+      research: "info", proposal: "secondary", completed: "success", failed: "destructive",
     });
     expect(THESIS_ACTIVITY_VARIANTS).toEqual({ active: "success", slow: "warning", at_risk: "destructive" });
   });
@@ -192,7 +192,6 @@ describe("thesisLabels", () => {
 
   it("falls back to '-' for empty values and to the raw value for unknown ones", () => {
     expect(getThesisStatusLabel(null)).toBe("-");
-    expect(getThesisStatusLabel("on_leave")).toBe("Berhenti Studi Sementara (BSS)");
     expect(getThesisActivityLabel("at_risk")).toBe("Berisiko");
     expect(getThesisStatusLabel("unknown_value")).toBe("unknown_value");
   });
@@ -200,15 +199,18 @@ describe("thesisLabels", () => {
   it("blocks guidance actions unless the thesis is in research", () => {
     expect(getGuidanceActionBlockReason("research")).toBeNull();
     expect(getGuidanceActionBlockReason(undefined)).toMatch(/belum memiliki/);
-    const reason = getGuidanceActionBlockReason("on_leave");
-    expect(reason).toContain("Berhenti Studi Sementara (BSS)");
-    expect(reason).not.toContain("on_leave");
+    const reason = getGuidanceActionBlockReason("completed");
+    expect(reason).toContain("Selesai");
+    expect(reason).not.toContain("completed");
+    // The student is on leave: the thesis stays in research, but every write is blocked.
+    expect(getGuidanceActionBlockReason("research", "Anda", { onLeave: true })).toBe("Anda sedang cuti. Bimbingan dan milestone tidak dapat diubah selama cuti.");
+    expect(getGuidanceActionBlockReason("proposal", "mahasiswa", { onLeave: true, proposalPhaseOpen: true })).toMatch(/^Mahasiswa sedang cuti/);
   });
 
   it("status options follow the allowed transitions", () => {
     expect(getAllowedThesisStatusOptions(null).map((o) => o.value)).toEqual(["proposal", "research", "completed", "failed"]);
-    expect(getAllowedThesisStatusOptions("research").map((o) => o.value)).toEqual(["research", "on_leave", "completed", "failed"]);
-    expect(getAllowedThesisStatusOptions("on_leave", "proposal").map((o) => o.value)).toEqual(["on_leave", "proposal", "failed"]);
+    expect(getAllowedThesisStatusOptions("research").map((o) => o.value)).toEqual(["research", "completed", "failed"]);
+    expect(getAllowedThesisStatusOptions("proposal").map((o) => o.value)).toEqual(["proposal", "research", "failed"]);
     expect(getAllowedThesisStatusOptions("failed").map((o) => o.value)).toEqual(["failed"]);
   });
 });

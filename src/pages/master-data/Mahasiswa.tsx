@@ -29,6 +29,15 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { getStudentStatusLabel } from '@/lib/thesisLabels';
+import { SoftWarning } from '@/components/shared/SoftWarning';
+
+/** What a status change does to the running thesis (the server applies it in the same save). */
+const STUDENT_STATUS_THESIS_EFFECTS: Record<string, string> = {
+  bss: 'Tugas akhir yang berjalan dijeda selama cuti: bimbingan dan milestone diblokir, masa bimbingan berhenti.',
+  active: 'Tugas akhir dilanjutkan; masa cuti tidak dihitung dalam masa bimbingan.',
+  mengundurkan_diri: 'Tugas akhir yang berjalan dihentikan (Gagal) dan pembimbing dilepas.',
+  dropout: 'Tugas akhir yang berjalan dihentikan (Gagal) dan pembimbing dilepas.',
+};
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
@@ -570,6 +579,11 @@ export default function Mahasiswa() {
                   <SelectItem value="mengundurkan_diri">Mengundurkan Diri</SelectItem>
                 </SelectContent>
               </Select>
+              {(() => {
+                const before = selectedStudent?.student?.status || 'active';
+                const effect = editStatus !== before && (editStatus !== 'active' || before === 'bss') ? STUDENT_STATUS_THESIS_EFFECTS[editStatus] : null;
+                return effect ? <SoftWarning>{effect}</SoftWarning> : null;
+              })()}
             </div>
 
             <div className="space-y-4 pt-2">

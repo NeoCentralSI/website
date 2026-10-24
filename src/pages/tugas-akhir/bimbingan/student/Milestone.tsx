@@ -84,6 +84,7 @@ export default function StudentMilestonePage() {
     ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", {
         repeatingProposal: thesisDetail.repeatingProposal,
         proposalPhaseOpen: thesisDetail.proposalPhaseOpen,
+        onLeave: thesisDetail.supervisionClock?.isPaused,
       })
     : null;
 

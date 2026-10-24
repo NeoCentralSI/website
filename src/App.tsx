@@ -30,7 +30,6 @@ const Profil = lazy(() => import('./pages/profil/Profil'))
 const BimbinganEntry = lazy(() => import('./pages/tugas-akhir/bimbingan/BimbinganEntry'))
 const StudentGuidance = lazy(() => import('./pages/tugas-akhir/bimbingan/student/StudentGuidance'));
 const StudentMilestonePage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/Milestone'));
-const CompletedHistory = lazy(() => import('./pages/tugas-akhir/bimbingan/student/CompletedHistory'));
 const StudentGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/GuidanceSession'))
 const LecturerRequestsPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/Requests'))
 const LecturerGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/GuidanceSession'))
@@ -105,6 +104,7 @@ const StudentProgressDetail = lazy(() => import('./pages/tugas-akhir/monitoring/
 const DevToolsPage = lazy(() => import('./pages/dev-tools/DevTools'))
 // Master Data
 const UserManagementPage = lazy(() => import('./pages/master-data/UserManagement'))
+const ActivityLogPage = lazy(() => import('./pages/master-data/ActivityLog'))
 const AcademicYearPage = lazy(() => import('./pages/master-data/AcademicYear'))
 const CurriculumPage = lazy(() => import('./pages/master-data/Curriculum'))
 const Cpl = lazy(() => import('./pages/master-data/Cpl'))
@@ -241,7 +241,8 @@ function App() {
                     <Route path="bimbingan/student" element={<StudentGuidance />} />
                     <Route path="bimbingan/student/milestone" element={<StudentMilestonePage />} />
                     <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
-                    <Route path="bimbingan/student/history" element={<CompletedHistory />} />
+                    {/* The old Riwayat Bimbingan page: its sessions and PDF log are on the Bimbingan page */}
+                    <Route path="bimbingan/student/history" element={<Navigate to="/tugas-akhir/bimbingan/student" replace />} />
                     {/* DangerZone (TA-05) is not restored in the guidance revival (GUIDANCE_REVIVAL_PLAN e1); redirect to TA overview */}
                     <Route path="bimbingan/danger-zone" element={<Navigate to="/tugas-akhir" replace />} />
                     {/* Seminar Hasil and Sidang handled by top-level routes (thesis-seminar/, thesis-defence/) */}
@@ -331,6 +332,11 @@ function App() {
                   <Route path="/tugas-akhir/kelola-rubrik" element={<Placeholder title="Tugas Akhir - Kelola Rubrik" />} />
                   <Route path="/tugas-akhir/kelola-yudisium" element={<Placeholder title="Tugas Akhir - Kelola Yudisium" />} />
                   <Route path="/tugas-akhir/kelola" element={<Placeholder title="Tugas Akhir - Kelola (Deprecated)" />} />
+                </Route>
+
+                {/* Log Aktivitas: Admin (Master Data), Kadep and Sekdep (read-only, same page) */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.KETUA_DEPARTEMEN, ROLES.SEKRETARIS_DEPARTEMEN]} />}>
+                  <Route path="/master-data/log" element={<ActivityLogPage />} />
                 </Route>
 
                 {/* Shared Kelola - Sekdep & Kadep */}

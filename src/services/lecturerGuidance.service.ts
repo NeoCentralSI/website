@@ -7,6 +7,8 @@ import type { SupervisionClock, ThesisActivityLevel, ThesisLifecycleStatus, Thes
 export type GuidanceStatus = "requested" | "accepted" | "rejected" | "completed" | "cancelled" | "summary_pending" | "rescheduled" | "summary_rejected";
 
 export interface MyStudentItem {
+  /** The student is on leave: the thesis is paused ("Cuti" badge). */
+  isOnLeave?: boolean;
   /** Relation status of the current lecturer to this thesis (active/released). */
   supervisorStatus?: string | null;
   /** This lecturer was replaced; shown under "Semua" only, read-only. */
@@ -195,7 +197,7 @@ export const getStudentDetail = async (thesisId: string): Promise<{ success: boo
   return res.json();
 };
 
-/** List filter; "active" (default) = research + on_leave. */
+/** List filter; "active" (default) = research, also during a leave. */
 export type MyStudentsFilter = "active" | "proposal" | "completed" | "failed" | "all";
 
 export const getMyStudents = async (params?: { roles?: string; status?: MyStudentsFilter }): Promise<{ success: boolean; count: number; students: MyStudentItem[] }> => {

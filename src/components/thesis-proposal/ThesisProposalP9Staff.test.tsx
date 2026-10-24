@@ -363,7 +363,7 @@ describe('Batas Bimbingan', () => {
     expect(screen.queryByRole('heading', { name: 'Beban Dosen' })).not.toBeInTheDocument();
 
     const table = screen.getByRole('table');
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Dosen', 'Beban', 'Menunggu Penetapan', 'Proposal', 'Penelitian', 'BSS', 'Pembimbing 2']);
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Dosen', 'Beban', 'Menunggu Penetapan', 'Proposal', 'Penelitian', 'Cuti', 'Pembimbing 2']);
     const rows = tableRows();
     expect(rows.map((r) => within(r).getAllByRole('cell')[0].textContent)).toEqual([
       expect.stringContaining('Afriyanti'), expect.stringContaining('Husnil'), expect.stringContaining('Ullya'),

@@ -24,7 +24,7 @@ const COUNT_COLUMNS: { key: keyof Breakdown; header: string; title: string; widt
   { key: 'waitingAssignment', header: 'Menunggu Penetapan', title: 'Diterima, belum masuk Penetapan Pembimbing', width: LOAD_COUNT_COLUMN_WIDTH.waitingAssignment },
   { key: 'proposal', header: 'Proposal', title: 'Fase proposal, sudah ditetapkan', width: LOAD_COUNT_COLUMN_WIDTH.proposal },
   { key: 'research', header: 'Penelitian', title: 'Fase penelitian', width: LOAD_COUNT_COLUMN_WIDTH.research },
-  { key: 'onLeave', header: 'BSS', title: 'Berhenti Studi Sementara', width: LOAD_COUNT_COLUMN_WIDTH.onLeave },
+  { key: 'onLeave', header: 'Cuti', title: 'Mahasiswa sedang cuti', width: LOAD_COUNT_COLUMN_WIDTH.onLeave },
   { key: 'asSupervisor2', header: 'Pembimbing 2', title: 'Jumlah sebagai Pembimbing 2', width: LOAD_COUNT_COLUMN_WIDTH.asSupervisor2 },
 ];
 

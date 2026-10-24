@@ -47,7 +47,7 @@ export function StudentThesisSummaryCard({ thesis, headerAction, headerNote, tit
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <ThesisStatusBadge status={thesis.status} />
+            <ThesisStatusBadge status={thesis.status} onLeave={thesis.supervisionClock?.isPaused} />
             {headerAction}
           </div>
         </div>

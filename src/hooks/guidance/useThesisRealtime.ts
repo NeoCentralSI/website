@@ -111,7 +111,6 @@ export function useThesisRealtimeHandlers() {
           });
           qc.invalidateQueries({ queryKey: ["student-guidance"] });
           qc.invalidateQueries({ queryKey: ["needs-summary"] });
-          qc.invalidateQueries({ queryKey: ["completed-history"] });
         }
         qc.invalidateQueries({ queryKey: ["notification-unread"] });
         return true;
@@ -169,7 +168,6 @@ export function useThesisRealtimeHandlers() {
         qc.invalidateQueries({ queryKey: ['lecturer-requests'] });
         qc.invalidateQueries({ queryKey: ['pending-approval'] });
         qc.invalidateQueries({ queryKey: ['needs-summary'] });
-        qc.invalidateQueries({ queryKey: ['completed-history'] });
         qc.invalidateQueries({ queryKey: ['notification-unread'] });
         return true;
       }

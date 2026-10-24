@@ -46,7 +46,7 @@ const student: DevToolsStudent = {
     eligibleResearchMethod: true, eligibilitySource: 'devtools', eligibilityCapturedAt: '2026-10-01T03:00:00.000Z',
     takingThesisCourse: false, thesisCourseSource: 'sia', thesisCourseCapturedAt: null,
   },
-  latestThesis: { id: 't1', status: 'on_leave', title: 'Judul' },
+  latestThesis: { id: 't1', status: 'completed', title: 'Judul' },
 };
 
 const guidance: DevToolsGuidance = {
@@ -105,8 +105,8 @@ describe('DevTools panels', () => {
     expect(await screen.findByText('Ilham Nofaldi')).toBeInTheDocument();
     // Enum values are never shown raw.
     expect(screen.getByText('Aktif')).toBeInTheDocument();
-    expect(screen.getByText('Berhenti Studi Sementara (BSS)')).toBeInTheDocument();
-    expect(screen.queryByText('on_leave')).not.toBeInTheDocument();
+    expect(screen.getByText('Selesai')).toBeInTheDocument();
+    expect(screen.queryByText('completed')).not.toBeInTheDocument();
     expect(screen.queryByText('active')).not.toBeInTheDocument();
     expect(screen.getAllByRole('columnheader')).toHaveLength(9);
     expect(screen.queryByText('KKN')).not.toBeInTheDocument();

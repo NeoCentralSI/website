@@ -339,6 +339,8 @@ export interface AdminAuditLog {
   action: string;
   entity: string;
   entityId: string | null;
+  /** Display name of the object (person, thesis, semester), resolved by the server. */
+  objectLabel?: string | null;
   changes: {
     oldValues?: unknown;
     newValues?: unknown;
@@ -358,6 +360,11 @@ export const getAdminAuditLogsAPI = async (params?: {
   pageSize?: number;
   action?: string;
   entity?: string;
+  /** Actor or object (name, NIM/NIP, email, thesis title). */
+  search?: string;
+  /** `YYYY-MM-DD`, Asia/Jakarta days. */
+  dateFrom?: string;
+  dateTo?: string;
 }): Promise<{
   success: boolean;
   logs: AdminAuditLog[];
@@ -373,6 +380,9 @@ export const getAdminAuditLogsAPI = async (params?: {
   if (params?.pageSize !== undefined) queryParams.append('pageSize', params.pageSize.toString());
   if (params?.action) queryParams.append('action', params.action);
   if (params?.entity) queryParams.append('entity', params.entity);
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.dateFrom) queryParams.append('dateFrom', params.dateFrom);
+  if (params?.dateTo) queryParams.append('dateTo', params.dateTo);
 
   const response = await fetch(getApiUrl(`/adminfeatures/audit-logs?${queryParams}`), {
     method: 'GET',
@@ -383,7 +393,7 @@ export const getAdminAuditLogsAPI = async (params?: {
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat jejak audit');
+    throw new Error(errorData.message || 'Gagal memuat log aktivitas');
   }
 
   return response.json();
@@ -718,6 +728,7 @@ export interface StudentDetail {
     id: string;
     title: string;
     status: string | null;
+    isOnLeave?: boolean;
     topic: string | null;
     startDate: string | null;
     supervisors: Array<{
@@ -798,6 +809,7 @@ export interface LecturerDetail {
     thesisId: string;
     title: string;
     status: string | null;
+    isOnLeave?: boolean;
     role: string;
     student: {
       id: string;

@@ -11,7 +11,7 @@ vi.mock("lottie-react", () => ({
 // Create actions stay visible but are disabled with a visible reason.
 describe("MilestoneList create actions", () => {
   it("disables 'Buat dari Template' and 'Buat Manual' with the reason for a non-research thesis", () => {
-    const reason = getGuidanceActionBlockReason("on_leave");
+    const reason = getGuidanceActionBlockReason("research", "Anda", { onLeave: true });
     render(
       <MilestoneList
         milestones={[]}
@@ -31,7 +31,7 @@ describe("MilestoneList create actions", () => {
       expect(button.parentElement).toHaveAttribute("title", reason);
     }
     expect(screen.getByRole("button", { name: /Buat Manual/ })).toBeDisabled();
-    expect(reason).toContain("Berhenti Studi Sementara (BSS)");
+    expect(reason).toContain("selama cuti");
   });
 
   it("keeps create actions enabled for a research thesis", () => {

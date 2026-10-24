@@ -17,7 +17,8 @@ export interface MasterDataThesis {
     supervisionClock?: SupervisionClock | null;
     startDate: string | null;
     status: ThesisLifecycleStatus;
-    statusBeforeLeave?: ThesisLifecycleStatus | null;
+    /** The student is on leave: the thesis is paused ("Cuti" badge). */
+    isOnLeave?: boolean;
     terminationReason?: ThesisTerminationReason | null;
     terminationNote?: string | null;
     student: {

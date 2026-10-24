@@ -5,7 +5,7 @@ import type { MyStudentItem } from "@/services/lecturerGuidance.service";
 import { getMyStudents, sendWarningToStudent, type MyStudentsFilter, type WarningType } from "@/services/lecturerGuidance.service";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-// Default "Aktif" (research + on_leave); finished and failed students stay reachable.
+// Default "Aktif" (research, also during a leave); finished and failed students stay reachable.
 // "Fase Proposal" lists the students whose proposal guidance this lecturer supervises.
 const STUDENT_FILTERS: { value: MyStudentsFilter; label: string }[] = [
   { value: "active", label: "Aktif" },
@@ -64,8 +64,8 @@ import { SupervisionClockCell } from '@/components/shared/SupervisionClockCell';
 
 /**
  * Fixed layout: every column but "Mahasiswa" has a width, so the table fills the card. The
- * minimum width keeps "Mahasiswa" as wide as its longest badge ("Berhenti Studi
- * Sementara (BSS)", MY_STUDENTS_NAME_MIN_WIDTH) next to the fixed columns (782 px, Aksi with four
+ * minimum width keeps "Mahasiswa" wide enough for its badges (the status with "Cuti",
+ * MY_STUDENTS_NAME_MIN_WIDTH) next to the fixed columns (782 px, Aksi with four
  * icons); below it the table scrolls, with the action column pinned to the right.
  */
 const MY_STUDENTS_TABLE_CLASS = "table-fixed min-w-[1014px]";
@@ -227,7 +227,7 @@ export default function LecturerMyStudentsPage() {
             <p className="text-sm text-muted-foreground">Judul belum ditentukan</p>
           )}
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} className="max-w-full truncate text-xs" />}
+            {row.thesisStatus && <ThesisStatusBadge status={row.thesisStatus} onLeave={row.isOnLeave} className="max-w-full truncate text-xs" />}
             {/* A running change request; the marker opens its detail. */}
             {row.changeRequest?.hasOpenRequest && row.thesisId && (
               <button

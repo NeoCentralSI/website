@@ -49,7 +49,7 @@ export const BADGE_COLUMN_WIDTH = {
 
 /**
  * Beban Dosen, one number column per stage; each fits its header (14 px semibold +
- * the cell padding): "Menunggu Penetapan" 173, "Proposal" 84, "Penelitian" 91, "BSS" 52,
+ * the cell padding): "Menunggu Penetapan" 173, "Proposal" 84, "Penelitian" 91, "Cuti" 52 or less,
  * "Pembimbing 2" 121.
  */
 export const LOAD_COUNT_COLUMN_WIDTH = {
@@ -69,5 +69,5 @@ export const ASSIGNMENT_BOARD_WIDTH = {
   assignment: 168,
 } as const;
 
-/** Mahasiswa Bimbingan: "Berhenti Studi Sementara (BSS)" in the Mahasiswa column needs 229 px. */
+/** Mahasiswa Bimbingan: room in the Mahasiswa column for the status badge with "Cuti" (at least 229 px). */
 export const MY_STUDENTS_NAME_MIN_WIDTH = 232;

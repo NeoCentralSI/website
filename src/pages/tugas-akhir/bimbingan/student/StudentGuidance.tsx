@@ -80,6 +80,7 @@ export default function StudentGuidancePage() {
     ? getGuidanceActionBlockReason(thesisDetail.status, "Anda", {
         repeatingProposal: thesisDetail.repeatingProposal,
         proposalPhaseOpen: thesisDetail.proposalPhaseOpen,
+        onLeave: thesisDetail.supervisionClock?.isPaused,
       })
     : null;
 
