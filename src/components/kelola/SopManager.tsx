@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ImportFilePicker } from "@/components/shared/ImportFilePicker";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
@@ -35,6 +36,13 @@ import { Badge } from "@/components/ui/badge";
 
 type Category = 'SOP' | 'TEMPLATE';
 type Subject = 'TA' | 'KP' | 'UMUM';
+
+const SOP_ACCEPT = ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const SOP_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
 
 const CATEGORY_OPTIONS: { label: string; value: Category }[] = [
   { label: "Panduan (SOP)", value: "SOP" },
@@ -64,6 +72,15 @@ export function SopManager() {
   const [selectedSubject, setSelectedSubject] = useState<Subject>("TA");
   const [docTitle, setDocTitle] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  // Only PDF, DOC or DOCX; anything else is refused with a message.
+  const pickSopFile = (f: File | null) => {
+    if (f && !SOP_TYPES.includes(f.type) && !f.name.endsWith(".docx") && !f.name.endsWith(".doc")) {
+      toast.error("File harus PDF, DOC, atau DOCX");
+      setFile(null);
+      return;
+    }
+    setFile(f);
+  };
   const [editingSop, setEditingSop] = useState<SopFile | null>(null);
 
   const { data: allData = [], isLoading, isFetching, refetch } = useQuery({
@@ -424,31 +441,15 @@ export function SopManager() {
                         </Select>
                       </div>
                     </div>
-                    <Label htmlFor="file" className="text-xs font-bold uppercase text-muted-foreground">
+                    <Label className="text-xs font-bold uppercase text-muted-foreground">
                       File Dokumen (PDF/DOCX)
                     </Label>
-                    <Input
-                      id="file"
-                      type="file"
-                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                      required
-                      className="h-9 text-xs file:text-xs file:bg-primary/10 file:text-primary file:border-0 file:rounded-full file:px-3 file:mr-2 cursor-pointer pt-1.5"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        const allowedTypes = [
-                          "application/pdf",
-                          "application/msword",
-                          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        ];
-
-                        if (f && !allowedTypes.includes(f.type) && !f.name.endsWith('.docx') && !f.name.endsWith('.doc')) {
-                          toast.error("File harus PDF, DOC, atau DOCX");
-                          e.target.value = "";
-                          setFile(null);
-                        } else {
-                          setFile(f || null);
-                        }
-                      }}
+                    <ImportFilePicker
+                      file={file}
+                      onChange={pickSopFile}
+                      label="File Dokumen"
+                      accept={SOP_ACCEPT}
+                      placeholder="Pilih file PDF atau DOCX"
                     />
                   </div>
                   <DialogFooter>
@@ -524,30 +525,15 @@ export function SopManager() {
                 </div>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-file" className="text-xs font-bold uppercase text-muted-foreground">
+                <Label className="text-xs font-bold uppercase text-muted-foreground">
                   Ganti File (Opsional)
                 </Label>
-                <Input
-                  id="edit-file"
-                  type="file"
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                  className="h-9 text-xs file:text-xs file:bg-primary/10 file:text-primary file:border-0 file:rounded-full file:px-3 file:mr-2 cursor-pointer pt-1.5"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    const allowedTypes = [
-                      "application/pdf",
-                      "application/msword",
-                      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    ];
-
-                    if (f && !allowedTypes.includes(f.type) && !f.name.endsWith('.docx') && !f.name.endsWith('.doc')) {
-                      toast.error("File harus PDF, DOC, atau DOCX");
-                      e.target.value = "";
-                      setFile(null);
-                    } else {
-                      setFile(f || null);
-                    }
-                  }}
+                <ImportFilePicker
+                  file={file}
+                  onChange={pickSopFile}
+                  label="Ganti File"
+                  accept={SOP_ACCEPT}
+                  placeholder="Pilih file PDF atau DOCX"
                 />
                 <p className="text-[10px] text-muted-foreground">Biarkan kosong jika tidak ingin mengganti file.</p>
               </div>

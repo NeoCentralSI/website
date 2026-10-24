@@ -31,7 +31,7 @@ export const ACTIVITY_ACTION_LABELS: Record<string, string> = {
   ACADEMIC_YEAR_CREATED: 'Tambah tahun ajaran',
   ACADEMIC_YEAR_UPDATED: 'Ubah tahun ajaran',
   SUPERVISION_LIMIT_UPDATED: 'Ubah batas bimbingan',
-  ASSESSMENT_MASTER_CHANGED: 'Ubah CPMK atau rubrik',
+  ASSESSMENT_MASTER_CHANGED: 'Ubah CPMK, kriteria, atau rubrik',
   SUPERVISOR_ASSIGNMENT_ISSUED: 'Terbitkan penetapan pembimbing',
   SUPERVISOR_REQUEST_KADEP_APPROVED: 'Setujui pengajuan di atas kuota',
   SUPERVISOR_REQUEST_KADEP_REJECTED: 'Tolak pengajuan pembimbing',
@@ -61,6 +61,13 @@ export const ACTIVITY_ENTITY_LABELS: Record<string, string> = {
 
 export const getActivityActionLabel = (action: string) => ACTIVITY_ACTION_LABELS[action] ?? 'Tindakan lain';
 export const getActivityEntityLabel = (entity: string) => ACTIVITY_ENTITY_LABELS[entity] ?? 'Objek lain';
+
+/** Object type with its scope when the entry has one, e.g. "Rubrik penilaian · Sidang TA". */
+export function getActivityObjectType(entity: string, changes: { metadata?: unknown } | null | undefined): string {
+  const scope = (changes?.metadata as { scope?: string } | null | undefined)?.scope;
+  const scopeLabel = scope ? SCOPE_LABELS[scope] : null;
+  return scopeLabel ? `${getActivityEntityLabel(entity)} · ${scopeLabel}` : getActivityEntityLabel(entity);
+}
 
 export const ACTIVITY_ACTION_OPTIONS = Object.entries(ACTIVITY_ACTION_LABELS).map(([value, label]) => ({ value, label }));
 export const ACTIVITY_ENTITY_OPTIONS = Object.entries(ACTIVITY_ENTITY_LABELS).map(([value, label]) => ({ value, label }));
@@ -136,7 +143,7 @@ const SOURCE_LABELS: Record<string, string> = {
   sia: 'SIA',
 };
 const OPERATION_LABELS: Record<string, string> = { create: 'Tambah', update: 'Ubah', delete: 'Hapus', copy: 'Salin dari periode lain' };
-const SCOPE_LABELS: Record<string, string> = { proposal: 'Metode Penelitian', thesis: 'Tugas Akhir' };
+const SCOPE_LABELS: Record<string, string> = { proposal: 'Metode Penelitian', thesis: 'Tugas Akhir', seminar: 'Seminar Hasil', defence: 'Sidang TA' };
 const THESIS_EFFECT_LABELS: Record<string, string> = { paused: 'Dijeda', resumed: 'Dilanjutkan', terminated: 'Dihentikan (Gagal)' };
 const IMPORT_KIND_LABELS: Record<string, string> = { users: 'Pengguna', students: 'Mahasiswa', lecturers: 'Dosen' };
 

@@ -8,7 +8,7 @@ import { FileSpreadsheet, Download, Upload, AlertCircle, CheckCircle2 } from "lu
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
+import { ImportFilePicker } from "@/components/shared/ImportFilePicker";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { importMasterDataTheses } from "@/services/masterDataTa.service";
@@ -93,13 +93,6 @@ export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataD
         XLSX.writeFile(workbook, "Template_Import_Tugas_Akhir.xlsx");
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setFile(e.target.files[0]);
-            setResult(null);
-        }
-    };
-
     const handleUpload = async () => {
         if (!file) return;
 
@@ -168,19 +161,15 @@ export function ImportMasterDataDialog({ open, onOpenChange }: ImportMasterDataD
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="excel-file">Pilih File Excel</Label>
-                                <Input
-                                    id="excel-file"
-                                    type="file"
-                                    accept=".xlsx, .xls"
-                                    onChange={handleFileChange}
+                                <Label>File Excel</Label>
+                                <ImportFilePicker
+                                    file={file}
+                                    onChange={(next) => { setFile(next); setResult(null); }}
                                     disabled={importMutation.isPending || isParsing}
+                                    label="File Excel"
+                                    accept=".xlsx,.xls"
+                                    placeholder="Pilih file Excel (xlsx, xls)"
                                 />
-                                {file && (
-                                    <p className="text-xs text-muted-foreground">
-                                        File terpilih: <span className="font-medium text-foreground">{file.name}</span>
-                                    </p>
-                                )}
                             </div>
 
                             {importMutation.isPending && (

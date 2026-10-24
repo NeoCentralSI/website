@@ -56,8 +56,9 @@ export function UserFormDialog({
   const hasOtherRole = selectedRoles.some((r) => r !== ROLES.ADMIN);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={onSubmit}>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
+        {/* Only the fields scroll; the title and the footer stay visible. */}
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
             <DialogTitle>
               {editingUser ? 'Edit User' : 'Tambah User Baru'}
@@ -69,7 +70,7 @@ export function UserFormDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-1 py-4">
             <div className="grid gap-2">
               <Label htmlFor="fullName">Nama Lengkap</Label>
               <Input

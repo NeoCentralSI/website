@@ -1,3 +1,4 @@
+import { formatSemesterLabel } from "@/lib/academicYear";
 import { useCallback, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Download, AlertCircle, RotateCw } from "lucide-react";
@@ -66,7 +67,6 @@ const emptyForm: FormState = {
 
 const terminationReasonOptions = getTerminationReasonOptions();
 const isClosedStatus = (s: ThesisLifecycleStatus | null) => s === "completed" || s === "failed";
-const semesterLabel = (semester: string | null | undefined) => (semester === "genap" ? "Genap" : semester === "ganjil" ? "Ganjil" : semester ?? "-");
 
 // Two lines high, so a short hint and a long one keep the two columns level.
 const FIELD_HINT_CLASS = "min-h-8 text-xs text-muted-foreground";
@@ -285,7 +285,7 @@ export function DataMasterTaPanel() {
             className: "whitespace-nowrap",
             render: (t) => (
                 <span className="text-sm">
-                    {t.academicYear ? `${t.academicYear.year} - ${semesterLabel(t.academicYear.semester)}` : "-"}
+                    {t.academicYear ? formatSemesterLabel(t.academicYear) : "-"}
                 </span>
             )
         },
@@ -388,13 +388,13 @@ export function DataMasterTaPanel() {
             />
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-x-hidden">
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
                     <DialogHeader>
                         <DialogTitle>{formState.id ? "Edit Data Tugas Akhir" : "Tambah Data Tugas Akhir"}</DialogTitle>
                         <DialogDescription>Isi form di bawah ini untuk mengelola master data tugas akhir.</DialogDescription>
                     </DialogHeader>
 
-                    <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-1">
+                    <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-1">
                         <div className="space-y-4 py-4 pr-3">
                             <div className="grid min-w-0 gap-2">
                                 <Label>Mahasiswa *</Label>
@@ -447,7 +447,7 @@ export function DataMasterTaPanel() {
                                             <SelectContent>
                                                 <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
                                                 {academicYears.map(ay => (
-                                                    <SelectItem key={ay.id} value={ay.id}>{ay.year} - {semesterLabel(ay.semester)}</SelectItem>
+                                                    <SelectItem key={ay.id} value={ay.id}>{formatSemesterLabel(ay)}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>

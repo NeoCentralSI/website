@@ -30,6 +30,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { getStudentStatusLabel } from '@/lib/thesisLabels';
 import { SoftWarning } from '@/components/shared/SoftWarning';
+import { compareSemestersDesc, formatSemesterLabel } from '@/lib/academicYear';
 
 /** What a status change does to the running thesis (the server applies it in the same save). */
 const STUDENT_STATUS_THESIS_EFFECTS: Record<string, string> = {
@@ -376,15 +377,8 @@ export default function Mahasiswa() {
     () =>
       academicYears
         .slice()
-        .sort((a, b) => {
-          const yearCmp = Number(b.year || 0) - Number(a.year || 0);
-          if (yearCmp !== 0) return yearCmp;
-          return (b.semester === 'genap' ? 1 : 0) - (a.semester === 'genap' ? 1 : 0);
-        })
-        .map((ay) => ({
-          value: ay.id,
-          label: `${ay.year} ${ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}`,
-        })),
+        .sort(compareSemestersDesc)
+        .map((ay) => ({ value: ay.id, label: formatSemesterLabel(ay) })),
     [academicYears]
   );
 

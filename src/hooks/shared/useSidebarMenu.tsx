@@ -18,7 +18,7 @@ import { useAvatarBlob } from "@/hooks/profile";
 import { useLecturerApprovalInbox } from "@/hooks/thesis-proposal/useSupervisorRequests";
 import { ENV } from "@/config/env";
 
-/** Log Aktivitas for the Ketua and Sekretaris Departemen: below Kelola, read-only. */
+/** Log Aktivitas: under Master Data for the Admin; below Kelola, read-only, for the Ketua and Sekretaris Departemen. */
 const ACTIVITY_LOG_MENU = { title: "Log Aktivitas", url: "/master-data/log", icon: History, items: [] };
 
 /** `badge`: a count shown next to the sub-item, e.g. waiting supervisor requests. */
@@ -590,10 +590,6 @@ export const useSidebarMenu = () => {
                 url: "/master-data/user",
               },
               {
-                title: "Log Aktivitas",
-                url: "/master-data/log",
-              },
-              {
                 title: "Kelola Tahun Ajaran",
                 url: "/master-data/tahun-ajaran",
               },
@@ -608,6 +604,8 @@ export const useSidebarMenu = () => {
               // No "Batas Bimbingan" for Admin; Kadep and Sekdep set it.
             ],
           },
+          // Log Aktivitas: its own item right under Master Data (above Development).
+          ACTIVITY_LOG_MENU,
           ...(ENV.ENABLE_DEV_TOOLS
             ? [
                 {

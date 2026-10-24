@@ -27,7 +27,7 @@ import {
   ACTIVITY_ENTITY_OPTIONS,
   describeActivityChanges,
   getActivityActionLabel,
-  getActivityEntityLabel,
+  getActivityObjectType,
 } from '@/lib/activityLogLabels';
 
 const ALL_OPTION = { label: 'Semua', value: '' };
@@ -124,7 +124,7 @@ export default function ActivityLogPage() {
       render: (log) => (
         <div className="min-w-0">
           <p className="truncate text-sm" title={log.objectLabel ?? undefined}>{log.objectLabel || '-'}</p>
-          <p className="text-xs text-muted-foreground">{getActivityEntityLabel(log.entity)}</p>
+          <p className="truncate text-xs text-muted-foreground">{getActivityObjectType(log.entity, log.changes)}</p>
         </div>
       ),
     },
@@ -193,7 +193,7 @@ function ActivityDetailDialog({ log, onClose }: { log: AdminAuditLog | null; onC
               <dd>{actorName(log)}</dd>
               <dt className="text-muted-foreground">Objek</dt>
               <dd className="[overflow-wrap:anywhere]">
-                {log.objectLabel || '-'} <span className="text-muted-foreground">({getActivityEntityLabel(log.entity)})</span>
+                {log.objectLabel || '-'} <span className="text-muted-foreground">({getActivityObjectType(log.entity, log.changes)})</span>
               </dd>
             </dl>
 

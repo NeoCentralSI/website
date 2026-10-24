@@ -240,6 +240,21 @@ describe("useSidebarMenu", () => {
     }
   });
 
+  it("puts Log Aktivitas right under Master Data for the Admin, and last for the Ketua and Sekretaris Departemen", () => {
+    mockRole({ isAdmin: true });
+    const admin = renderHook(() => useSidebarMenu()).result.current.navMain.map((item) => item.title);
+    expect(admin[admin.indexOf("Master Data") + 1]).toBe("Log Aktivitas");
+    const masterItems = renderHook(() => useSidebarMenu()).result.current.navMain.find((item) => item.title === "Master Data");
+    expect(masterItems?.items?.map((item) => item.title)).not.toContain("Log Aktivitas");
+
+    for (const role of [{ isKadep: true, isDosen: true }, { isSekdep: true, isDosen: true }]) {
+      mockRole(role);
+      const titles = renderHook(() => useSidebarMenu()).result.current.navMain.map((item) => item.title);
+      expect(titles.at(-1)).toBe("Log Aktivitas");
+      expect(titles.at(-2)).toBe("Kelola");
+    }
+  });
+
   it("keeps GKM CPL and Admin master-data additions from fathur-sidang", () => {
     mockRole({ isDosen: true, isGkm: true });
     const gkm = renderHook(() => useSidebarMenu());
