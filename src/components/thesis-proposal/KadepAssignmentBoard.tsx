@@ -25,6 +25,7 @@ import { haystack, useLocalTable } from '@/hooks/shared/useLocalTable';
 import { useIssueAssignment } from '@/hooks/thesis-proposal/useSupervisorAssignment';
 import AuthenticatedDocumentPreviewDialog from '@/components/thesis/AuthenticatedDocumentPreviewDialog';
 import { getApiUrl } from '@/config/api';
+import { downloadAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
 import { DateTimeCell, TruncatedText } from '@/lib/guidanceCells';
 import { ACTIONS_3_WIDTH, ASSIGNMENT_BOARD_WIDTH, BADGE_COLUMN_WIDTH, CLIP_CELL, DATE_COLUMN_WIDTH } from '@/lib/tableColumnWidths';
 import { formatDateTimeWib, formatLecturerName, toTitleCaseName } from '@/lib/text';
@@ -444,15 +445,16 @@ export function AssignmentVersionHistoryTable({ board, isKadepOrAdmin, semesterS
       render: (batch) => <Badge variant={getAssignmentBatchStatusVariant(batch.status)} className="whitespace-nowrap">{getAssignmentBatchStatusLabel(batch.status)}</Badge>,
     },
     {
-      key: 'download',
-      header: 'Unduh',
-      width: 80,
+      key: 'actions',
+      header: 'Aksi',
+      width: ACTIONS_3_WIDTH,
       className: 'text-center',
       render: (batch) => {
         const reason = getDownloadBlockReason(batch, board, isKadepOrAdmin);
         return (
-          <div className="flex items-center justify-center">
-            <TableIconAction icon={Download} label="Unduh PDF" disabled={Boolean(reason)} disabledReason={reason} onClick={() => setPdf(batch)} />
+          <div className="flex items-center justify-center gap-1">
+            <TableIconAction icon={Eye} label="Lihat" disabled={Boolean(reason)} disabledReason={reason} onClick={() => setPdf(batch)} />
+            <TableIconAction icon={Download} label="Unduh" disabled={Boolean(reason)} disabledReason={reason} onClick={() => void downloadAuthenticatedFileOrToast(getApiUrl(batch.fileUrl), batch.fileName)} />
           </div>
         );
       },

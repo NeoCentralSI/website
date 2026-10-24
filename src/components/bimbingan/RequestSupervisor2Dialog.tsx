@@ -173,7 +173,7 @@ export function RequestSupervisor2Dialog({
                   }}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1 space-y-1">
                       <p className="text-sm font-medium truncate">
                         {formatLecturerName(lecturer.fullName || "")}
                       </p>
@@ -194,13 +194,12 @@ export function RequestSupervisor2Dialog({
                             </Badge>
                           )}
                           {lecturer.totalLimit != null && <Badge variant="outline">Semester ini {lecturer.acceptedCount ?? 0}/{lecturer.semesterQuota} · Total {lecturer.activeCount}/{lecturer.totalLimit}</Badge>}
-
                         </div>
                       )}
                       {isClosed ? (
                         <p className="mt-1 text-[11px] text-red-600">{SUPERVISOR2_CLOSED_NOTE}</p>
                       ) : isFull ? (
-                        <SoftWarning>{SUPERVISOR2_FULL_NOTE}</SoftWarning>
+                        <SoftWarning className="mt-2">{SUPERVISOR2_FULL_NOTE}</SoftWarning>
                       ) : null}
                     </div>
                     {isSelected && (
@@ -216,7 +215,7 @@ export function RequestSupervisor2Dialog({
         </div>
 
         {selectedLecturer?.trafficLight === "red" && (
-          <SoftWarning title="Dosen ini sudah penuh">{SUPERVISOR2_FULL_NOTE}</SoftWarning>
+          <SoftWarning className="mt-2" title="Dosen ini sudah penuh">{SUPERVISOR2_FULL_NOTE}</SoftWarning>
         )}
         <FieldError message={missing ? "Pilih dosen Pembimbing 2 terlebih dahulu." : null} />
 

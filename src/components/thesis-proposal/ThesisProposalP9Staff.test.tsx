@@ -12,6 +12,7 @@ import KadepThesisSupervisorAssignment from '@/pages/thesis-proposal/KadepThesis
 import SupervisionQuotaPage from '@/pages/thesis-proposal/SupervisionQuota';
 import * as assignments from '@/services/thesis-proposal/supervisor-assignment.service';
 import * as quota from '@/services/thesis-proposal/supervision-quota.service';
+import { downloadAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
 import { expectFooter } from '@/test/dialogFooter';
 import { expectColumnFits } from '@/test/columnFit';
 import type {
@@ -28,6 +29,7 @@ const roles = vi.hoisted(() => ({ kadep: true, sekdep: false }));
 vi.mock('@/hooks/useAuthenticatedBlobUrl', () => ({ useAuthenticatedBlobUrl: () => ({ blobUrl: 'blob:assignment', error: null, isLoading: false }) }));
 vi.mock('lottie-react', () => ({ default: () => null }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/lib/authenticatedFile', () => ({ downloadAuthenticatedFileOrToast: vi.fn() }));
 vi.mock('@/services/thesis-proposal/supervisor-assignment.service');
 vi.mock('@/services/thesis-proposal/supervision-quota.service');
 vi.mock('@/services/lecturerGuidance.service', () => ({ approveSupervisor2KadepRequest: vi.fn(), rejectSupervisor2KadepRequest: vi.fn() }));
@@ -228,7 +230,7 @@ describe('Penetapan Pembimbing', () => {
     expectFooter(detail, ['Tutup']);
   });
 
-  it('opens preview and issued versions in the fullscreen document viewer', async () => {
+  it('keeps preview in the fullscreen viewer; history separates viewing from direct download', async () => {
     vi.mocked(assignments.assignmentPreviewUrl).mockReturnValue('/thesis-proposals/supervisor-assignments/preview?academicYearId=ay-1');
     wrap(<KadepThesisSupervisorAssignment />);
     fireEvent.click(await screen.findByRole('button', { name: 'Pratinjau PDF' }));
@@ -238,10 +240,21 @@ describe('Penetapan Pembimbing', () => {
     expect(within(preview).getByRole('button', { name: 'Unduh' })).toBeInTheDocument();
     fireEvent.keyDown(preview, { key: 'Escape' });
     fireEvent.click(screen.getByRole('button', { name: 'Riwayat Versi' }));
-    fireEvent.click((await screen.findAllByRole('button', { name: 'Unduh PDF' }))[0]);
+    const current = tableRows()[0];
+    expect(within(current).getByRole('button', { name: 'Lihat' })).toBeEnabled();
+    expect(within(current).getByRole('button', { name: 'Unduh' })).toBeEnabled();
+    fireEvent.click(within(current).getByRole('button', { name: 'Lihat' }));
     const issued = await screen.findByRole('dialog', { name: 'Penetapan-v2.pdf' });
     expect(issued).toHaveClass('h-[100vh]');
     expect(within(issued).getByRole('button', { name: 'Unduh' })).toBeInTheDocument();
+    fireEvent.keyDown(issued, { key: 'Escape' });
+
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Unduh' }));
+    await waitFor(() => expect(downloadAuthenticatedFileOrToast).toHaveBeenCalledWith(
+      expect.stringContaining('/thesis-proposals/supervisor-assignments/batches/b2/file'),
+      'Penetapan-v2.pdf',
+    ));
+    expect(screen.queryByRole('dialog', { name: 'Penetapan-v2.pdf' })).not.toBeInTheDocument();
   });
 
   it('a past semester is read only', async () => {
@@ -270,11 +283,13 @@ describe('Penetapan Pembimbing', () => {
     roles.sekdep = true;
     wrap(<KadepThesisSupervisorAssignment />, '/?tab=riwayat-versi');
     const table = await screen.findByRole('table');
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Versi', 'Diterbitkan', 'Oleh', 'Mahasiswa', 'Status', 'Unduh']);
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Versi', 'Diterbitkan', 'Oleh', 'Mahasiswa', 'Status', 'Aksi']);
     const [current, old] = tableRows();
     // Not up to date: the current version waits for the new issue; the old one was replaced.
-    expect(within(current).getByRole('button', { name: 'Unduh PDF' })).toBeDisabled();
-    expect(within(old).getByRole('button', { name: 'Unduh PDF' })).toBeDisabled();
+    expect(within(current).getByRole('button', { name: 'Lihat' })).toBeDisabled();
+    expect(within(current).getByRole('button', { name: 'Unduh' })).toBeDisabled();
+    expect(within(old).getByRole('button', { name: 'Lihat' })).toBeDisabled();
+    expect(within(old).getByRole('button', { name: 'Unduh' })).toBeDisabled();
   });
 
   it('Beban Dosen: the toolbar follows the semester; the dialog is prefilled and can return to the general limit', async () => {

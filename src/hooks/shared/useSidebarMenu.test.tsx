@@ -298,7 +298,10 @@ describe("useSidebarMenu", () => {
 it("Admin has read-only Monitoring Kelas without assessment navigation", () => {
   mockRole({ isAdmin: true });
   const { result } = renderHook(() => useSidebarMenu());
-  expect(result.current.navMain.find((menu) => menu.title === "Metode Penelitian")?.items).toEqual([
+  const menus = result.current.navMain;
+  const researchMethodIndex = menus.findIndex((menu) => menu.title === "Metode Penelitian");
+  expect(menus[researchMethodIndex]?.items).toEqual([
     { title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" },
   ]);
+  expect(menus[researchMethodIndex + 1]?.title).toBe("Tugas Akhir");
 });

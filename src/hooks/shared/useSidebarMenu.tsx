@@ -541,6 +541,7 @@ export const useSidebarMenu = () => {
               },
             ],
           },
+          { title: "Metode Penelitian", url: "#", icon: BookOpen, items: buildResearchMethodItems() },
           {
             title: "Tugas Akhir",
             url: "#",
@@ -556,7 +557,6 @@ export const useSidebarMenu = () => {
             icon: GraduationCap,
             items: [],
           },
-          { title: "Metode Penelitian", url: "#", icon: BookOpen, items: buildResearchMethodItems() },
           buildAnnouncementMenu(),
           {
             title: "Master Data",
