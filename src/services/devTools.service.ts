@@ -20,6 +20,17 @@ import type {
   DevToolsSemesterFlags,
   DevToolsSupervisorRequest,
   DevToolsSupervisorRequestList,
+  DevToolsEffects,
+  DevToolsEventKind,
+  DevToolsEventMode,
+  DevToolsEventTarget,
+  DevToolsFinalStages,
+  DevToolsScheduleDto,
+  DevToolsYudisiumPeriod,
+  DevToolsPeriodDatesDto,
+  DevToolsParticipantStatus,
+  DevToolsStudentYudisium,
+  DevToolsCplRow,
 } from '@/types/devTools.types';
 
 const BASE = '/devtools';
@@ -200,5 +211,107 @@ export const devToolsService = {
     const url = getApiUrl(`${BASE}/guidances/${id}`);
     const response = await apiRequest(url, { method: 'PATCH', body: JSON.stringify(data) });
     return parseMsg(response, 'Gagal mengubah jadwal sesi bimbingan');
+  },
+
+  // --- Seminar Hasil and Sidang TA ---
+  getFinalStages: async (studentId: string): Promise<DevToolsFinalStages> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/final-stages/${studentId}`));
+    return parseJson<DevToolsFinalStages>(response, 'Gagal memuat seminar dan sidang');
+  },
+
+  previewEvent: async (studentId: string, kind: DevToolsEventKind, mode: DevToolsEventMode, target?: DevToolsEventTarget): Promise<DevToolsEffects> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/final-stages/${studentId}/${kind}/preview`), { method: 'POST', body: JSON.stringify({ mode, target }) });
+    return parseJson<DevToolsEffects>(response, 'Gagal memuat pratinjau');
+  },
+
+  setEventStatus: async (studentId: string, kind: DevToolsEventKind, target: DevToolsEventTarget, mode: 'change' | 'create'): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/final-stages/${studentId}/${kind}/status`), { method: 'POST', body: JSON.stringify({ target, mode }) });
+    return parseMsg(response, 'Gagal mengubah status');
+  },
+
+  approveRevisions: async (studentId: string, kind: DevToolsEventKind): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/final-stages/${studentId}/${kind}/approve-revisions`), { method: 'POST' });
+    return parseMsg(response, 'Gagal menyetujui revisi');
+  },
+
+  deleteEvent: async (studentId: string, kind: DevToolsEventKind): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/final-stages/${studentId}/${kind}`), { method: 'DELETE' });
+    return parseMsg(response, kind === 'seminar' ? 'Gagal menghapus seminar' : 'Gagal menghapus sidang');
+  },
+
+  setEventSchedule: async (kind: DevToolsEventKind, eventId: string, data: DevToolsScheduleDto): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/final-stages/${kind}/${eventId}/schedule`), { method: 'PATCH', body: JSON.stringify(data) });
+    return parseMsg(response, 'Gagal mengubah jadwal');
+  },
+
+  // --- Yudisium ---
+  getYudisiumPeriods: async (): Promise<DevToolsYudisiumPeriod[]> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/periods`));
+    return parseJson<DevToolsYudisiumPeriod[]>(response, 'Gagal memuat periode yudisium');
+  },
+
+  setYudisiumPeriodDates: async (id: string, data: DevToolsPeriodDatesDto): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/periods/${id}`), { method: 'PATCH', body: JSON.stringify(data) });
+    return parseMsg(response, 'Gagal mengubah tanggal periode');
+  },
+
+  getStudentYudisium: async (studentId: string): Promise<DevToolsStudentYudisium> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/students/${studentId}`));
+    return parseJson<DevToolsStudentYudisium>(response, 'Gagal memuat yudisium mahasiswa');
+  },
+
+  previewRegisterYudisium: async (studentId: string, yudisiumId: string): Promise<DevToolsEffects> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/students/${studentId}/register/preview`), { method: 'POST', body: JSON.stringify({ yudisiumId }) });
+    return parseJson<DevToolsEffects>(response, 'Gagal memuat pratinjau');
+  },
+
+  registerYudisium: async (studentId: string, yudisiumId: string): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/students/${studentId}/register`), { method: 'POST', body: JSON.stringify({ yudisiumId }) });
+    return parseMsg(response, 'Gagal mendaftarkan mahasiswa');
+  },
+
+  previewRemoveParticipant: async (participantId: string): Promise<DevToolsEffects> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/participants/${participantId}/remove/preview`), { method: 'POST' });
+    return parseJson<DevToolsEffects>(response, 'Gagal memuat pratinjau');
+  },
+
+  removeParticipant: async (participantId: string): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/participants/${participantId}`), { method: 'DELETE' });
+    return parseMsg(response, 'Gagal menghapus peserta');
+  },
+
+  previewParticipantStatus: async (participantId: string, target: DevToolsParticipantStatus): Promise<DevToolsEffects> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/participants/${participantId}/status/preview`), { method: 'POST', body: JSON.stringify({ target }) });
+    return parseJson<DevToolsEffects>(response, 'Gagal memuat pratinjau');
+  },
+
+  setParticipantStatus: async (participantId: string, target: DevToolsParticipantStatus): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/participants/${participantId}/status`), { method: 'POST', body: JSON.stringify({ target }) });
+    return parseMsg(response, 'Gagal mengubah status peserta');
+  },
+
+  setRequirementItems: async (participantId: string, action: 'approve' | 'decline', itemId?: string): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/participants/${participantId}/requirements`), { method: 'POST', body: JSON.stringify({ action, itemId }) });
+    return parseMsg(response, 'Gagal mengubah item persyaratan');
+  },
+
+  setExitSurvey: async (participantId: string, action: 'fill' | 'clear'): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/participants/${participantId}/exit-survey`), { method: 'POST', body: JSON.stringify({ action }) });
+    return parseMsg(response, 'Gagal mengubah exit survey');
+  },
+
+  setCplScore: async (studentId: string, cplId: string, score: number): Promise<{ cpl: DevToolsCplRow[] }> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/students/${studentId}/cpl/${cplId}`), { method: 'PATCH', body: JSON.stringify({ score }) });
+    return parseJson<{ cpl: DevToolsCplRow[] }>(response, 'Gagal mengubah nilai CPL');
+  },
+
+  setCplPreset: async (studentId: string, preset: 'all-pass' | 'one-fail'): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/students/${studentId}/cpl/${preset}`), { method: 'POST' });
+    return parseMsg(response, 'Gagal mengubah nilai CPL');
+  },
+
+  setCplRecommendation: async (studentId: string, cplId: string, action: 'create' | 'resolve' | 'delete'): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/yudisium/students/${studentId}/cpl/${cplId}/recommendation`), { method: 'POST', body: JSON.stringify({ action }) });
+    return parseMsg(response, 'Gagal mengubah rekomendasi CPL');
   },
 };
