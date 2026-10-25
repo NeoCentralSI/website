@@ -11,24 +11,28 @@ import { Calendar, Clock, MapPin, Loader2, VideoIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import EmptyState from '@/components/ui/empty-state';
+import { getEventKindLabel } from './CalendarEventDialog';
 
 interface UpcomingEventsCardProps {
   className?: string;
+  /** KP events of the student, merged in as before. */
   extraEvents?: CalendarEvent[];
   isLoadingExtraEvents?: boolean;
-  limit?: number; // Add limit prop to control number of events shown
+  /** Opens the same detail modal as the calendar. */
+  onEventClick?: (event: CalendarEvent) => void;
 }
+
+const LIMIT = 5;
 
 export function UpcomingEventsCard({
   className,
   extraEvents = [],
   isLoadingExtraEvents = false,
-  limit
+  onEventClick,
 }: UpcomingEventsCardProps) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['upcoming-events', limit], // Include limit in queryKey
-    queryFn: () => getUpcomingEventsAPI(limit ? 30 : 7), // If limit provided (likely home dashboard), fetch 30 days but slice later? Better to just fetch enough. API accepts days, let's stick to 7 or 30 days lookahead.
-    // Let's use 14 days lookahead for "Upcoming"
+    queryKey: ['upcoming-events'],
+    queryFn: () => getUpcomingEventsAPI(LIMIT),
   });
 
   const isLoadingAll = isLoading || isLoadingExtraEvents;
@@ -38,15 +42,15 @@ export function UpcomingEventsCard({
     return [...(data?.events || []), ...extraEvents]
       .filter(event => new Date(event.startDate) >= new Date())
       .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-      .slice(0, limit || 5); // Default to 5 events if no limit specified
-  }, [data?.events, extraEvents, limit]);
+      .slice(0, LIMIT);
+  }, [data?.events, extraEvents]);
 
   if (isLoadingAll) {
     return (
       <Card className={cn("h-full", className)}>
         <CardHeader>
           <CardTitle>Agenda Mendatang</CardTitle>
-          <CardDescription>Kegiatan anda dalam waktu dekat</CardDescription>
+          <CardDescription>Kegiatan Anda dalam waktu dekat</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center items-center min-h-[200px]">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
@@ -60,15 +64,10 @@ export function UpcomingEventsCard({
       <Card className={cn("h-full", className)}>
         <CardHeader>
           <CardTitle>Agenda Mendatang</CardTitle>
-          <CardDescription>Kegiatan anda dalam waktu dekat</CardDescription>
+          <CardDescription>Kegiatan Anda dalam waktu dekat</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center items-center min-h-[200px]">
-          <EmptyState
-            title=""
-            description="Tidak ada agenda mendatang"
-            size="sm"
-            className="py-0"
-          />
+          <EmptyState title="Belum Ada Agenda" description="Tidak ada agenda mendatang" size="sm" className="py-0" />
         </CardContent>
       </Card>
     );
@@ -108,7 +107,19 @@ export function UpcomingEventsCard({
               else daysText = `${daysLeft} hari lagi`;
 
               return (
-                <div key={event.id} className="relative pl-6 group">
+                <div
+                  key={event.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onEventClick?.(event)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      onEventClick?.(event);
+                    }
+                  }}
+                  className="relative cursor-pointer rounded-md pl-6 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
                   {/* Vertical Line */}
                   {!isLast && (
                     <div className="absolute left-[9px] top-3 -bottom-6 w-0.5 bg-border group-hover:bg-primary/20 transition-colors" />
@@ -151,9 +162,9 @@ export function UpcomingEventsCard({
                       <div className="flex items-center gap-2 mt-1">
                         {event.meetingLink ? (
                           <Badge variant="outline" className="gap-1 p-0.5 px-2 font-normal text-xs hover:bg-muted cursor-pointer as-child" >
-                            <a href={event.meetingLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1">
+                            <a href={event.meetingLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                               <VideoIcon className="h-3 w-3" />
-                              <span>Online Meeting</span>
+                              <span>Daring</span>
                             </a>
                           </Badge>
                         ) : (
@@ -168,7 +179,7 @@ export function UpcomingEventsCard({
                     {/* Event Type Badge - Optional, clean look */}
                     <div className="mt-1">
                       <Badge variant="secondary" className="text-[10px] font-normal px-2 h-5">
-                        {formatEventType(event.type)}
+                        {getEventKindLabel(event)}
                       </Badge>
                     </div>
 
@@ -181,20 +192,4 @@ export function UpcomingEventsCard({
       </CardContent>
     </Card>
   );
-}
-
-function formatEventType(type: string) {
-  const labels: Record<string, string> = {
-    guidance_scheduled: 'Bimbingan',
-    guidance_request: 'Permintaan Bimbingan',
-    thesis_deadline: 'Deadline TA',
-    seminar_scheduled: 'Seminar',
-    internship_seminar: 'Seminar KP',
-    defense_scheduled: 'Sidang',
-    student_guidance: 'Bimbingan Mhs',
-    meeting: 'Rapat',
-    holiday: 'Libur',
-    outlook_event: 'Outlook',
-  };
-  return labels[type] || type.replace(/_/g, ' ');
 }

@@ -15,6 +15,7 @@ export type EventType =
   | 'student_guidance'       // accepted guidance (lecturer view)
   | 'seminar_as_examiner'
   | 'defense_as_examiner'
+  | 'yudisium_event'
   
   // Admin Events
   | 'academic_year_start'
@@ -32,12 +33,24 @@ export type EventType =
 
 export type EventStatus = 'requested' | 'accepted' | 'rejected';
 
+/** The kind of a TA event, with its full label ("Bimbingan", "Seminar Hasil", "Sidang", "Yudisium"). */
+export type EventKind = 'guidance' | 'seminar' | 'defence' | 'yudisium';
+
 export interface CalendarEvent {
   id: string;
   title: string;
-  description?: string;
+  description?: string | null;
   type: EventType;
-  status: EventStatus;
+  /** Guidance: EventStatus; seminar/defence: the effective status (scheduled, ongoing, passed, ...). */
+  status: EventStatus | string | null;
+  /** Set by the server for TA events. */
+  kind?: EventKind;
+  kindLabel?: string;
+  statusLabel?: string | null;
+  /** The page of this event for the viewer's role; no "Lihat Detail" without it. */
+  detailPath?: string | null;
+  /** The copy in the viewer's own Outlook calendar, when it was synced. */
+  outlookEventId?: string | null;
   startDate: string; // ISO 8601
   endDate?: string;  // ISO 8601
   
@@ -54,11 +67,13 @@ export interface CalendarEvent {
     userId: string;
     name: string;
     role: 'student' | 'lecturer' | 'admin' | 'moderator';
+    /** "Mahasiswa", "Pembimbing 1", "Penguji 1", ... */
+    roleLabel?: string;
   }>;
   
   // Location/Link
-  location?: string;
-  meetingLink?: string;
+  location?: string | null;
+  meetingLink?: string | null;
   
   // Notifications
   reminderMinutes?: number; // Reminder berapa menit sebelum event

@@ -61,7 +61,7 @@ export function useThesisRealtimeHandlers() {
         return true;
       }
       case "thesis-guidance:approved": {
-        const title = payload?.notification?.title || "Bimbingan Disetujui ✓";
+        const title = payload?.notification?.title || "Bimbingan Disetujui";
         const body = payload?.notification?.body || "Permintaan bimbingan Anda telah disetujui";
         toast(title, { description: body, duration: 5000 });
         qc.invalidateQueries({ queryKey: ["student-guidance"] });
@@ -102,7 +102,7 @@ export function useThesisRealtimeHandlers() {
       }
       case "thesis-guidance:summary-approved": {
         if (role === "student") {
-          const title = payload?.data?.title || "Catatan Bimbingan Disetujui ✓";
+          const title = payload?.data?.title || "Catatan Bimbingan Disetujui";
           const body = payload?.data?.body || "Catatan bimbingan Anda telah disetujui. Bimbingan selesai!";
           toast.success(title, {
             description: body,
