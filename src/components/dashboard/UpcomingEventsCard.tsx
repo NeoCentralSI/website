@@ -40,7 +40,13 @@ export function UpcomingEventsCard({
   // Filter and sort events (ensure they are future events)
   const events = useMemo(() => {
     return [...(data?.events || []), ...extraEvents]
-      .filter(event => new Date(event.startDate) >= new Date())
+      // Still going on or coming: it ends now or later (the server already sends only these).
+      .filter(event => {
+        const end = event.allDay
+          ? new Date(new Date(`${event.startDate}T00:00:00+07:00`).getTime() + 24 * 60 * 60 * 1000)
+          : new Date(event.endDate ?? event.startDate);
+        return end >= new Date();
+      })
       .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
       .slice(0, LIMIT);
   }, [data?.events, extraEvents]);
@@ -89,7 +95,7 @@ export function UpcomingEventsCard({
           <div className="space-y-6">
             {events.map((event, index) => {
               const isLast = index === events.length - 1;
-              const eventDate = new Date(event.startDate);
+              const eventDate = new Date(event.allDay ? `${event.startDate}T00:00:00+07:00` : event.startDate);
               const now = new Date();
               const isToday = isSameDay(eventDate, now);
 
@@ -153,7 +159,9 @@ export function UpcomingEventsCard({
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Clock className="h-3.5 w-3.5" />
                       <span>
-                        {format(eventDate, 'EEE, d MMM yyyy • HH:mm', { locale: idLocale })}
+                        {event.allDay
+                          ? `${format(eventDate, 'EEE, d MMM yyyy', { locale: idLocale })} • Sepanjang hari`
+                          : format(eventDate, 'EEE, d MMM yyyy • HH:mm', { locale: idLocale })}
                       </span>
                     </div>
 

@@ -35,8 +35,9 @@ const ROLE_LABELS: Record<string, string> = { student: 'Mahasiswa', lecturer: 'D
 
 /** "Selasa, 12 Maret 2031 · 09.00–11.00" */
 function formatWhen(event: CalendarEvent): string {
-  const start = new Date(event.startDate);
+  const start = new Date(event.allDay ? `${event.startDate}T00:00:00+07:00` : event.startDate);
   const day = format(start, 'EEEE, dd MMMM yyyy', { locale: idLocale });
+  if (event.allDay) return `${day} · Sepanjang hari`;
   const from = format(start, 'HH.mm');
   const end = event.endDate ? new Date(event.endDate) : null;
   const to = end && end.getTime() !== start.getTime() ? format(end, 'HH.mm') : null;

@@ -287,7 +287,8 @@ export function CalendarDashboard({
       id: event.id,
       title: event.title,
       start: event.startDate,
-      end: event.endDate,
+      end: event.allDay ? undefined : event.endDate ?? undefined,
+      allDay: event.allDay ?? false,
       backgroundColor: getEventColor(event.type),
       borderColor: getEventColor(event.type),
       extendedProps: {

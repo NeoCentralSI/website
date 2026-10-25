@@ -45,6 +45,12 @@ describe('CalendarEventDialog', () => {
     expect(screen.getByText('Lihat di Outlook')).toBeInTheDocument();
   });
 
+  it('shows an event without a time as the whole day, not 00.00', () => {
+    render(<MemoryRouter><CalendarEventDialog event={{ ...seminar, allDay: true, startDate: '2026-09-28', endDate: null }} onClose={vi.fn()} /></MemoryRouter>);
+    expect(screen.getByText(/28 September 2026 · Sepanjang hari/)).toBeInTheDocument();
+    expect(screen.queryByText(/00\.00/)).not.toBeInTheDocument();
+  });
+
   it('uses full, uniform kind labels', () => {
     expect(getEventKindLabel({ type: 'student_guidance' } as CalendarEvent)).toBe('Bimbingan');
     expect(getEventKindLabel({ type: 'defense_as_examiner' } as CalendarEvent)).toBe('Sidang');

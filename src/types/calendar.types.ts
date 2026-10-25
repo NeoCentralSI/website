@@ -51,8 +51,10 @@ export interface CalendarEvent {
   detailPath?: string | null;
   /** The copy in the viewer's own Outlook calendar, when it was synced. */
   outlookEventId?: string | null;
+  /** No time known (e.g. an archived seminar): the whole day, `startDate` is "YYYY-MM-DD". */
+  allDay?: boolean;
   startDate: string; // ISO 8601
-  endDate?: string;  // ISO 8601
+  endDate?: string | null;  // ISO 8601
   
   // User-specific data
   userId: string;
