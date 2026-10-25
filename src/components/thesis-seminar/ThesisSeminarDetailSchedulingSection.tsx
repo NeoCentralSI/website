@@ -8,6 +8,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import idLocale from '@fullcalendar/core/locales/id';
 import type { DateSelectArg, EventInput } from '@fullcalendar/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -746,19 +747,19 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
             <CardContent className="flex-1 flex flex-col min-h-0 justify-between space-y-4">
               {/* Legend Items mapped on top */}
               {legendItems.length > 0 && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pb-2 border-b">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pb-2 border-b border-gray-200">
                   <span className="font-medium">Ketersediaan dosen:</span>
                   {legendItems.map((item) => (
                     <div key={item.id} className="flex items-center gap-1.5">
                       <span
-                        className="inline-block h-2.5 w-2.5 rounded-sm border"
+                        className="inline-block h-2.5 w-2.5 rounded-sm border border-gray-200"
                         style={{ backgroundColor: item.color + '33', borderColor: item.color }}
                       />
                       <span className="text-foreground font-medium">{toTitleCaseName(item.name)}</span>
                     </div>
                   ))}
                   {current && (
-                    <div className="flex items-center gap-3 ml-2 pl-3 border-l">
+                    <div className="flex items-center gap-3 ml-2 pl-3 border-l border-gray-200">
                       <div className="flex items-center gap-1.5">
                         <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#16a34a]" />
                         <span className="text-foreground font-medium">Draft Jadwal</span>
@@ -772,7 +773,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
                 </div>
               )}
 
-              <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden flex-1 flex flex-col min-h-[520px]">
+              <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden flex-1 flex flex-col min-h-[520px] border-gray-200">
                 <FullCalendar
                   plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                   initialView="timeGridWeek"
@@ -816,14 +817,16 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
         {/* Right Column: Recommendations & Blocked Slots */}
         <div className="lg:col-span-1 flex flex-col gap-4 min-h-full">
           {/* 1. Rekomendasi Jadwal */}
-          <Card className="flex h-[320px] flex-col shadow-sm">
-            <CardHeader className="pb-3 border-b shrink-0">
-              <CardTitle className="text-sm flex items-center gap-2">
+          <Card className="flex h-[320px] flex-col gap-4 py-6">
+            <CardHeader className="shrink-0">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
                 Rekomendasi Jadwal
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 flex-1 flex flex-col justify-start min-h-0 overflow-y-auto [scrollbar-width:thin] space-y-2 text-xs">
+            <CardContent className="min-h-0 flex-1 px-6 text-xs">
+              <ScrollArea className="h-full pr-3">
+                <div className="flex min-h-full flex-col space-y-2">
               {recommendations.length > 0 ? (
                 <div className="flex flex-col gap-2 w-full">
                   {recommendations.map((rec, idx) => (
@@ -863,18 +866,22 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
               ) : (
                 <EmptyState size="sm" className="py-2 my-auto" title="Tidak Ada Rekomendasi" description="Tidak ditemukan slot waktu 2 jam yang sesuai untuk seluruh peserta seminar" />
               )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
 
           {/* 2. Slot Terblokir */}
-          <Card className="flex h-[320px] flex-col shadow-sm">
-            <CardHeader className="pb-3 border-b shrink-0">
-              <CardTitle className="text-sm flex items-center gap-2">
+          <Card className="flex h-[320px] flex-col gap-4 py-6">
+            <CardHeader className="shrink-0">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Lock className="h-4 w-4 text-muted-foreground" />
                 Slot Terblokir
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 flex-1 flex flex-col justify-start min-h-0 overflow-y-auto [scrollbar-width:thin] space-y-2 text-xs">
+            <CardContent className="min-h-0 flex-1 px-6 text-xs">
+              <ScrollArea className="h-full pr-3">
+                <div className="flex min-h-full flex-col space-y-2">
               {roomConflicts.length > 0 ? (
                 <div className="flex flex-col gap-2 w-full">
                   {roomConflicts.map((c: any) => {
@@ -923,6 +930,8 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
               ) : (
                 <EmptyState size="sm" className="py-2 my-auto" title="Tidak Ada Slot Terblokir" description="Seluruh waktu ketersediaan terpilih saat ini berstatus aman dari konflik" />
               )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
@@ -939,7 +948,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
           <div className="space-y-4 py-2 text-xs sm:text-sm text-muted-foreground">
             <p>Anda akan menjadwalkan Seminar Hasil TA berikut:</p>
 
-            <div className="space-y-3 bg-muted/40 rounded-lg border p-4 font-medium text-foreground">
+            <div className="space-y-3 bg-muted/40 rounded-lg border p-4 font-medium text-foreground border-gray-200">
               <div>
                 <span className="text-xs text-muted-foreground block font-normal">Mahasiswa</span>
                 <span className="block mt-0.5 text-xs sm:text-sm font-semibold">
@@ -979,7 +988,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
               )}
 
               {current && (
-                <div className="border-t pt-3 mt-2 space-y-1.5">
+                <div className="border-t pt-3 mt-2 space-y-1.5 border-gray-200">
                   <span className="text-xs text-muted-foreground block font-normal">Informasi Jadwal</span>
                   <div className="flex items-center gap-2 text-xs font-medium">
                     <CalendarDays className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -1228,12 +1237,12 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
 
       <style>{`
         .seminar-calendar-wrapper {
-          --fc-border-color: var(--border);
+          --fc-border-color: #e5e7eb;
           --fc-button-text-color: var(--foreground);
           --fc-button-bg-color: transparent;
-          --fc-button-border-color: var(--border);
+          --fc-button-border-color: #e5e7eb;
           --fc-button-hover-bg-color: var(--accent);
-          --fc-button-hover-border-color: var(--border);
+          --fc-button-hover-border-color: #e5e7eb;
           --fc-button-active-bg-color: var(--primary);
           --fc-button-active-border-color: var(--primary);
           --fc-button-active-text-color: var(--primary-foreground);
@@ -1273,7 +1282,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
         .seminar-calendar-wrapper .fc-button:hover {
           background-color: var(--accent) !important;
           color: var(--accent-foreground) !important;
-          border-color: var(--border) !important;
+          border-color: #e5e7eb !important;
         }
 
         .seminar-calendar-wrapper .fc-button-active,
@@ -1357,7 +1366,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Seminar Hasil Tugas Akhir ma
         .seminar-calendar-wrapper .fc-scroller::-webkit-scrollbar { width: 5px; }
         .seminar-calendar-wrapper .fc-scroller::-webkit-scrollbar-track { background: transparent; }
         .seminar-calendar-wrapper .fc-scroller::-webkit-scrollbar-thumb {
-          background-color: var(--border);
+          background-color: #e5e7eb;
           border-radius: 3px;
         }
       `}</style>

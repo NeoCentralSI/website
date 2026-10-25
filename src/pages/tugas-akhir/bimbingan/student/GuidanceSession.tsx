@@ -565,9 +565,8 @@ export default function GuidanceSessionPage() {
             />
           ) : (
             <Card>
-              <CardContent className="p-6 text-center text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Belum ada dokumen</p>
+              <CardContent>
+                <EmptyState title="Belum Ada Dokumen" description="Dokumen sesi bimbingan ini belum diunggah" />
               </CardContent>
             </Card>
           )}

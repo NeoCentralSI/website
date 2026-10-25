@@ -17,10 +17,10 @@ export default function AdminThesisSeminar() {
 	const breadcrumbs = useMemo(
 		() => [
 			{ label: 'Tugas Akhir', href: '/tugas-akhir' },
-			{ label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
-			{ label: activeTab === 'arsip' ? 'Arsip' : 'Verifikasi' },
+			// Tabs do not add a breadcrumb level.
+			{ label: 'Seminar Hasil' },
 		],
-		[activeTab]
+		[]
 	)
 
 	useEffect(() => {

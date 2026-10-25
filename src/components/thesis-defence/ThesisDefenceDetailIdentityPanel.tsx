@@ -138,7 +138,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
               )}
 
               {detail.rejectedExaminers && detail.rejectedExaminers.length > 0 && (
-                <div className="pt-2 border-t">
+                <div className="pt-2 border-t border-gray-200">
                   <p className="text-xs text-muted-foreground mb-2">Riwayat Penolakan:</p>
                   <div className="space-y-2">
                     {detail.rejectedExaminers.map((e: any) => (
@@ -212,7 +212,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                     notes={doc?.notes}
                     onView={doc ? () => openDocument(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.DOCUMENT_FILE(detail.id, dt.id), doc.fileName) : undefined}
                     actions={isAdmin() && doc && (isSubmitted || isDeclined) ? (
-                        <div className="flex items-center gap-1.5 ml-1 pl-3 border-l">
+                        <div className="flex items-center gap-1.5 ml-1 pl-3 border-l border-gray-200">
                           <Button
                             size="sm"
                             variant="default"

@@ -123,7 +123,7 @@ export function YudisiumRequirementFormDialog({
 
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 border-gray-200">
                             <Switch
                                 id="isActive"
                                 checked={isActive}
@@ -137,7 +137,7 @@ export function YudisiumRequirementFormDialog({
                             </div>
                         </div>
 
-                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 border-gray-200">
                             <Switch
                                 id="isPublic"
                                 checked={isPublic}

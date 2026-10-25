@@ -32,7 +32,7 @@ function ChecklistRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-[10px] p-[8px_12px] rounded-[7px] border transition-all duration-200",
+        "flex items-center gap-[10px] p-[8px_12px] rounded-[7px] border transition-all duration-200 border-gray-200",
         met ? "bg-emerald-50/50 border-emerald-200" : "bg-card border border-gray-200"
       )}
     >

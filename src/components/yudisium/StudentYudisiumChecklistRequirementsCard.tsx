@@ -58,7 +58,7 @@ function ChecklistRow({
   return (
     <div
       className={cn(
-        "flex items-center gap-[10px] p-[8px_12px] rounded-[7px] border transition-all duration-200",
+        "flex items-center gap-[10px] p-[8px_12px] rounded-[7px] border transition-all duration-200 border-gray-200",
         met ? "bg-emerald-50/50 border-emerald-200" : "bg-card border border-gray-200"
       )}
     >
@@ -103,7 +103,7 @@ function ChecklistRow({
           onClick={(canAccessExitSurvey || met) ? onExitSurveyClick : undefined}
           disabled={!canAccessExitSurvey && !met}
           className={cn(
-            "shrink-0 px-[9px] py-[4px] text-xs font-semibold rounded-[5px] transition-all duration-200 border",
+            "shrink-0 px-[9px] py-[4px] text-xs font-semibold rounded-[5px] transition-all duration-200 border border-gray-200",
             met
               ? "border-gray-200 text-foreground bg-transparent hover:bg-accent cursor-pointer"
               : canAccessExitSurvey

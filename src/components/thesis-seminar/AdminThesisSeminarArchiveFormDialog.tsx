@@ -229,7 +229,7 @@ export function AdminThesisSeminarArchiveFormDialog({
               value={examinerSearch}
               onChange={(e) => setExaminerSearch(e.target.value)}
             />
-            <div className="max-h-[220px] overflow-y-auto rounded-md border p-3 space-y-2">
+            <div className="max-h-[220px] overflow-y-auto rounded-md border p-3 space-y-2 border-gray-200">
               {filteredLecturers.map((lec) => {
                 const checked = examinerIds.includes(lec.id);
                 return (

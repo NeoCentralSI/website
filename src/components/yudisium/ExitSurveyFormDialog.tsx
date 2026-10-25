@@ -106,7 +106,7 @@ export function ExitSurveyFormDialog({
             />
           </div>
 
-          <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+          <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 border-gray-200">
             <Switch
               id="exit-survey-is-active"
               checked={isActive}

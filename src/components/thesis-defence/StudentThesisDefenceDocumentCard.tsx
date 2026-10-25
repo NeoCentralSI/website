@@ -130,7 +130,7 @@ function DocumentRow({ requirement, canUpload, uploadConfig, isUploading, onUplo
     >
       <div
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border',
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200',
           isApproved
             ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
             : isDeclined

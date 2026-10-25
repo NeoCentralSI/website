@@ -497,7 +497,7 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
                 const answers = selectedResponse?.answers.filter((a) => a.questionId === q.id) || [];
                 const answerText = answers.map(formatAnswer).filter(Boolean).join(', ');
                 return (
-                  <div key={q.id} className="space-y-1 rounded-md border p-3">
+                  <div key={q.id} className="space-y-1 rounded-md border p-3 border-gray-200">
                     <dt className="text-sm text-muted-foreground">{qIdx + 1}. {q.question}</dt>
                     <dd className={answerText ? 'whitespace-pre-wrap break-words text-sm font-medium' : 'text-sm italic text-muted-foreground'}>
                       {answerText || 'Tidak memberikan jawaban'}

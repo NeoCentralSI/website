@@ -574,7 +574,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               <th className="px-3 py-2 text-left font-semibold text-muted-foreground w-12">No</th>
               <th className="px-3 py-2 text-left font-semibold text-muted-foreground">Aspek Penilaian</th>
               {finalData.examiners?.map((ex) => (
-                <th key={ex.id} className="px-3 py-2 text-center font-semibold text-muted-foreground border-l w-36">
+                <th key={ex.id} className="px-3 py-2 text-center font-semibold text-muted-foreground border-l w-36 border-gray-200">
                   <div className="flex flex-col items-center leading-tight gap-1">
                     <span>Penguji {ex.order}</span>
                     <Badge 
@@ -629,7 +629,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
 
                   {/* Group description row - now shows the aggregate scores */}
                   {group.description && (
-                    <tr className="border-b hover:bg-muted/5">
+                    <tr className="border-b hover:bg-muted/5 border-gray-200">
                       <td className="px-3 py-2"></td>
                       <td className="px-3 py-2 text-muted-foreground leading-relaxed">
                         {group.description}
@@ -639,7 +639,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                         const groupScore = exGroup?.criteria?.reduce((sum: number, c: any) => sum + (c.score || 0), 0) ?? null;
                         
                         return (
-                          <td key={ex.id} className="px-3 py-2 text-center border-l font-bold">
+                          <td key={ex.id} className="px-3 py-2 text-center border-l font-bold border-gray-200">
                             {groupScore !== null ? (
                               <span>{groupScore}<span className="text-muted-foreground font-normal">/{groupMaxScore}</span></span>
                             ) : (
@@ -656,7 +656,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                     const cLetter = String.fromCharCode(97 + cIdx);
                     
                     return (
-                      <tr key={criterion.id} className="border-b last:border-b-0 hover:bg-muted/5">
+                      <tr key={criterion.id} className="border-b last:border-b-0 hover:bg-muted/5 border-gray-200">
                         <td className="px-3 py-2 text-muted-foreground">({cLetter})</td>
                         <td className="px-3 py-2">{criterion.name}</td>
                         {finalData.examiners?.map((ex) => {
@@ -665,7 +665,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
                           const score = exCriterion ? exCriterion.score : null;
                           
                           return (
-                            <td key={ex.id} className="px-3 py-2 text-center border-l font-semibold">
+                            <td key={ex.id} className="px-3 py-2 text-center border-l font-semibold border-gray-200">
                               {score !== null ? (
                                 <span>{score}<span className="text-muted-foreground font-normal">/{criterion.maxScore}</span></span>
                               ) : (
@@ -681,11 +681,11 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
               );
             })}
             
-            <tr className="font-bold bg-muted/30 border-t-2 border-b">
+            <tr className="font-bold bg-muted/30 border-t-2 border-b border-gray-200">
               <td></td>
               <td className="px-3 py-2 text-foreground">Total</td>
               {finalData.examiners?.map((ex) => (
-                <td key={ex.id} className="px-3 py-2 text-center border-l font-bold">
+                <td key={ex.id} className="px-3 py-2 text-center border-l font-bold border-gray-200">
                   {ex.assessmentScore !== null ? (
                     <span>{ex.assessmentScore}<span className="text-muted-foreground font-normal">/{totalMaxScore}</span></span>
                   ) : (
@@ -698,7 +698,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
             <tr className="font-bold bg-muted/20">
               <td></td>
               <td className="px-3 py-2 text-foreground">Rata-rata</td>
-              <td colSpan={finalData.examiners?.length || 0} className="px-3 py-2 text-right border-l text-sm text-green-700">
+              <td colSpan={finalData.examiners?.length || 0} className="px-3 py-2 text-right border-l text-sm text-green-700 border-gray-200">
                 {finalData.averageScore !== null ? (
                   <div className="flex items-center justify-end gap-2">
                     <span>{finalData.averageScore?.toFixed(2)}<span className="text-muted-foreground font-normal">/{totalMaxScore}</span></span>

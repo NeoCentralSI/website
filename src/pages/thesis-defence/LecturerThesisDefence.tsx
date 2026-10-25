@@ -17,20 +17,13 @@ export default function LecturerThesisDefence() {
     setSearchParams({ tab }, { replace: true });
   };
 
-  const activeLabel = useMemo(() => {
-    if (activeTab === 'mahasiswa-bimbingan') return 'Mahasiswa Bimbingan';
-    if (activeTab === 'menguji-mahasiswa') return 'Menguji Mahasiswa';
-    if (activeTab === 'tetapkan-penguji') return 'Tetapkan Penguji';
-    return 'Sidang';
-  }, [activeTab]);
-
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Sidang', href: '/tugas-akhir/sidang' },
-      { label: activeLabel },
+      // Tabs do not add a breadcrumb level.
+      { label: 'Sidang' },
     ],
-    [activeLabel]
+    []
   );
 
   useEffect(() => {

@@ -534,7 +534,7 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
         {/* Left Sidebar - Form Structure */}
         <aside className="w-72 sticky top-6 shrink-0 hidden lg:block self-start space-y-4">
           <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
-             <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
+             <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between border-gray-200">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-display">Struktur Formulir</h3>
                  <div className="flex items-center gap-1">
                    {(reorderMode !== 'none') && hasReordered && (
@@ -639,7 +639,7 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
                 })}
              </div>
               {!isLocked && (
-                <div className="p-3 border-t bg-muted/20">
+                <div className="p-3 border-t bg-muted/20 border-gray-200">
                    <Button variant="ghost" size="sm" className="w-full h-8 text-xs gap-2 text-primary hover:bg-primary/10 font-semibold" onClick={() => createSessionMutation.mutate({ name: `Bagian ${(form.sessions?.length ?? 0) + 1}`, order: (form.sessions?.length ?? 0) + 1 })}>
                       <Plus className="h-3 w-3" />
                       Tambah Bagian

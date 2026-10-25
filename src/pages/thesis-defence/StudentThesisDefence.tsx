@@ -24,8 +24,8 @@ export default function StudentThesisDefence() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: studentTaParentHref },
-      { label: 'Sidang', href: '/tugas-akhir/sidang' },
-      { label: 'Status & Pendaftaran' },
+      // Tabs do not add a breadcrumb level.
+      { label: 'Sidang' },
     ],
     [studentTaParentHref]
   );

@@ -214,33 +214,34 @@ export default function YudisiumParticipantDetail() {
       {
         key: 'no',
         header: 'No',
-        width: 50,
+        width: 48,
         className: 'text-center',
         render: (_, idx) => <span className="text-sm text-muted-foreground">{idx + 1}</span>
       },
       {
         key: 'code',
         header: 'Kode CPL',
-        width: 100,
+        width: 88,
         render: (row) => <span className="font-medium">{row.code ?? '-'}</span>
       },
       {
         key: 'description',
         header: 'Deskripsi',
-        className: 'whitespace-normal',
-        render: (row) => <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{row.description}</p>
+        // The rest of the width, wrapped on as many lines as it needs (no horizontal scroll).
+        className: 'whitespace-normal break-words',
+        render: (row) => <p className="text-sm text-muted-foreground leading-relaxed">{row.description}</p>
       },
       {
         key: 'score',
         header: 'Nilai',
-        width: 80,
+        width: 64,
         className: 'text-center',
         render: (row) => <span className="font-semibold">{row.score ?? '-'}</span>
       },
       {
         key: 'minimalScore',
         header: 'Minimal',
-        width: 80,
+        width: 76,
         className: 'text-center',
         accessor: 'minimalScore'
       },
@@ -583,6 +584,7 @@ export default function YudisiumParticipantDetail() {
           Capaian Pembelajaran Lulusan (CPL)
         </h2>
         <CustomTable
+          tableClassName="table-fixed"
           columns={cplColumns}
           data={cplScores}
           loading={loadingCpl}

@@ -156,7 +156,7 @@ export function LecturerThesisDefenceAssignExaminerDialog({
           </div>
 
           <div className="md:grid-cols-1">
-            <div className="space-y-3 rounded-md border p-3">
+            <div className="space-y-3 rounded-md border p-3 border-gray-200">
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold">
                   {isPartialReplace ? 'Pilih Dosen Penguji Pengganti' : 'Pilih Dosen Penguji'}
@@ -171,7 +171,7 @@ export function LecturerThesisDefenceAssignExaminerDialog({
                   <Spinner className="h-6 w-6" />
                 </div>
               ) : (
-                <ScrollArea className="h-[360px] rounded-md border p-2">
+                <ScrollArea className="h-[360px] rounded-md border p-2 border-gray-200">
                   {filteredLecturers.length === 0 ? (
                     <div className="text-center text-sm text-muted-foreground py-8">
                       {search ? 'Tidak ditemukan' : 'Tidak ada dosen tersedia'}

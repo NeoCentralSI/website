@@ -418,7 +418,7 @@ export default function StudentProgressDetail() {
                   ))}
                 </div>
               ) : (
-                <EmptyState size="sm" title="Belum Ada Milestone" description="Belum ada milestone yang tercatat." className="py-6" />
+                <EmptyState size="sm" title="Belum Ada Milestone" description="Belum ada milestone yang tercatat" className="py-6" />
               )}
             </CardContent>
           </Card>

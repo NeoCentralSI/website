@@ -137,7 +137,7 @@ export function DocumentVerificationDialog({ open, onOpenChange, title, subtitle
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="flex h-[100vh] w-[100vw] max-w-[100vw] flex-col gap-0 overflow-hidden rounded-none p-0 sm:max-w-[100vw]">
-          <DialogHeader className="flex-shrink-0 space-y-2 border-b px-4 py-3 text-left sm:px-6">
+          <DialogHeader className="flex-shrink-0 space-y-2 border-b px-4 py-3 text-left sm:px-6 border-gray-200">
             <div className="flex flex-wrap items-center justify-between gap-2 pr-8">
               <div className="min-w-0">
                 <DialogTitle className="truncate">{title}</DialogTitle>
@@ -190,7 +190,7 @@ export function DocumentVerificationDialog({ open, onOpenChange, title, subtitle
             )}
           </div>
 
-          <div className="grid flex-shrink-0 grid-cols-3 gap-2 border-t px-4 py-3 sm:px-6">
+          <div className="grid flex-shrink-0 grid-cols-3 gap-2 border-t px-4 py-3 sm:px-6 border-gray-200">
             <Button type="button" variant="outline" className="w-full" onClick={() => onOpenChange(false)}>
               Batal
             </Button>

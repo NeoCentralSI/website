@@ -34,10 +34,10 @@ export default function StudentThesisSeminar() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: studentTaParentHref },
-      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
-      { label: activeTab === 'riwayat-kehadiran' ? 'Riwayat Kehadiran' : 'Status & Pendaftaran' },
+      // Tabs do not add a breadcrumb level.
+      { label: 'Seminar Hasil' },
     ],
-    [activeTab, studentTaParentHref]
+    [studentTaParentHref]
   );
 
   useEffect(() => {

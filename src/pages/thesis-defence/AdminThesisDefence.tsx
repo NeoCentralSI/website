@@ -17,10 +17,10 @@ export default function AdminThesisDefence() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Sidang', href: '/tugas-akhir/sidang' },
-      { label: activeTab === 'arsip' ? 'Arsip' : 'Verifikasi' },
+      // Tabs do not add a breadcrumb level.
+      { label: 'Sidang' },
     ],
-    [activeTab]
+    []
   );
 
   useEffect(() => {

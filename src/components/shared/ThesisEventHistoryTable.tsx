@@ -3,7 +3,7 @@ import { Eye } from 'lucide-react';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { ThesisEventStatusBadge, type ThesisEventStatus } from '@/components/shared/ThesisEventStatusBadge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatDateOnlyId, toTitleCaseName } from '@/lib/text';
+import { formatDateAbbrId, toTitleCaseName } from '@/lib/text';
 
 /** A failed or cancelled Seminar Hasil or Sidang attempt. */
 export interface ThesisEventHistoryRow {
@@ -28,13 +28,13 @@ function formatTimeRange(startTime: string | null, endTime: string | null): stri
 /** The earlier attempts of a Seminar Hasil or Sidang, in the standard table, without pagination. */
 export function ThesisEventHistoryTable({ items, onDetail }: { items: ThesisEventHistoryRow[]; onDetail: (id: string) => void }) {
   return (
-    <div className="overflow-x-auto border-t">
-      <Table className="min-w-[820px] table-fixed">
+    <div className="overflow-x-auto border-t border-gray-200">
+      <Table className="min-w-[760px] table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead style={{ width: 56 }} className="text-center">No</TableHead>
             <TableHead>Dosen Penguji</TableHead>
-            <TableHead style={{ width: 190 }}>Tanggal</TableHead>
+            <TableHead style={{ width: 150 }}>Tanggal</TableHead>
             <TableHead style={{ width: 150 }}>Ruangan</TableHead>
             <TableHead style={{ width: 80 }}>Nilai</TableHead>
             <TableHead style={{ width: 160 }}>Status</TableHead>
@@ -57,10 +57,10 @@ export function ThesisEventHistoryTable({ items, onDetail }: { items: ThesisEven
                       ))
                     : <span className="text-muted-foreground">-</span>}
                 </TableCell>
-                <TableCell>
+                <TableCell className="whitespace-normal">
                   {item.date ? (
                     <>
-                      <div>{formatDateOnlyId(item.date)}</div>
+                      <div>{formatDateAbbrId(item.date)}</div>
                       {timeRange && <div className="mt-0.5 text-xs text-muted-foreground">{timeRange}</div>}
                     </>
                   ) : <span className="text-muted-foreground">-</span>}

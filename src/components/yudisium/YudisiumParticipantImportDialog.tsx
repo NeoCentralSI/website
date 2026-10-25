@@ -98,7 +98,7 @@ export function YudisiumParticipantImportDialog({
 
         {!result ? (
           <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3 border-gray-200">
               <div className="flex items-center gap-3">
                 <FileSpreadsheet className="h-8 w-8 text-green-600 shrink-0" />
                 <div>
@@ -138,22 +138,22 @@ export function YudisiumParticipantImportDialog({
         ) : (
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded border p-2">
+              <div className="rounded border p-2 border-gray-200">
                 <p className="text-lg font-semibold">{result.total}</p>
                 <p className="text-xs text-muted-foreground">Total</p>
               </div>
-              <div className="rounded border p-2">
+              <div className="rounded border p-2 border-gray-200">
                 <p className="text-lg font-semibold text-green-600">{result.successCount}</p>
                 <p className="text-xs text-muted-foreground">Sukses</p>
               </div>
-              <div className="rounded border p-2">
+              <div className="rounded border p-2 border-gray-200">
                 <p className="text-lg font-semibold text-red-600">{result.failed}</p>
                 <p className="text-xs text-muted-foreground">Gagal</p>
               </div>
             </div>
 
             {result.failedRows.length > 0 && (
-              <ScrollArea className="h-44 rounded border p-3">
+              <ScrollArea className="h-44 rounded border p-3 border-gray-200">
                 <div className="space-y-1">
                   {result.failedRows.map((row, index) => (
                     <p key={`${row.row}-${index}`} className="text-xs text-red-600">

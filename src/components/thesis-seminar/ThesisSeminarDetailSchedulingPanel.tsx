@@ -43,21 +43,21 @@ function ViewerSchedulingContent({ detail }: { detail: any }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20">
+          <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 border-gray-200">
             <Calendar className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div>
               <p className="text-xs text-muted-foreground uppercase font-semibold">Tanggal</p>
               <p className="font-medium">{dateStr}</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20">
+          <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 border-gray-200">
             <Clock className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div>
               <p className="text-xs text-muted-foreground uppercase font-semibold">Waktu</p>
               <p className="font-medium">{timeStr}</p>
             </div>
           </div>
-          <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20">
+          <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/20 border-gray-200">
             {detail.isOnline ? (
               <Video className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             ) : (
@@ -84,11 +84,11 @@ function ViewerSchedulingContent({ detail }: { detail: any }) {
         </div>
 
         {detail.examiners?.length > 0 && (
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t border-gray-200">
             <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Dosen Penguji</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {detail.examiners.map((ex: any) => (
-                <div key={ex.id} className="text-sm p-2 rounded border bg-background">
+                <div key={ex.id} className="text-sm p-2 rounded border bg-background border-gray-200">
                   <span className="text-muted-foreground">Penguji {ex.order}:</span>{' '}
                   <span className="font-medium">{toTitleCaseName(ex.lecturerName)}</span>
                 </div>

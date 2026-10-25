@@ -31,11 +31,10 @@ export default function StudentYudisium() {
 
   const breadcrumbs = useMemo(
     () => [
-      { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Yudisium', href: '/yudisium' },
-      { label: activeTab === 'nilai-cpl' ? 'Nilai CPL' : 'Status & Pendaftaran' },
+      // Yudisium is a top-level menu; tabs do not add a level.
+      { label: 'Yudisium' },
     ],
-    [activeTab]
+    []
   );
 
   useEffect(() => {
@@ -71,7 +70,7 @@ export default function StudentYudisium() {
       <LocalTabsNav tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
       {isOverviewError ? (
-        <div className="space-y-3 rounded-lg border border-dashed p-8 text-center">
+        <div className="space-y-3 rounded-lg border border-dashed p-8 text-center border-gray-200">
           <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
             {overviewError instanceof Error

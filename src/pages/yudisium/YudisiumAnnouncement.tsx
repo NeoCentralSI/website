@@ -1,25 +1,23 @@
+import EmptyState from '@/components/ui/empty-state';
+import { SearchField } from '@/components/shared/SearchField';
+import { ListPagination } from '@/components/shared/ListPagination';
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Loading } from '@/components/ui/spinner';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import {
   CalendarDays,
   Clock,
   MapPin,
-  Search,
   Users,
 } from 'lucide-react';
 import { toTitleCaseName } from '@/lib/text';
-import { cn } from '@/lib/utils';
 import { useYudisiumAnnouncements } from '@/hooks/yudisium/useYudisium';
 
 const PAGE_SIZE = 5;
 const PARTICIPANT_PAGE_SIZE = 10;
 
-type PaginationItem = number | 'ellipsis';
 
 type AnnouncementParticipant = {
   id: string;
@@ -40,21 +38,6 @@ function formatDateHeader(iso: string | null | undefined): string {
   }).format(d);
 }
 
-function getPaginationItems(currentPage: number, totalPages: number): PaginationItem[] {
-  if (totalPages <= 7) {
-    return Array.from({ length: totalPages }, (_, index) => index + 1);
-  }
-
-  const items: PaginationItem[] = [1];
-  const left = Math.max(2, currentPage - 1);
-  const right = Math.min(totalPages - 1, currentPage + 1);
-
-  if (left > 2) items.push('ellipsis');
-  for (let page = left; page <= right; page += 1) items.push(page);
-  if (right < totalPages - 1) items.push('ellipsis');
-  items.push(totalPages);
-  return items;
-}
 
 export default function YudisiumAnnouncementPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -170,71 +153,13 @@ export default function YudisiumAnnouncementPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-card p-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="relative w-full sm:flex-1 sm:max-w-[65%]">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Cari nama mahasiswa, NIM, atau judul TA..."
-            className="pl-9 border-gray-200 bg-card text-xs"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-          />
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <div className="flex flex-wrap items-center gap-1">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0 border-gray-200 text-xs"
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              disabled={currentPage === 1}
-            >
-              ‹
-            </Button>
-            {getPaginationItems(currentPage, totalPages).map((item, index) =>
-              item === 'ellipsis' ? (
-                <span key={`ellipsis-${index}`} className="px-1 text-sm text-muted-foreground">
-                  ...
-                </span>
-              ) : (
-                <Button
-                  key={item}
-                  size="sm"
-                  variant={currentPage === item ? 'default' : 'outline'}
-                  className={cn("h-8 min-w-8 px-2 text-xs", currentPage !== item && "border-gray-200")}
-                  onClick={() => setCurrentPage(item)}
-                >
-                  {item}
-                </Button>
-              )
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0 border-gray-200 text-xs"
-              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-              disabled={currentPage === totalPages}
-            >
-              ›
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>
-          Menampilkan {sortedAnnouncements.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, sortedAnnouncements.length)} dari {sortedAnnouncements.length} pengumuman
-        </span>
-        <span>Halaman {currentPage} dari {totalPages}</span>
-      </div>
+      <SearchField value={search} onChange={setSearch} placeholder="Cari nama mahasiswa, NIM, atau judul TA..." />
 
       {paginatedAnnouncements.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-16 text-muted-foreground">
-          <CalendarDays className="h-12 w-12 opacity-30" />
-          <p className="text-sm">
-            {search ? 'Tidak ditemukan pengumuman yang sesuai pencarian.' : 'Belum ada pengumuman hasil yudisium.'}
-          </p>
-        </div>
+        <EmptyState
+          title={search ? 'Tidak Ditemukan' : 'Belum Ada Pengumuman'}
+          description={search ? 'Tidak ditemukan pengumuman yang sesuai pencarian' : 'Belum ada pengumuman hasil yudisium'}
+        />
       ) : (
         <div className="space-y-4">
           {paginatedAnnouncements.map((item) => {
@@ -294,6 +219,9 @@ export default function YudisiumAnnouncementPage() {
             );
           })}
         </div>
+      )}
+      {sortedAnnouncements.length > 0 && (
+        <ListPagination total={sortedAnnouncements.length} page={currentPage} pageSize={PAGE_SIZE} onPageChange={setCurrentPage} />
       )}
     </div>
   );

@@ -423,7 +423,7 @@ export function YudisiumFormDialog({
 						) : requirements.length === 0 ? (
 							<p className="text-xs text-muted-foreground">Belum ada persyaratan yang tersedia</p>
 						) : (
-							<div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+							<div className="border rounded-md divide-y max-h-48 overflow-y-auto border-gray-200">
 								{requirements
 									.filter(req => req.isActive || selectedRequirementIds.includes(req.id))
 									.map((req) => (

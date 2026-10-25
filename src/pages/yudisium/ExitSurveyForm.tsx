@@ -112,8 +112,7 @@ export default function ExitSurveyFormPage() {
 
   useEffect(() => {
     setBreadcrumbs([
-      { label: 'Yudisium', href: '/yudisium' },
-      { label: 'Exit Survey', href: '/yudisium?tab=exit-survey' },
+      { label: 'Yudisium', href: '/yudisium?tab=exit-survey' },
       { label: 'Kelola Form' },
     ]);
     if (form) {

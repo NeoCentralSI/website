@@ -3,7 +3,7 @@ import { Eye } from 'lucide-react';
 import { TableIconAction } from '@/components/shared/TableIconAction';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { formatDateOnlyId } from '@/lib/text';
+import { formatDateAbbrId, formatDateRangeShort } from '@/lib/text';
 import { cn } from '@/lib/utils';
 
 const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string }> = {
@@ -27,14 +27,14 @@ interface YudisiumHistoryRow {
 /** Registrations in earlier yudisium periods, in the standard table, without pagination. */
 export function StudentYudisiumHistoryTable({ items, onDetail }: { items: YudisiumHistoryRow[]; onDetail: (id: string, yudisiumId: string) => void }) {
   return (
-    <div className="overflow-x-auto border-t">
-      <Table className="min-w-[760px] table-fixed">
+    <div className="overflow-x-auto border-t border-gray-200">
+      <Table className="min-w-[680px] table-fixed">
         <TableHeader>
           <TableRow>
             <TableHead style={{ width: 56 }} className="text-center">No</TableHead>
             <TableHead>Periode Yudisium</TableHead>
-            <TableHead style={{ width: 230 }}>Rentang Pendaftaran</TableHead>
-            <TableHead style={{ width: 140 }}>Pelaksanaan</TableHead>
+            <TableHead style={{ width: 170 }} className="whitespace-normal">Rentang Pendaftaran</TableHead>
+            <TableHead style={{ width: 120 }}>Pelaksanaan</TableHead>
             <TableHead style={{ width: 220 }}>Status</TableHead>
             <TableHead style={{ width: 64 }} className="text-center">Aksi</TableHead>
           </TableRow>
@@ -46,10 +46,10 @@ export function StudentYudisiumHistoryTable({ items, onDetail }: { items: Yudisi
               <TableRow key={item.id}>
                 <TableCell className="text-center text-muted-foreground">{index + 1}</TableCell>
                 <TableCell className="truncate font-medium" title={item.yudisiumName ?? undefined}>{item.yudisiumName || "-"}</TableCell>
-                <TableCell>{formatDateOnlyId(item.registrationOpenDate)} – {formatDateOnlyId(item.registrationCloseDate)}</TableCell>
-                <TableCell>{formatDateOnlyId(item.eventDate)}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={cn('rounded-full px-2 py-0.5 text-xs font-semibold', status.className)}>{status.label}</Badge>
+                <TableCell className="whitespace-normal break-words">{formatDateRangeShort(item.registrationOpenDate, item.registrationCloseDate)}</TableCell>
+                <TableCell className="whitespace-normal">{formatDateAbbrId(item.eventDate)}</TableCell>
+                <TableCell className="whitespace-normal">
+                  <Badge variant="outline" className={cn('max-w-full whitespace-normal rounded-full px-2 py-0.5 text-left text-xs font-semibold', status.className)}>{status.label}</Badge>
                 </TableCell>
                 <TableCell className="text-center">
                   <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => onDetail(item.id, item.yudisiumId || '')} />

@@ -227,7 +227,7 @@ export default function YudisiumDetailPage() {
                 {/* Task 1: Verifikasi Dokumen */}
                 <div
                   className={cn(
-                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border",
+                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border border-gray-200",
                     isDocDone
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : "bg-amber-50/70 text-amber-700 border-amber-200/80"
@@ -246,7 +246,7 @@ export default function YudisiumDetailPage() {
                 {/* Task 2: Validasi CPL */}
                 <div
                   className={cn(
-                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border",
+                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border border-gray-200",
                     isCplDone
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : "bg-amber-50/70 text-amber-700 border-amber-200/80"
