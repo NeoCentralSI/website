@@ -204,6 +204,11 @@ describe("thesisLabels", () => {
     expect(reason).not.toContain("completed");
     // The student is on leave: the thesis stays in research, but every write is blocked.
     expect(getGuidanceActionBlockReason("research", "Anda", { onLeave: true })).toBe("Anda sedang cuti. Bimbingan dan milestone tidak dapat diubah selama cuti.");
+    // The Tugas Akhir course of the semester (reason from the server) blocks a thesis in research only.
+    const course = "Anda tidak tercatat mengambil mata kuliah Tugas Akhir semester ini. Hubungi Admin Departemen bila ini keliru.";
+    expect(getGuidanceActionBlockReason("research", "Anda", { courseBlockReason: course })).toBe(course);
+    expect(getGuidanceActionBlockReason("research", "Anda", { onLeave: true, courseBlockReason: course })).toMatch(/sedang cuti/);
+    expect(getGuidanceActionBlockReason("proposal", "Anda", { proposalPhaseOpen: true, courseBlockReason: course })).toBeNull();
     expect(getGuidanceActionBlockReason("proposal", "mahasiswa", { onLeave: true, proposalPhaseOpen: true })).toMatch(/^Mahasiswa sedang cuti/);
   });
 

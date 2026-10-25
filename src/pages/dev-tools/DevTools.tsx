@@ -10,14 +10,16 @@ import { AlertTriangle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { TabsNav, type TabItem } from '@/components/ui/tabs-nav';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { DevToolsFinalStagesPanel } from '@/components/dev-tools/DevToolsFinalStagesPanel';
+import {
+  DevToolsEventTablePanel,
+  DevToolsYudisiumParticipantTablePanel,
+  DevToolsYudisiumPeriodTablePanel,
+} from '@/components/dev-tools/DevToolsFinalStagesTables';
 import { DevToolsGuidancePanel } from '@/components/dev-tools/DevToolsGuidancePanel';
 import { DevToolsPeriodPanel } from '@/components/dev-tools/DevToolsPeriodPanel';
 import { DevToolsProposalPanel } from '@/components/dev-tools/DevToolsProposalPanel';
 import { DevToolsStudentPanel } from '@/components/dev-tools/DevToolsStudentPanel';
 import { DevToolsUserPanel } from '@/components/dev-tools/DevToolsUserPanel';
-import { DevToolsYudisiumParticipantPanel } from '@/components/dev-tools/DevToolsYudisiumParticipantPanel';
-import { DevToolsYudisiumPeriodPanel } from '@/components/dev-tools/DevToolsYudisiumPeriodPanel';
 
 const DEV_TOOLS_BASE_PATH = '/admin/dev-tools';
 
@@ -27,9 +29,10 @@ const TABS = [
   { label: 'Periode', to: `${DEV_TOOLS_BASE_PATH}/periode`, Panel: DevToolsPeriodPanel },
   { label: 'Proposal', to: `${DEV_TOOLS_BASE_PATH}/proposal`, Panel: DevToolsProposalPanel },
   { label: 'Bimbingan', to: `${DEV_TOOLS_BASE_PATH}/bimbingan`, Panel: DevToolsGuidancePanel },
-  { label: 'Seminar & Sidang', to: `${DEV_TOOLS_BASE_PATH}/seminar-sidang`, Panel: DevToolsFinalStagesPanel },
-  { label: 'Periode Yudisium', to: `${DEV_TOOLS_BASE_PATH}/periode-yudisium`, Panel: DevToolsYudisiumPeriodPanel },
-  { label: 'Peserta Yudisium', to: `${DEV_TOOLS_BASE_PATH}/peserta-yudisium`, Panel: DevToolsYudisiumParticipantPanel },
+  { label: 'Seminar Hasil', to: `${DEV_TOOLS_BASE_PATH}/seminar`, Panel: () => <DevToolsEventTablePanel kind="seminars" /> },
+  { label: 'Sidang', to: `${DEV_TOOLS_BASE_PATH}/sidang`, Panel: () => <DevToolsEventTablePanel kind="defences" /> },
+  { label: 'Periode Yudisium', to: `${DEV_TOOLS_BASE_PATH}/periode-yudisium`, Panel: DevToolsYudisiumPeriodTablePanel },
+  { label: 'Peserta Yudisium', to: `${DEV_TOOLS_BASE_PATH}/peserta-yudisium`, Panel: DevToolsYudisiumParticipantTablePanel },
 ] as const;
 
 const TAB_ITEMS: TabItem[] = TABS.map(({ label, to }) => ({ label, to }));

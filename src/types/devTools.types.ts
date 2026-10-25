@@ -168,114 +168,59 @@ export interface UpdateGuidanceScheduleDto {
   completedAt?: string | null;
 }
 
-// --- Seminar Hasil, Sidang TA, Yudisium ---
+// --- Seminar Hasil, Sidang, Yudisium (status and dates as plain tables) ---
 
-export type DevToolsEventKind = 'seminar' | 'defence';
-export type DevToolsEventTarget =
+export type DevToolsEventKind = 'seminars' | 'defences';
+export type DevToolsEventStatus =
   | 'registered'
   | 'verified'
   | 'examiner_assigned'
   | 'scheduled'
   | 'passed'
   | 'passed_with_revision'
-  | 'failed';
-export type DevToolsEventMode = 'change' | 'create' | 'delete' | 'approve-revisions';
+  | 'failed'
+  | 'cancelled';
 
-export interface DevToolsEventCard {
+export interface DevToolsEventRow {
   id: string;
-  status: string;
-  displayStatus: string;
-  registeredAt: string | null;
+  status: DevToolsEventStatus;
   date: string | null;
   startTime: string | null;
   endTime: string | null;
-  room: string | null;
-  examiners: { id: string; name: string; order: number; availabilityStatus: string; score: number | null; submitted: boolean }[];
-  finalScore: number | null;
-  supervisorScore?: number | null;
-  supervisorSubmitted?: boolean;
-  grade?: string | null;
-  resultFinalizedAt: string | null;
-  revision: { total: number; approved: number; finalizedAt: string | null };
-  officialDocuments: number;
+  studentName: string | null;
+  studentNim: string | null;
 }
 
-export interface DevToolsFinalStages {
-  student: { id: string; fullName: string; nim: string; sksCompleted: number; researchMethodCompleted: boolean };
-  thesis: { id: string; title: string | null; status: string } | null;
-  seminar: DevToolsEventCard | null;
-  defence: DevToolsEventCard | null;
-  history: { seminar: number; defence: number };
-  guards: { seminar: string | null; defence: string | null };
+export interface DevToolsEventPatch {
+  status?: DevToolsEventStatus;
+  date?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  preset?: 'now' | 'past';
 }
 
-/** What an action will do, shown before it is confirmed. */
-export interface DevToolsEffects {
-  prerequisites: string[];
-  effects: string[];
-}
-
-export interface DevToolsScheduleDto {
-  preset?: 'now' | 'past' | 'tomorrow';
-  date?: string;
-  startTime?: string;
-  endTime?: string;
-}
-
-export type DevToolsPeriodStatus = 'draft' | 'open' | 'closed' | 'ongoing' | 'completed';
-
-export interface DevToolsYudisiumPeriod {
+export interface DevToolsYudisiumPeriodRow {
   id: string;
   name: string;
   registrationOpenDate: string | null;
   registrationCloseDate: string | null;
   eventDate: string | null;
-  exitSurveyOpenDate: string | null;
-  exitSurveyCloseDate: string | null;
-  appointedAt: string | null;
-  decreeUploadedAt: string | null;
-  hasExitSurvey: boolean;
-  participantCount: number;
-  requirementCount: number;
-  status: DevToolsPeriodStatus;
 }
 
-export type DevToolsPeriodDatesDto = Partial<
-  Record<'registrationOpenDate' | 'registrationCloseDate' | 'eventDate' | 'exitSurveyOpenDate' | 'exitSurveyCloseDate', string | null>
-> & { preset?: 'open' | 'close' | 'event' };
+export type DevToolsPeriodPatch = Partial<Record<'registrationOpenDate' | 'registrationCloseDate' | 'eventDate', string | null>>;
 
 export type DevToolsParticipantStatus = 'registered' | 'eligible' | 'appointed' | 'rejected' | 'finalized';
 
-export interface DevToolsYudisiumParticipant {
+export interface DevToolsParticipantRow {
   id: string;
-  period: DevToolsYudisiumPeriod;
   status: DevToolsParticipantStatus;
-  registeredAt: string | null;
-  exitSurveySubmittedAt: string | null;
-  exitSurveyAnswers: number;
-  requirementVerifiedAt: string | null;
-  cplValidatedAt: string | null;
-  requirements: { itemId: string; name: string; status: 'submitted' | 'approved' | 'declined' | null; verifiedAt: string | null }[];
+  periodId: string | null;
+  periodName: string | null;
+  studentName: string | null;
+  studentNim: string | null;
 }
 
-export interface DevToolsCplRow {
-  cplId: string;
-  code: string;
-  description: string;
-  minimalScore: number;
-  score: number | null;
-  oldScore: number | null;
-  status: 'calculated' | 'validated' | 'finalized' | null;
-  passed: boolean;
-  hasRecommendation: boolean;
-  hasSettlement: boolean;
-  validatedAt: string | null;
-}
-
-export interface DevToolsStudentYudisium {
-  student: { id: string; fullName: string; nim: string; sksCompleted: number };
-  thesis: { id: string; title: string | null; status: string } | null;
-  academic: { defencePassed: boolean; sksMet: boolean; coursesMet: boolean };
-  participants: DevToolsYudisiumParticipant[];
-  cpl: DevToolsCplRow[];
+export interface DevToolsPage<T> {
+  data: T[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
 }

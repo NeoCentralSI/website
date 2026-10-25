@@ -30,6 +30,8 @@ export interface SeminarChecklist {
   kehadiran: SeminarChecklistItem;
   metopen: SeminarChecklistItem;
   pembimbing: SeminarChecklistItem;
+  /** Taking the Tugas Akhir course this semester; `reason` says why not. */
+  mataKuliahTa?: { met: boolean; label: string; reason?: string | null };
 }
 
 export interface SeminarDocument {

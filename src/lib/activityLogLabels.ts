@@ -128,12 +128,6 @@ const FIELD_LABELS: Record<string, string> = {
   registrationOpenDate: 'Buka pendaftaran',
   registrationCloseDate: 'Tutup pendaftaran',
   eventDate: 'Tanggal acara',
-  exitSurveyOpenDate: 'Buka exit survey',
-  exitSurveyCloseDate: 'Tutup exit survey',
-  action: 'Aksi',
-  items: 'Item',
-  cpl: 'CPL',
-  score: 'Nilai',
 };
 
 /** Metadata keys worth showing, with their label. */
@@ -146,7 +140,6 @@ const METADATA_LABELS: Record<string, string> = {
   cancelledGuidances: 'Sesi dibatalkan',
   cancelledChangeRequests: 'Pengajuan perubahan ditutup',
   closedEvaluations: 'Evaluasi ditutup',
-  details: 'Rincian',
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -164,19 +157,8 @@ const OPERATION_LABELS: Record<string, string> = {
   update: 'Ubah',
   delete: 'Hapus',
   copy: 'Salin dari periode lain',
-  status: 'Ubah status',
-  schedule: 'Ubah jadwal',
-  approve_revisions: 'Setujui semua revisi',
-  register: 'Daftarkan ke periode',
-  requirement: 'Item persyaratan',
-  exit_survey: 'Exit survey',
-  dates: 'Ubah tanggal periode',
-  cpl_score: 'Ubah nilai CPL',
-  cpl_all_pass: 'Semua CPL memenuhi',
-  cpl_one_fail: 'Satu CPL tidak memenuhi',
-  cpl_recommendation: 'Rekomendasi CPL',
 };
-const SCOPE_LABELS: Record<string, string> = { proposal: 'Metode Penelitian', thesis: 'Tugas Akhir', seminar: 'Seminar Hasil', defence: 'Sidang TA', yudisium: 'Yudisium', cpl: 'CPL' };
+const SCOPE_LABELS: Record<string, string> = { proposal: 'Metode Penelitian', thesis: 'Tugas Akhir', seminar: 'Seminar Hasil', defence: 'Sidang TA', yudisium: 'Yudisium' };
 const EVENT_STATUS_LABELS: Record<string, string> = {
   registered: 'Terdaftar',
   verified: 'Terverifikasi',
@@ -188,13 +170,11 @@ const EVENT_STATUS_LABELS: Record<string, string> = {
   cancelled: 'Dibatalkan',
 };
 const PARTICIPANT_STATUS_LABELS: Record<string, string> = { registered: 'Terdaftar', eligible: 'Memenuhi Syarat', appointed: 'Ditetapkan', rejected: 'Ditolak', finalized: 'Final' };
-const DEVTOOLS_ACTION_LABELS: Record<string, string> = {
-  approve: 'Terverifikasi', decline: 'Ditolak', fill: 'Diisi', clear: 'Dikosongkan', create: 'Dibuat', resolve: 'Diselesaikan', delete: 'Dihapus',
-};
+
 const THESIS_EFFECT_LABELS: Record<string, string> = { paused: 'Dijeda', resumed: 'Dilanjutkan', terminated: 'Dihentikan (Gagal)' };
 const IMPORT_KIND_LABELS: Record<string, string> = { users: 'Pengguna', students: 'Mahasiswa', lecturers: 'Dosen' };
 
-const DATE_KEYS = new Set(['startDate', 'endDate', 'date', 'exitSurveyOpenDate', 'exitSurveyCloseDate']);
+const DATE_KEYS = new Set(['startDate', 'endDate', 'date']);
 
 /** A value of `changes` as readable text. */
 export function formatActivityValue(key: string, value: unknown): string {
@@ -216,7 +196,6 @@ export function formatActivityValue(key: string, value: unknown): string {
   if (key === 'kind' && typeof value === 'string') return IMPORT_KIND_LABELS[value] ?? value;
   if (key === 'eventStatus' && typeof value === 'string') return EVENT_STATUS_LABELS[value] ?? value;
   if (key === 'participantStatus' && typeof value === 'string') return PARTICIPANT_STATUS_LABELS[value] ?? value;
-  if (key === 'action' && typeof value === 'string') return DEVTOOLS_ACTION_LABELS[value] ?? value;
   if (DATE_KEYS.has(key) && typeof value === 'string') return formatDateShortId(value);
   if (Array.isArray(value)) {
     if (value.length === 0) return '-';

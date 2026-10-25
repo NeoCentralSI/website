@@ -396,6 +396,8 @@ export interface MyThesisDetail extends ThesisPhaseSummary {
   lastActivityAt?: string | null;
   daysSinceActivity?: number | null;
   supervisionClock?: SupervisionClock | null;
+  /** Why the student may not act now: leave, or the Tugas Akhir course of the semester. */
+  actionBlock?: { code: "on_leave" | "not_taking_thesis" | "thesis_course_unknown" | null; reason: string | null; takingThesisCourse: boolean | null } | null;
   /** True while the thesis is back in proposal because of a guidance evaluation. */
   repeatingProposal?: boolean;
   startDate?: string | null;

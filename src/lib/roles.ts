@@ -14,7 +14,6 @@ export const ROLES = {
   /** The database value keeps the old name; the UI label is "Koordinator Metode Penelitian". */
   KOORDINATOR_METODE_PENELITIAN: "Koordinator Matkul Metopen",
   KOORDINATOR_YUDISIUM: "Koordinator Yudisium",
-  TIM_PENGELOLA_CPL: "Tim Pengelola CPL",
 } as const;
 
 export type RoleName = typeof ROLES[keyof typeof ROLES];
@@ -35,7 +34,6 @@ export const LECTURER_ROLES = [
   ROLES.GKM,
   ROLES.KOORDINATOR_METODE_PENELITIAN,
   ROLES.KOORDINATOR_YUDISIUM,
-  ROLES.TIM_PENGELOLA_CPL,
 ] as const;
 
 // Staff roles (admin + management)
@@ -58,7 +56,6 @@ export const formatRoleName = (roleName: string): string => {
     [ROLES.PENGUJI]: 'Penguji',
     [ROLES.KOORDINATOR_METODE_PENELITIAN]: 'Koordinator Metode Penelitian',
     [ROLES.KOORDINATOR_YUDISIUM]: 'Koordinator Yudisium',
-    [ROLES.TIM_PENGELOLA_CPL]: 'Tim Pengelola CPL',
   };
   return roleMap[roleName] || roleName;
 };
@@ -75,7 +72,6 @@ export const roleOptions = [
   { value: ROLES.GKM, label: 'GKM' },
   { value: ROLES.KOORDINATOR_METODE_PENELITIAN, label: 'Koordinator Metode Penelitian' },
   { value: ROLES.KOORDINATOR_YUDISIUM, label: 'Koordinator Yudisium' },
-  { value: ROLES.TIM_PENGELOLA_CPL, label: 'Tim Pengelola CPL' },
 ];
 
 // Peran yang bisa ditugaskan Admin lewat form Kelola User.

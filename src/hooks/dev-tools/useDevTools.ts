@@ -12,11 +12,9 @@ import type {
   CreateUserDto,
   UpdateGuidanceScheduleDto,
   SetPeriodFlagsDto,
-  DevToolsEventKind,
-  DevToolsEventTarget,
-  DevToolsScheduleDto,
-  DevToolsPeriodDatesDto,
+  DevToolsEventPatch,
   DevToolsParticipantStatus,
+  DevToolsPeriodPatch,
 } from '@/types/devTools.types';
 
 const QK = {
@@ -29,9 +27,7 @@ const QK = {
   guidances: 'devtools-guidances',
   semesterFlags: 'devtools-semester-flags',
   supervisorRequests: 'devtools-supervisor-requests',
-  finalStages: 'devtools-final-stages',
-  yudisiumPeriods: 'devtools-yudisium-periods',
-  studentYudisium: 'devtools-student-yudisium',
+  tables: 'devtools-tables',
 } as const;
 
 export function useDevToolsStudents(search: string, statusFilter: string) {
@@ -118,23 +114,13 @@ export function useDevToolsSupervisorRequests(params: { search: string; page: nu
   });
 }
 
-export function useDevToolsFinalStages(studentId: string | null) {
+/** A DevTools table (seminars, defences, yudisium-periods, yudisium-participants). */
+export function useDevToolsTable<T>(path: string, params: { search: string; status?: string; page: number; pageSize: number }) {
   return useQuery({
-    queryKey: [QK.finalStages, studentId],
-    queryFn: () => devToolsService.getFinalStages(studentId!),
-    enabled: !!studentId,
-  });
-}
-
-export function useDevToolsYudisiumPeriods() {
-  return useQuery({ queryKey: [QK.yudisiumPeriods], queryFn: () => devToolsService.getYudisiumPeriods() });
-}
-
-export function useDevToolsStudentYudisium(studentId: string | null) {
-  return useQuery({
-    queryKey: [QK.studentYudisium, studentId],
-    queryFn: () => devToolsService.getStudentYudisium(studentId!),
-    enabled: !!studentId,
+    queryKey: [QK.tables, path, params.search, params.status ?? '', params.page, params.pageSize],
+    queryFn: () => devToolsService.listTable<T>(path, params),
+    staleTime: 15_000,
+    placeholderData: (prev) => prev,
   });
 }
 
@@ -151,9 +137,7 @@ export function useDevToolsMutations() {
     qc.invalidateQueries({ queryKey: [QK.guidances] });
     qc.invalidateQueries({ queryKey: [QK.semesterFlags] });
     qc.invalidateQueries({ queryKey: [QK.supervisorRequests] });
-    qc.invalidateQueries({ queryKey: [QK.finalStages] });
-    qc.invalidateQueries({ queryKey: [QK.yudisiumPeriods] });
-    qc.invalidateQueries({ queryKey: [QK.studentYudisium] });
+    qc.invalidateQueries({ queryKey: [QK.tables] });
     qc.invalidateQueries({ queryKey: ['thesis-proposal'] });
     qc.invalidateQueries({ queryKey: ['research-method'] });
   }, [qc]);
@@ -197,24 +181,7 @@ export function useDevToolsMutations() {
       wrap(() => devToolsService.updateGuidanceSchedule(id, data)),
     setSupervisorRequestTime: (id: string, createdAt: string) =>
       wrap(() => devToolsService.setSupervisorRequestTime(id, createdAt), 'Waktu pengajuan pembimbing diubah'),
-    setEventStatus: (studentId: string, kind: DevToolsEventKind, target: DevToolsEventTarget, mode: 'change' | 'create') =>
-      wrap(() => devToolsService.setEventStatus(studentId, kind, target, mode)),
-    approveRevisions: (studentId: string, kind: DevToolsEventKind) => wrap(() => devToolsService.approveRevisions(studentId, kind)),
-    deleteEvent: (studentId: string, kind: DevToolsEventKind) => wrap(() => devToolsService.deleteEvent(studentId, kind)),
-    setEventSchedule: (kind: DevToolsEventKind, eventId: string, data: DevToolsScheduleDto) =>
-      wrap(() => devToolsService.setEventSchedule(kind, eventId, data)),
-    setYudisiumPeriodDates: (id: string, data: DevToolsPeriodDatesDto) => wrap(() => devToolsService.setYudisiumPeriodDates(id, data)),
-    registerYudisium: (studentId: string, yudisiumId: string) => wrap(() => devToolsService.registerYudisium(studentId, yudisiumId)),
-    removeParticipant: (participantId: string) => wrap(() => devToolsService.removeParticipant(participantId)),
-    setParticipantStatus: (participantId: string, target: DevToolsParticipantStatus) =>
-      wrap(() => devToolsService.setParticipantStatus(participantId, target)),
-    setRequirementItems: (participantId: string, action: 'approve' | 'decline', itemId?: string) =>
-      wrap(() => devToolsService.setRequirementItems(participantId, action, itemId)),
-    setExitSurvey: (participantId: string, action: 'fill' | 'clear') => wrap(() => devToolsService.setExitSurvey(participantId, action)),
-    setCplScore: (studentId: string, cplId: string, score: number) =>
-      wrap(() => devToolsService.setCplScore(studentId, cplId, score), 'Nilai CPL diubah'),
-    setCplPreset: (studentId: string, preset: 'all-pass' | 'one-fail') => wrap(() => devToolsService.setCplPreset(studentId, preset)),
-    setCplRecommendation: (studentId: string, cplId: string, action: 'create' | 'resolve' | 'delete') =>
-      wrap(() => devToolsService.setCplRecommendation(studentId, cplId, action)),
+    patchTable: (path: string, id: string, body: DevToolsEventPatch | DevToolsPeriodPatch | { status: DevToolsParticipantStatus }) =>
+      wrap(() => devToolsService.patchTable(path, id, body)),
   };
 }

@@ -118,7 +118,7 @@ export function ImportStudentDialog({
       { 'Kolom': 'NIM/NIP', 'Keterangan': 'Nomor Induk Mahasiswa (NIM) atau Nomor Induk Pegawai (NIP). Wajib diisi.' },
       { 'Kolom': 'Nama Lengkap', 'Keterangan': 'Nama lengkap user beserta gelar jika ada.' },
       { 'Kolom': 'Email', 'Keterangan': 'Email user yang unik (contoh: @student.unand.ac.id atau @fti.unand.ac.id). Wajib diisi.' },
-      { 'Kolom': 'Role', 'Keterangan': 'Role user. Jika memiliki multiple role, pisahkan dengan koma (contoh: "Pembimbing 1, Penguji", "Ketua Departemen, Pembimbing 1"). Pilihan role baku: Mahasiswa, Pembimbing 1, Pembimbing 2, Penguji, Ketua Departemen, Sekretaris Departemen, GKM, Koordinator Metode Penelitian, Koordinator Yudisium, Tim Pengelola CPL, Admin. Admin tidak dapat digabung dengan role lain.' },
+      { 'Kolom': 'Role', 'Keterangan': 'Role user. Jika memiliki multiple role, pisahkan dengan koma (contoh: "Pembimbing 1, Penguji", "Ketua Departemen, Pembimbing 1"). Pilihan role baku: Mahasiswa, Pembimbing 1, Pembimbing 2, Penguji, Ketua Departemen, Sekretaris Departemen, GKM, Koordinator Metode Penelitian, Koordinator Yudisium, Admin. Admin tidak dapat digabung dengan role lain.' },
       { 'Kolom': 'Status Mahasiswa', 'Keterangan': 'Status mahasiswa (khusus mahasiswa). Pilihan: Aktif, Cuti, Lulus, Mengundurkan Diri, Drop Out. Kosong untuk mahasiswa baru berarti Aktif; kosong untuk mahasiswa lama tidak mengubah status. Kosongkan untuk Dosen.' },
     ];
 

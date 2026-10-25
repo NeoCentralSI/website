@@ -251,7 +251,7 @@ export default function MahasiswaDetail() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Predikat</span>
-                  <Badge variant="outline">{data.student.graduationPredicate || '-'}</Badge>
+                  <Badge variant="outline">{data.student.graduationPredicate || '—'}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">MK Wajib</span>

@@ -965,7 +965,6 @@ export const adminUpdateStudentAPI = async (id: string, data: {
   status: string;
   sksCompleted: number;
   gpa?: number | null;
-  graduationPredicate?: string | null;
   enrollmentYear?: number;
   currentSemester?: number;
   mandatoryCoursesCompleted?: boolean;
@@ -984,7 +983,6 @@ export const adminUpdateStudentAPI = async (id: string, data: {
       status: data.status,
       skscompleted: data.sksCompleted,
       gpa: data.gpa,
-      graduationPredicate: data.graduationPredicate,
       enrollmentYear: data.enrollmentYear,
       currentSemester: data.currentSemester,
       mandatoryCoursesCompleted: data.mandatoryCoursesCompleted,

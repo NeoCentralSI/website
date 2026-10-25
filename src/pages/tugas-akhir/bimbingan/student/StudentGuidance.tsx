@@ -81,6 +81,7 @@ export default function StudentGuidancePage() {
         repeatingProposal: thesisDetail.repeatingProposal,
         proposalPhaseOpen: thesisDetail.proposalPhaseOpen,
         onLeave: thesisDetail.supervisionClock?.isPaused,
+        courseBlockReason: thesisDetail.actionBlock?.code && thesisDetail.actionBlock.code !== 'on_leave' ? thesisDetail.actionBlock.reason : null,
       })
     : null;
 

@@ -247,7 +247,7 @@ describe('DevTools panels', () => {
       </QueryClientProvider>,
     );
     expect(screen.getByText(/Hanya untuk Pengembangan/)).toBeInTheDocument();
-    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['User', 'Mahasiswa', 'Periode', 'Proposal', 'Bimbingan', 'Seminar & Sidang', 'Periode Yudisium', 'Peserta Yudisium']);
+    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['User', 'Mahasiswa', 'Periode', 'Proposal', 'Bimbingan', 'Seminar Hasil', 'Sidang', 'Periode Yudisium', 'Peserta Yudisium']);
     expect(screen.getByRole('link', { name: 'Proposal' })).toHaveAttribute('href', '/admin/dev-tools/proposal');
     expect(screen.getByRole('link', { name: 'User' })).toHaveAttribute('href', '/admin/dev-tools/users');
     expect(await screen.findByText('Husnil Kamil')).toBeInTheDocument();

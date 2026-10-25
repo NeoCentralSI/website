@@ -11,11 +11,14 @@ function ChecklistRow({
   met,
   current,
   required,
+  note,
 }: {
   label: string;
   met: boolean;
   current?: number;
   required?: number;
+  /** Why it is not met, shown instead of "Menunggu". */
+  note?: string | null;
 }) {
   const hasProgress = current !== undefined && required !== undefined;
   const isInProgress = !met && hasProgress && current > 0;
@@ -24,7 +27,7 @@ function ChecklistRow({
     ? 'Terpenuhi'
     : isInProgress
       ? `${current}/${required}`
-      : 'Menunggu';
+      : note || 'Menunggu';
 
   return (
     <div
@@ -61,6 +64,9 @@ export function StudentThesisSeminarChecklistRequirementsCard({ checklist }: Che
         Checklist Persyaratan
       </div>
       <div className="flex flex-col gap-1.5">
+        {checklist.mataKuliahTa && (
+          <ChecklistRow label={checklist.mataKuliahTa.label} met={checklist.mataKuliahTa.met} note={checklist.mataKuliahTa.reason} />
+        )}
         <ChecklistRow
           label={checklist.metopen?.label || "Lulus Mata Kuliah Metode Penelitian"}
           met={checklist.metopen?.met || false}

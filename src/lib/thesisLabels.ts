@@ -591,7 +591,7 @@ export function getThesisActivityOptions(): { value: ThesisActivityLevel; label:
 export function getGuidanceActionBlockReason(
   status: string | null | undefined,
   owner: "Anda" | "mahasiswa" = "Anda",
-  options: { repeatingProposal?: boolean | null; proposalPhaseOpen?: boolean | null; onLeave?: boolean | null } = {},
+  options: { repeatingProposal?: boolean | null; proposalPhaseOpen?: boolean | null; onLeave?: boolean | null; courseBlockReason?: string | null } = {},
 ): string | null {
   // The student is on leave: the thesis is paused (the same check runs on the server).
   if (options.onLeave && (status === "research" || status === "proposal")) {
@@ -599,7 +599,8 @@ export function getGuidanceActionBlockReason(
       ? "Anda sedang cuti. Bimbingan dan milestone tidak dapat diubah selama cuti."
       : "Mahasiswa sedang cuti. Bimbingan dan milestone tidak dapat diubah selama cuti.";
   }
-  if (status === "research") return null;
+  // A thesis in research needs the Tugas Akhir course of the semester (reason from the server).
+  if (status === "research") return options.courseBlockReason ?? null;
   // TA yang dikembalikan ke proposal oleh evaluasi bimbingan menyebut alasannya.
   if (status === "proposal" && options.repeatingProposal) {
     return `${REPEAT_PROPOSAL_LOCK_REASON} Bimbingan dan milestone terkunci sampai Pembimbing 1 menyetujui proposal revisi (Tugas Akhir > Proposal).`;
