@@ -28,6 +28,7 @@ export const OFFICIAL_DOCUMENT_KIND_LABELS: Record<string, string> = {
   seminar_invitation: 'Undangan Seminar Hasil',
   seminar_assessment_result: 'Berita Acara Seminar Hasil',
   seminar_audience_list: 'Daftar Hadir Seminar Hasil',
+  seminar_attendance_certificate: 'Bukti Kehadiran Seminar (TA-07)',
   defence_invitation: 'Undangan Sidang Tugas Akhir',
   defence_assessment_result: 'Berita Acara Sidang Tugas Akhir',
   yudisium_participant_list: 'Daftar Peserta Yudisium',

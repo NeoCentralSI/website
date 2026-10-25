@@ -95,13 +95,13 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'Daftar_Kehadiran_Seminar_Hasil.pdf';
+      link.download = 'TA-07_Bukti_Kehadiran_Seminar.pdf';
       document.body.appendChild(link);
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Gagal membuat PDF daftar kehadiran');
+      toast.error(error instanceof Error ? error.message : 'Gagal membuat bukti kehadiran seminar');
     } finally {
       setIsExporting(false);
     }
