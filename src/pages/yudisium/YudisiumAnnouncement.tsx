@@ -166,7 +166,7 @@ export default function YudisiumAnnouncementPage() {
       <div>
         <h1 className="text-2xl font-bold">Pengumuman Hasil Yudisium</h1>
         <p className="text-muted-foreground">
-          Daftar mahasiswa yang telah ditetapkan sebagai peserta yudisium.
+          Daftar mahasiswa yang telah ditetapkan sebagai peserta yudisium
         </p>
       </div>
 

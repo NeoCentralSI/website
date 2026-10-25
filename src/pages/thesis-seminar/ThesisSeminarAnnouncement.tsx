@@ -588,7 +588,7 @@ export default function SeminarHasilAnnouncement() {
                 )}
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                ⓘ Kehadiran Anda akan tercatat setelah dikonfirmasi oleh dosen pembimbing mahasiswa yang bersangkutan.
+                ⓘ Kehadiran Anda akan tercatat setelah dikonfirmasi oleh dosen pembimbing mahasiswa yang bersangkutan
               </p>
             </div>
           </AlertDialogDescription>

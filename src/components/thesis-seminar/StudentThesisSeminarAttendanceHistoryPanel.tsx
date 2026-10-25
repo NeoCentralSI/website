@@ -1,3 +1,4 @@
+import EmptyState from '@/components/ui/empty-state';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -141,9 +142,7 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
 
   if (!attendance) {
     return (
-      <div className="mt-6 rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-        Data riwayat kehadiran belum tersedia.
-      </div>
+      <EmptyState title="Belum Ada Riwayat" description="Data riwayat kehadiran belum tersedia" />
     );
   }
 
@@ -205,7 +204,7 @@ export function StudentThesisSeminarAttendanceHistoryPanel({
     {
       key: 'verifiedBy',
       header: 'Diverifikasi Oleh',
-      width: 160,
+      width: 190,
       render: (row) => (
         <ThesisSeminarLecturerCell
           name={row.approvedBy || '-'}

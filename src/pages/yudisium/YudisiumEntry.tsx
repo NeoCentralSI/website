@@ -23,7 +23,7 @@ export default function YudisiumEntry() {
       ) : (
         <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
           <p className="text-muted-foreground text-sm">
-            Anda tidak memiliki akses ke halaman ini.
+            Anda tidak memiliki akses ke halaman ini
           </p>
         </div>
       )}

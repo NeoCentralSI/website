@@ -250,7 +250,7 @@ export function AdminThesisSeminarArchiveFormDialog({
                 );
               })}
               {filteredLecturers.length === 0 && (
-                <p className="text-sm text-muted-foreground">Tidak ada dosen ditemukan.</p>
+                <p className="text-sm text-muted-foreground">Tidak ada dosen ditemukan</p>
               )}
             </div>
             <p className="text-xs text-muted-foreground">

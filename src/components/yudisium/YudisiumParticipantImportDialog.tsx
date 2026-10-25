@@ -1,6 +1,7 @@
-import { useRef, useState } from 'react';
+import { ImportFilePicker } from '@/components/shared/ImportFilePicker';
+import { useState } from 'react';
 import * as xlsx from 'xlsx';
-import { AlertCircle, Download, FileSpreadsheet, FileUp, RefreshCw, Upload, X } from 'lucide-react';
+import { AlertCircle, Download, FileSpreadsheet, RefreshCw, Upload } from 'lucide-react';
 
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Spinner } from '@/components/ui/spinner';
 import type { ArchiveYudisiumParticipantImportResult } from '@/types/admin-yudisium.types';
@@ -33,7 +33,6 @@ export function YudisiumParticipantImportDialog({
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<ArchiveYudisiumParticipantImportResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = () => {
     const headers = ['No', 'Nama Mahasiswa', 'NIM', 'Judul Tugas Akhir'];
@@ -64,7 +63,6 @@ export function YudisiumParticipantImportDialog({
     setFile(null);
     setResult(null);
     setErrorMessage(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async () => {
@@ -115,48 +113,7 @@ export function YudisiumParticipantImportDialog({
               </Button>
             </div>
 
-            <div className="relative">
-              <Input
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={(event) => {
-                  setFile(event.target.files?.[0] ?? null);
-                  setErrorMessage(null);
-                }}
-                disabled={isImporting}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full justify-start gap-2 overflow-hidden pr-12 text-muted-foreground font-normal"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isImporting}
-              >
-                <FileUp className="h-4 w-4 shrink-0" />
-                <span className="truncate">
-                  {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
-                </span>
-              </Button>
-              {file && !isImporting && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  aria-label="Hapus file terpilih"
-                  title="Hapus file terpilih"
-                  onClick={() => {
-                    setFile(null);
-                    setErrorMessage(null);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <ImportFilePicker file={file} onChange={setFile} disabled={isImporting} label="File peserta yudisium" accept=".xlsx,.xls" placeholder="Pilih file Excel (xlsx, xls)" />
 
             {errorMessage && (
               <Alert variant="destructive">

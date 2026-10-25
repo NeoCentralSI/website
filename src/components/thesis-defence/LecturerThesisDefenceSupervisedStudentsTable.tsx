@@ -205,7 +205,7 @@ export function LecturerThesisDefenceSupervisedStudentsTable() {
         setSearch(val);
         setPage(1);
       }}
-      emptyText="Belum ada mahasiswa bimbingan yang mendaftar sidang."
+      emptyText="Belum ada mahasiswa bimbingan yang mendaftar sidang"
       rowKey={(row) => row.id}
       actions={
         <RefreshButton

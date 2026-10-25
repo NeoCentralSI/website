@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/dialog";
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { TableIconAction } from '@/components/shared/TableIconAction';
+import { RecordDetailDialog } from '@/components/shared/RecordDetailDialog';
+import { DetailDialogActions } from '@/components/shared/DetailDialogActions';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import type { ExitSurveyForm, ExitSurveyResponse, ExitSurveyAnswer } from '@/types/exit-survey.types';
 import { useQuery } from '@tanstack/react-query';
@@ -101,6 +103,15 @@ const formatAnswer = (answer: ExitSurveyAnswer): string => {
   }
   return '';
 };
+
+function ResponseField({ label, value }: { label: string; value?: string | number | null }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="truncate font-medium" title={value ? String(value) : undefined}>{value || '-'}</dd>
+    </div>
+  );
+}
 
 const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps) => {
   const [search, setSearch] = useState('');
@@ -280,25 +291,25 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg border border-gray-200 bg-card p-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <Select value={selectedYudisiumId} onValueChange={setSelectedYudisiumId}>
-            <SelectTrigger className="w-full sm:w-[280px] h-9 border-gray-200 bg-card text-xs font-medium text-foreground">
+            <SelectTrigger className="w-full sm:w-[280px]" aria-label="Periode yudisium">
               <div className="flex items-center gap-2 truncate">
-                <Filter className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
                 <SelectValue placeholder="Pilih Periode Yudisium" />
               </div>
             </SelectTrigger>
-            <SelectContent className="rounded-lg border-gray-200 p-1">
-              <SelectItem value="all" className="rounded-md text-xs py-2">
+            <SelectContent>
+              <SelectItem value="all">
                 Semua Periode
               </SelectItem>
               {uniqueYudisiums.map((y) => (
-                <SelectItem key={y.id} value={y.id} className="rounded-md text-xs py-2">
+                <SelectItem key={y.id} value={y.id}>
                   {y.name}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <div className="text-xs text-muted-foreground">
-            Total: <strong className="text-foreground">{filteredByYudisium.length}</strong> responden
+          <div className="text-sm text-muted-foreground">
+            Responden: <span className="font-medium text-foreground">{filteredByYudisium.length}</span>
           </div>
         </div>
 
@@ -306,25 +317,23 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
           <Button
             variant="outline"
             size="sm"
-            className="h-8 gap-1.5 border-gray-200 text-xs font-medium text-foreground bg-card hover:bg-accent disabled:opacity-50"
             onClick={handleExportExcel}
             disabled={filteredByYudisium.length === 0}
           >
-            <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground" />
+            <FileSpreadsheet className="mr-2 h-4 w-4" />
             Unduh Excel
           </Button>
 
           <Button
             variant="outline"
             size="sm"
-            className="h-8 gap-1.5 border-gray-200 text-xs font-medium text-foreground bg-card hover:bg-accent disabled:opacity-50"
             onClick={() => {
               setTempPdfYudisiumId(selectedYudisiumId);
               setIsPdfModalOpen(true);
             }}
             disabled={filteredByYudisium.length === 0}
           >
-            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+            <FileText className="mr-2 h-4 w-4" />
             Unduh PDF
           </Button>
         </div>
@@ -334,18 +343,18 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
       {chartQuestions.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {chartQuestions.map((q) => (
-            <Card key={q.id} className="border border-gray-200 bg-card rounded-lg overflow-hidden">
-              <CardHeader className="pb-2 pt-4 px-4 bg-muted/20 border-b border-gray-100">
+            <Card key={q.id}>
+              <CardHeader>
                 <div className="space-y-1">
-                  <CardTitle className="text-sm font-semibold text-foreground leading-snug">
+                  <CardTitle className="text-base leading-snug">
                     {q.question}
                   </CardTitle>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {q.answeredCount} dari {q.respondentCount} responden menjawab
                   </p>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 space-y-4">
+              <CardContent className="space-y-4">
                 <div className="h-[210px] w-full">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -377,17 +386,17 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
 
                 <div className="space-y-2 pt-1 border-t border-gray-100">
                   {q.data.map((item: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between text-xs">
+                    <div key={index} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2 min-w-0">
                         <div
                           className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: COLORS[index % COLORS.length] }}
                         />
-                        <span className="text-muted-foreground font-medium truncate">{item.name}</span>
+                        <span className="truncate text-muted-foreground" title={item.name}>{item.name}</span>
                       </div>
                       <div className="flex items-center gap-2 shrink-0 ml-3">
                         <span className="font-semibold text-foreground">{item.value}</span>
-                        <span className="text-[11px] font-medium text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        <span className="min-w-12 whitespace-nowrap rounded bg-muted px-1.5 py-0.5 text-right text-xs font-medium tabular-nums text-muted-foreground">
                           {q.data.reduce((acc: number, cur: any) => acc + cur.value, 0) > 0
                             ? Math.round((item.value / q.data.reduce((acc: number, cur: any) => acc + cur.value, 0)) * 100)
                             : 0}%
@@ -404,7 +413,7 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
 
       {/* Individual Responses Table Section */}
       <div className="space-y-3">
-        <h3 className="text-base font-bold text-foreground px-1">Responden Individual</h3>
+        <h3 className="text-base font-semibold text-foreground">Responden Individual</h3>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-16 bg-card rounded-lg border border-gray-200">
@@ -439,142 +448,67 @@ const ExitSurveyFormResponsePanel = ({ form }: ExitSurveyFormResponsePanelProps)
 
       {/* Export PDF Modal */}
       <Dialog open={isPdfModalOpen} onOpenChange={setIsPdfModalOpen}>
-        <DialogContent className="sm:max-w-md border-gray-200">
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-foreground">Ekspor Laporan PDF</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Pilih periode yudisium yang ingin disertakan dalam laporan exit survey.
-            </DialogDescription>
+            <DialogTitle>Unduh Laporan PDF</DialogTitle>
+            <DialogDescription>Pilih periode yudisium yang disertakan dalam laporan exit survey</DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="exit-survey-pdf-period" className="text-xs text-muted-foreground font-medium">
-                Periode Yudisium
-              </Label>
-              <Select value={tempPdfYudisiumId} onValueChange={setTempPdfYudisiumId}>
-                <SelectTrigger id="exit-survey-pdf-period" className="w-full h-9 border-gray-200 text-xs">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                    <SelectValue placeholder="Pilih Periode Yudisium" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
-                  <SelectItem value="all" className="text-xs">
-                    Semua Periode
-                  </SelectItem>
-                  {uniqueYudisiums.map((y) => (
-                    <SelectItem key={y.id} value={y.id} className="text-xs max-w-full whitespace-normal">
-                      {y.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="exit-survey-pdf-period">Periode yudisium</Label>
+            <Select value={tempPdfYudisiumId} onValueChange={setTempPdfYudisiumId}>
+              <SelectTrigger id="exit-survey-pdf-period" className="w-full">
+                <SelectValue placeholder="Pilih periode yudisium" />
+              </SelectTrigger>
+              <SelectContent className="w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
+                <SelectItem value="all">Semua Periode</SelectItem>
+                {uniqueYudisiums.map((y) => (
+                  <SelectItem key={y.id} value={y.id} className="max-w-full whitespace-normal">{y.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-
-          <DialogFooter className="gap-2 pt-2 border-t border-gray-100">
-            <Button variant="outline" size="sm" className="h-8 border-gray-200 text-xs" onClick={() => setIsPdfModalOpen(false)}>
-              Batal
-            </Button>
-            <Button size="sm" className="h-8 text-xs" onClick={() => handleExportPdf(tempPdfYudisiumId)}>
-              Unduh Laporan
-            </Button>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPdfModalOpen(false)}>Batal</Button>
+            <Button onClick={() => handleExportPdf(tempPdfYudisiumId)}>Unduh Laporan</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Response Detail Modal */}
-      <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
-        <DialogContent className="sm:max-w-[760px] max-h-[85vh] flex flex-col p-0 gap-0 rounded-lg overflow-hidden border border-gray-200 bg-card">
-          <DialogHeader className="p-5 border-b border-gray-200 bg-card shrink-0">
-            <DialogTitle className="text-lg font-bold text-foreground">Detail Respons Exit Survey</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-              Jawaban lengkap dari <strong className="text-foreground font-semibold">{toTitleCaseName(selectedResponse?.name)}</strong> ({selectedResponse?.nim})
-            </DialogDescription>
-          </DialogHeader>
+      <RecordDetailDialog
+        open={isDetailModalOpen}
+        onOpenChange={setIsDetailModalOpen}
+        title="Detail Respons Exit Survey"
+        description={`Jawaban lengkap dari ${toTitleCaseName(selectedResponse?.name)} (${selectedResponse?.nim ?? '-'})`}
+        footer={<DetailDialogActions onClose={() => setIsDetailModalOpen(false)} />}
+      >
+        <dl className="grid gap-3 rounded-md bg-muted/50 p-3 text-sm sm:grid-cols-2">
+          <ResponseField label="NIM" value={selectedResponse?.nim} />
+          <ResponseField label="Angkatan" value={selectedResponse?.enrollmentYear} />
+          <ResponseField label="Periode yudisium" value={selectedResponse?.yudisiumName} />
+          <ResponseField label="Waktu kirim" value={selectedResponse ? formatSubmitTime(selectedResponse.submittedAt) : null} />
+        </dl>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-6 bg-card">
-            {/* Student Info Card */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 rounded-lg border border-gray-200 bg-muted/20">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">NIM</p>
-                <p className="text-sm font-semibold text-foreground mt-0.5">{selectedResponse?.nim}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Angkatan</p>
-                <p className="text-sm font-semibold text-foreground mt-0.5">{selectedResponse?.enrollmentYear || '-'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Periode Yudisium</p>
-                <p className="text-sm font-semibold text-foreground mt-0.5 truncate" title={selectedResponse?.yudisiumName ?? undefined}>
-                  {selectedResponse?.yudisiumName || '-'}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground font-medium">Waktu Submit</p>
-                <p className="text-sm font-semibold text-foreground mt-0.5">
-                  {selectedResponse && formatSubmitTime(selectedResponse.submittedAt)}
-                </p>
-              </div>
-            </div>
-
-            {/* Questions by Session */}
-            <div className="space-y-6">
-              {form.sessions?.map((session, sIdx) => (
-                <div key={session.id} className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-muted text-[11px] font-semibold text-muted-foreground shrink-0">
-                      {sIdx + 1}
-                    </span>
-                    <h4 className="text-sm font-bold text-foreground">{session.name}</h4>
+        {form.sessions?.map((session, sIdx) => (
+          <section key={session.id} className="space-y-2">
+            <p className="text-sm font-semibold">{sIdx + 1}. {session.name}</p>
+            <dl className="space-y-3">
+              {session.questions?.map((q, qIdx) => {
+                const answers = selectedResponse?.answers.filter((a) => a.questionId === q.id) || [];
+                const answerText = answers.map(formatAnswer).filter(Boolean).join(', ');
+                return (
+                  <div key={q.id} className="space-y-1 rounded-md border p-3">
+                    <dt className="text-sm text-muted-foreground">{qIdx + 1}. {q.question}</dt>
+                    <dd className={answerText ? 'whitespace-pre-wrap break-words text-sm font-medium' : 'text-sm italic text-muted-foreground'}>
+                      {answerText || 'Tidak memberikan jawaban'}
+                    </dd>
                   </div>
-
-                  <div className="space-y-3">
-                    {session.questions?.map((q, qIdx) => {
-                      const answers = selectedResponse?.answers.filter((a) => a.questionId === q.id) || [];
-                      const answerText = answers.map(formatAnswer).filter(Boolean).join(', ');
-
-                      return (
-                        <div key={q.id} className="p-4 bg-card rounded-lg border border-gray-200 space-y-2">
-                          <div className="flex gap-2 text-xs">
-                            <span className="font-semibold text-muted-foreground">{qIdx + 1}.</span>
-                            <p className="font-semibold text-foreground leading-snug">
-                              {q.question}
-                            </p>
-                          </div>
-                          <div className="pl-4">
-                            {answerText ? (
-                              <div className="text-xs text-foreground bg-muted/30 p-3 rounded-md border border-gray-100 font-medium leading-relaxed whitespace-pre-wrap break-words">
-                                {answerText}
-                              </div>
-                            ) : (
-                              <div className="text-xs text-muted-foreground italic">
-                                Tidak memberikan jawaban
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <DialogFooter className="p-4 border-t border-gray-200 bg-card shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsDetailModalOpen(false)}
-              className="h-8 px-4 border-gray-200 text-xs font-medium"
-            >
-              Tutup
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+                );
+              })}
+            </dl>
+          </section>
+        ))}
+      </RecordDetailDialog>
     </div>
   );
 };

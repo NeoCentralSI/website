@@ -126,7 +126,7 @@ export const useSidebarMenu = () => {
       { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
       ...proposalItems,
       { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-      { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+      { title: "Sidang", url: "/tugas-akhir/sidang" },
     ];
     /** The Ketua Departemen's two decision queues, last in Tugas Akhir. */
     const KADEP_DECISION_ITEMS: SidebarLeafItem[] = [
@@ -170,7 +170,7 @@ export const useSidebarMenu = () => {
             { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
             { title: "Proposal", url: "/tugas-akhir/proposal" },
             { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-            { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+            { title: "Sidang", url: "/tugas-akhir/sidang" },
           ],
         },
         // Yudisium — leaf item (no children)
@@ -558,7 +558,7 @@ export const useSidebarMenu = () => {
             icon: FileText,
             items: [
               { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-              { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+              { title: "Sidang", url: "/tugas-akhir/sidang" },
             ],
           },
           {

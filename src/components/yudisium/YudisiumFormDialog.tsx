@@ -25,7 +25,7 @@ import { Eye, FileText, Upload, X } from 'lucide-react';
 import { getExitSurveyForms } from '@/services/yudisium/exit-survey.service';
 import { getYudisiumRequirements } from '@/services/yudisium/requirement.service';
 import { toast } from 'sonner';
-import { openProtectedFile } from '@/lib/protected-file';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
 import { truncateFileName } from '@/lib/text';
 import type { ExitSurveyForm } from '@/types/exit-survey.types';
 import type { YudisiumRequirement } from '@/services/yudisium/requirement.service';
@@ -85,6 +85,7 @@ export function YudisiumFormDialog({
 	editData,
 	onSubmit,
 }: YudisiumFormDialogProps) {
+	const { openDocument, viewer } = useDocumentViewer();
 	const [name, setName] = useState('');
 	const [eventDate, setEventDate] = useState<Date | null>(null);
 	const [registrationOpenDate, setRegistrationOpenDate] = useState('');
@@ -240,16 +241,7 @@ export function YudisiumFormDialog({
 		}
 	};
 
-	const handleViewCurrentDecree = async () => {
-		const filePath = existingDecreePath;
-		if (!filePath) return;
-
-		try {
-			await openProtectedFile(filePath, existingDecreeName || undefined);
-		} catch (error) {
-			toast.error((error as Error).message || 'Gagal membuka dokumen SK');
-		}
-	};
+	const handleViewCurrentDecree = () => openDocument(existingDecreePath, existingDecreeName || 'SK Yudisium');
 
 	const handleClearSelectedDecree = () => {
 		setDecreeFile(null);
@@ -313,6 +305,8 @@ export function YudisiumFormDialog({
 	};
 
 	return (
+		<>
+		{viewer}
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
@@ -427,7 +421,7 @@ export function YudisiumFormDialog({
 						{isLoadingOptions ? (
 							<p className="text-xs text-muted-foreground">Memuat persyaratan...</p>
 						) : requirements.length === 0 ? (
-							<p className="text-xs text-muted-foreground">Belum ada persyaratan yang tersedia.</p>
+							<p className="text-xs text-muted-foreground">Belum ada persyaratan yang tersedia</p>
 						) : (
 							<div className="border rounded-md divide-y max-h-48 overflow-y-auto">
 								{requirements
@@ -546,7 +540,7 @@ export function YudisiumFormDialog({
 							</div>
 							{canUploadDecree ? (
 								<p className="text-[11px] text-muted-foreground">
-									Mengunggah SK akan memfinalisasi status peserta dan nilai CPL yang telah ditetapkan.
+									Mengunggah SK akan memfinalisasi status peserta dan nilai CPL yang telah ditetapkan
 								</p>
 							) : !hasAppointedParticipants ? (
 								<p className="text-[11px] text-amber-600 font-medium">
@@ -596,5 +590,6 @@ export function YudisiumFormDialog({
 				</form>
 			</DialogContent>
 		</Dialog>
+		</>
 	);
 }

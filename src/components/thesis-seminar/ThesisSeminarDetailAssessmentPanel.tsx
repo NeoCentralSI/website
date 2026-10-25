@@ -119,7 +119,7 @@ function AdminAssessmentInfo({ detail }: { detail: any }) {
     <Card className="border-gray-200 bg-card shadow-none">
       <CardContent className="pt-4 text-center">
         <p className="text-muted-foreground text-sm">
-          Menunggu penilaian dari seluruh penguji dan penetapan hasil oleh dosen pembimbing.
+          Menunggu penilaian dari seluruh penguji dan penetapan hasil oleh dosen pembimbing
         </p>
       </CardContent>
     </Card>
@@ -446,7 +446,7 @@ function ExaminerAssessmentSection({ seminarId }: { seminarId: string }) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tindakan ini akan mengunci seluruh penilaian Anda. Nilai yang telah disubmit tidak dapat diubah lagi.
+                    Tindakan ini akan mengunci seluruh penilaian Anda. Nilai yang telah disubmit tidak dapat diubah lagi
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -835,7 +835,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <h4 className="font-bold text-sm">Status Kelulusan Otomatis</h4>
-                <p className="text-xs text-muted-foreground">Berdasarkan akumulasi nilai rata-rata penguji.</p>
+                <p className="text-xs text-muted-foreground">Berdasarkan akumulasi nilai rata-rata penguji</p>
               </div>
               <Badge variant={(finalData.averageScore || 0) < finalData.minimumPassingScore ? 'destructive' : 'success'} className="px-3 py-1">
                 {(finalData.averageScore || 0) < finalData.minimumPassingScore ? 'GAGAL (Tidak Lulus)' : 'LULUS'}
@@ -909,7 +909,7 @@ function SupervisorFinalizationSection({ seminarId, isSupervisor }: { seminarId:
           </div>
         </div>
       ) : (
-        <p className="text-xs text-muted-foreground italic">Menunggu penetapan hasil oleh dosen pembimbing.</p>
+        <p className="text-xs text-muted-foreground italic">Menunggu penetapan hasil oleh dosen pembimbing</p>
       )}
     </div>
 

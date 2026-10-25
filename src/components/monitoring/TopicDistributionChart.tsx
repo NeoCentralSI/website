@@ -14,6 +14,8 @@ interface TopicDistributionChartProps {
   emptyDescription?: string;
   /** Unit in the tooltip ("tugas akhir"). */
   unit?: string;
+  /** Bar colours in turn; Monitoring keeps its palette. */
+  colors?: string[];
 }
 
 const TOPIC_COLORS = [
@@ -27,6 +29,7 @@ export function TopicDistributionChart({
   title = "Distribusi Topik",
   emptyDescription = "Belum ada data topik",
   unit = "tugas akhir",
+  colors = TOPIC_COLORS,
 }: TopicDistributionChartProps) {
   if (isLoading) {
     return (
@@ -51,7 +54,7 @@ export function TopicDistributionChart({
   const chartData = data.map((t, i) => ({
     ...t,
     shortName: t.name.length > 20 ? t.name.substring(0, 18) + "..." : t.name,
-    fill: TOPIC_COLORS[i % TOPIC_COLORS.length],
+    fill: colors[i % colors.length],
   }));
 
   return (
@@ -89,7 +92,7 @@ export function TopicDistributionChart({
                 barSize={20}
               >
                 {chartData.map((entry, index) => (
-                  <rect key={entry.id} fill={TOPIC_COLORS[index % TOPIC_COLORS.length]} />
+                  <rect key={entry.id} fill={colors[index % colors.length]} />
                 ))}
               </Bar>
             </BarChart>

@@ -1,3 +1,4 @@
+import EmptyState from '@/components/ui/empty-state';
 import { useRef } from 'react';
 import { AlertCircle, Eye, FileText, Upload } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
@@ -8,7 +9,7 @@ import type {
   SeminarRequirementConfiguration,
   SeminarUploadConfig,
 } from '@/types/seminar.types';
-import { openProtectedFile } from '@/lib/protected-file';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -43,7 +44,7 @@ export function StudentThesisSeminarDocumentCard({
       ) : null}
 
       {configuration.isConfigured && requirements.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Belum ada syarat dokumen untuk percobaan seminar ini.</p>
+        <EmptyState size="sm" className="py-4" title="Belum Ada Syarat Dokumen" description="Belum ada syarat dokumen untuk percobaan seminar ini" />
       ) : (
         <div className="flex flex-col gap-1.5">
           {requirements.map((requirement) => (
@@ -105,14 +106,8 @@ function DocumentRow({ requirement, canUpload, uploadConfig, isUploading, onUplo
     onUpload(file);
   };
 
-  const handleView = async () => {
-    if (!document?.filePath) return;
-    try {
-      await openProtectedFile(document.filePath, document.fileName);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Gagal membuka dokumen.');
-    }
-  };
+  const { openDocument, viewer } = useDocumentViewer();
+  const handleView = () => openDocument(document?.filePath, document?.fileName);
 
   const statusText = isApproved
     ? 'Terverifikasi'
@@ -180,6 +175,7 @@ function DocumentRow({ requirement, canUpload, uploadConfig, isUploading, onUplo
       </div>
 
       <div className="flex shrink-0 items-center justify-end gap-2">
+        {viewer}
         <input
           ref={fileInputRef}
           type="file"

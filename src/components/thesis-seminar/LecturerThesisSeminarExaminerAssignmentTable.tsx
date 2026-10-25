@@ -252,7 +252,7 @@ export function LecturerThesisSeminarExaminerAssignmentTable() {
           setPage(1);
         }}
         enableColumnFilters
-        emptyText="Belum ada seminar yang perlu ditetapkan penguji."
+        emptyText="Belum ada seminar yang perlu ditetapkan penguji"
         rowKey={(row) => row.id}
         actions={
           <RefreshButton

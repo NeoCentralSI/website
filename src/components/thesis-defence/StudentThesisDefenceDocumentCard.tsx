@@ -1,3 +1,4 @@
+import EmptyState from '@/components/ui/empty-state';
 import { useRef } from 'react';
 import { AlertCircle, Eye, FileText, Upload } from 'lucide-react';
 import { Spinner } from '@/components/ui/spinner';
@@ -8,7 +9,8 @@ import type {
   DefenceRequirementConfiguration,
   DefenceUploadConfig,
 } from '@/types/defence.types';
-import { fetchDefenceDocumentBlob } from '@/services/thesis-defence/doc.service';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
+import { API_CONFIG } from '@/config/api';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -43,7 +45,7 @@ export function StudentThesisDefenceDocumentCard({
       ) : null}
 
       {configuration.isConfigured && requirements.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Belum ada syarat dokumen untuk percobaan sidang ini.</p>
+        <EmptyState size="sm" className="py-4" title="Belum Ada Syarat Dokumen" description="Belum ada syarat dokumen untuk percobaan sidang ini" />
       ) : (
         <div className="flex flex-col gap-1.5">
           {requirements.map((requirement) => (
@@ -105,16 +107,10 @@ function DocumentRow({ requirement, canUpload, uploadConfig, isUploading, onUplo
     onUpload(file);
   };
 
-  const handleView = async () => {
+  const { openDocument, viewer } = useDocumentViewer();
+  const handleView = () => {
     if (!requirement.document) return;
-    try {
-      const blob = await fetchDefenceDocumentBlob(requirement.document.thesisDefenceId, requirement.id);
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank', 'noopener,noreferrer');
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Gagal membuka dokumen.');
-    }
+    openDocument(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.DOCUMENT_FILE(requirement.document.thesisDefenceId, requirement.id), requirement.document.fileName);
   };
 
   const statusText = isApproved
@@ -183,6 +179,7 @@ function DocumentRow({ requirement, canUpload, uploadConfig, isUploading, onUplo
       </div>
 
       <div className="flex shrink-0 items-center justify-end gap-2">
+        {viewer}
         <input
           ref={fileInputRef}
           type="file"

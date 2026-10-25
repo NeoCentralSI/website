@@ -118,7 +118,7 @@ const QuestionCard = ({
       onDragOver={(e) => handleDragOver(e, question.id)}
       onDragEnd={handleDragEnd}
       className={cn(
-        "bg-white rounded-xl border border-border/60 shadow-sm hover:shadow-md transition-all group/q relative overflow-hidden scroll-mt-24",
+        "bg-white rounded-lg border border-border/60 shadow-sm hover:shadow-sm transition-all group/q relative overflow-hidden scroll-mt-24",
         reorderMode === 'questions' && draggingId === question.id && "opacity-50 border-primary border-dashed",
         reorderMode === 'questions' && "cursor-grab"
       )}
@@ -171,7 +171,7 @@ const QuestionCard = ({
                    <div className="w-40 shrink-0">
                       <DropdownMenu>
                          <DropdownMenuTrigger asChild disabled={reorderMode === 'questions' || isLocked}>
-                            <Button variant="outline" size="sm" className="w-full justify-between h-8 px-2 bg-muted/10 text-[11px] font-medium border-border/40" disabled={isLocked}>
+                            <Button variant="outline" size="sm" className="w-full justify-between h-8 px-2 bg-muted/10 text-xs font-medium border-border/40" disabled={isLocked}>
                                <span>
                                   {QUESTION_TYPES.find(t => t.value === localType)?.label}
                                </span>
@@ -199,23 +199,23 @@ const QuestionCard = ({
 
                 <div className="pl-0">
                   {localType === 'short_answer' && (
-                      <div className="text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-[11px] italic">
+                      <div className="text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-xs italic">
                         Jawaban singkat
                       </div>
                   )}
                   {localType === 'paragraph' && (
-                      <div className="text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-[11px] italic">
+                      <div className="text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-xs italic">
                         Jawaban panjang
                       </div>
                   )}
                   {localType === 'number' && (
-                      <div className="flex items-center gap-2 text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-[11px] italic">
+                      <div className="flex items-center gap-2 text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-xs italic">
                         <Hash className="h-3 w-3" />
                         Jawaban berupa angka (contoh: 10, 4.5)
                       </div>
                   )}
                   {localType === 'date' && (
-                      <div className="flex items-center gap-2 text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-[11px] italic">
+                      <div className="flex items-center gap-2 text-muted-foreground/30 border-b border-dashed border-border/40 pb-1 text-xs italic">
                         <Calendar className="h-3 w-3" />
                         hari/bulan/tahun
                     </div>
@@ -252,7 +252,7 @@ const QuestionCard = ({
                          <Button 
                            variant="ghost" 
                            size="sm" 
-                           className="h-7 text-primary hover:text-primary hover:bg-primary/5 -ml-1.5 gap-1.5 text-[11px] font-medium"
+                           className="h-7 text-primary hover:text-primary hover:bg-primary/5 -ml-1.5 gap-1.5 text-xs font-medium"
                            onClick={handleAddOption}
                          >
                             <Plus className="h-3 w-3" />
@@ -270,7 +270,7 @@ const QuestionCard = ({
                 {isDirty && (
                   <Button 
                     size="sm" 
-                    className="h-7 px-3 gap-1.5 bg-primary hover:bg-primary/90 text-white shadow-sm text-[11px] font-bold"
+                    className="h-7 px-3 gap-1.5 bg-primary hover:bg-primary/90 text-white shadow-sm text-xs font-bold"
                     onClick={handleSave}
                     disabled={updateMutation.isPending}
                   >
@@ -283,7 +283,7 @@ const QuestionCard = ({
              <div className="flex items-center gap-4">
                 {!isLocked && (
                   <div className="flex items-center gap-2 border-r pr-4 border-border/30">
-                     <Label htmlFor={`required-${question.id}`} className="text-[11px] font-semibold text-muted-foreground">Wajib</Label>
+                     <Label htmlFor={`required-${question.id}`} className="text-xs font-semibold text-muted-foreground">Wajib</Label>
                      <Switch 
                         id={`required-${question.id}`}
                         checked={isRequired}
@@ -368,7 +368,7 @@ const SessionCard = ({
   return (
     <div 
       className={cn(
-        "rounded-xl border border-border/80 border-l-4 border-l-primary overflow-hidden relative group bg-white transition-all shadow-sm",
+        "rounded-lg border border-border/80 border-l-4 border-l-primary overflow-hidden relative group bg-white transition-all shadow-sm",
         reorderMode === 'sessions' && draggingId === session.id && "opacity-50 border-primary border-dashed",
         reorderMode === 'sessions' && "cursor-grab"
       )}
@@ -395,7 +395,7 @@ const SessionCard = ({
               {isDirty && (
                 <Button 
                   size="sm" 
-                  className="shrink-0 h-7 px-3 gap-1.5 bg-primary hover:bg-primary/90 text-white shadow-sm text-[11px] font-bold"
+                  className="shrink-0 h-7 px-3 gap-1.5 bg-primary hover:bg-primary/90 text-white shadow-sm text-xs font-bold"
                   onClick={handleSave}
                   disabled={updateMutation.isPending}
                 >
@@ -517,7 +517,7 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
   return (
     <div className="space-y-6">
       {isLocked && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
            <div className="space-y-1">
               <h4 className="text-sm font-bold text-amber-900 font-display">Formulir Terkunci</h4>
@@ -533,7 +533,7 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
       <div className="flex gap-8 items-start">
         {/* Left Sidebar - Form Structure */}
         <aside className="w-72 sticky top-6 shrink-0 hidden lg:block self-start space-y-4">
-          <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+          <div className="bg-card rounded-lg border border-border shadow-sm overflow-hidden">
              <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground font-display">Struktur Formulir</h3>
                  <div className="flex items-center gap-1">
@@ -649,7 +649,7 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
           </div>
 
           <Button 
-            className="w-full py-6 text-sm font-bold shadow-md bg-[#f59e0b] hover:bg-[#d97706] text-white gap-2"
+            className="w-full py-6 text-sm font-bold shadow-sm bg-[#f59e0b] hover:bg-[#d97706] text-white gap-2"
             onClick={() => setActivePanel('preview')}
           >
             <Eye className="h-4 w-4" />
@@ -661,7 +661,7 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
         <div className="flex-1 min-w-0 flex flex-col relative">
           <div className="space-y-8 pb-32">
             {/* Form Identity Card */}
-            <div className="bg-white rounded-xl border border-border/80 border-t-4 border-t-primary shadow-sm overflow-hidden group">
+            <div className="bg-white rounded-lg border border-border/80 border-t-4 border-t-primary shadow-sm overflow-hidden group">
               <div className="pt-6 pb-5 px-8 space-y-5">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between gap-4">
@@ -681,7 +681,7 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
                     {isIdentityDirty && (
                       <Button 
                         size="sm" 
-                        className="shrink-0 h-7 px-3 gap-1.5 bg-primary hover:bg-primary/90 text-white shadow-sm text-[11px] font-bold"
+                        className="shrink-0 h-7 px-3 gap-1.5 bg-primary hover:bg-primary/90 text-white shadow-sm text-xs font-bold"
                         onClick={() => {
                           updateFormMutation.mutate({ name: localFormName, description: localFormDesc });
                           setIsIdentityDirty(false);
@@ -719,7 +719,7 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
                 <div className="border-t border-border/40 w-full" />
                 
                 <div className="flex items-center justify-between gap-4 pt-1">
-                   <div className="flex items-center gap-5 text-[11px] text-muted-foreground/70">
+                   <div className="flex items-center gap-5 text-xs text-muted-foreground/70">
                       <div className="flex items-center gap-1.5">
                          <HelpCircle className="h-3.5 w-3.5" />
                          <span>Terpakai: <span className="font-bold text-foreground/80">{form.usedCount} kali</span></span>
@@ -735,7 +735,7 @@ const ExitSurveyFormEditorPanel = (props: ExitSurveyFormEditorPanelProps) => {
                    </div>
                    
                    <div className="flex items-center gap-2.5 bg-muted/20 pl-3 pr-1 py-0.5 rounded-full border border-border/30">
-                      <Label htmlFor="form-active-toggle" className="text-[11px] font-bold cursor-pointer text-muted-foreground">Aktif</Label>
+                      <Label htmlFor="form-active-toggle" className="text-xs font-bold cursor-pointer text-muted-foreground">Aktif</Label>
                       <Switch 
                         id="form-active-toggle"
                         checked={form.isActive}

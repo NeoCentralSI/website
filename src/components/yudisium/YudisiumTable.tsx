@@ -289,7 +289,7 @@ export function YudisiumTable({
                         <AlertDialogTitle>Hapus Data Yudisium</AlertDialogTitle>
                         <AlertDialogDescription>
                             Apakah Anda yakin ingin menghapus data yudisium ini? Jika data arsip memiliki peserta,
-                            peserta yang terkait juga akan dihapus.
+                            peserta yang terkait juga akan dihapus
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

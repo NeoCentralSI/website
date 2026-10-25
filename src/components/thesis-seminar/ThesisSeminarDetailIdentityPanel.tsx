@@ -1,16 +1,13 @@
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { RequirementDocumentRow } from '@/components/shared/RequirementDocumentRow';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   toTitleCaseName,
   formatDateOnlyId,
-  formatDateShortId,
   formatRoleName,
 } from '@/lib/text';
-import { openProtectedFile } from '@/lib/protected-file';
-import { toast } from 'sonner';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
 import type { DocumentSubmitStatus } from '@/types/seminar.types';
-import { BookOpen, Calendar, Eye, FileText } from 'lucide-react';
+import { BookOpen, Calendar, FileText } from 'lucide-react';
 
 function extractSeminarTime(timeIso?: string | null): string {
   if (!timeIso) return '--:--';
@@ -18,16 +15,6 @@ function extractSeminarTime(timeIso?: string | null): string {
   return `${String(d.getUTCHours()).padStart(2, '0')}.${String(d.getUTCMinutes()).padStart(2, '0')}`;
 }
 
-function getDocStatusDisplay(status: DocumentSubmitStatus) {
-  switch (status) {
-    case 'approved':
-      return { label: 'Disetujui', badge: 'success' as const };
-    case 'declined':
-      return { label: 'Ditolak', badge: 'destructive' as const };
-    default:
-      return { label: 'Menunggu', badge: 'warning' as const };
-  }
-}
 
 
 interface Props {
@@ -76,16 +63,12 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
         ).values(),
       );
 
-  const handleDownload = async (filePath: string, fileName?: string | null) => {
-    try {
-      await openProtectedFile(filePath, fileName || undefined);
-    } catch (error) {
-      toast.error((error as Error).message || 'Gagal membuka dokumen');
-    }
-  };
+  const { openDocument, viewer } = useDocumentViewer();
+  const handleDownload = (filePath: string, fileName?: string | null) => openDocument(filePath, fileName);
 
   return (
     <div className="space-y-6">
+      {viewer}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Informasi Seminar */}
         <Card className="lg:col-span-1 h-full gap-4 py-6">
@@ -192,57 +175,19 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
               </CardHeader>
               <CardContent className="space-y-3">
                 {requirements.map((dt) => {
-                    const doc = documents.find((d) => (d.requirementId || d.documentTypeId) === dt.id);
-                    const statusDisplay = doc ? getDocStatusDisplay(doc.status) : null;
-                    const docName = dt.name;
-                    const fileName = doc ? (doc.fileName || 'File') : 'Belum diunggah';
-                    const fileDate = doc?.submittedAt ? formatDateShortId(doc.submittedAt) : '';
-
-                    return (
-                      <div
-                        key={dt.id}
-                        className="flex items-center justify-between gap-4 rounded-lg border bg-muted/10 p-4 transition-colors hover:bg-muted/20"
-                      >
-                        <div className="flex items-center gap-4 min-w-0">
-                          <div
-                            className={`p-2.5 rounded-lg shrink-0 ${doc ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}
-                          >
-                            <FileText className="h-5 w-5" />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="font-medium text-sm text-foreground block">
-                              {docName}
-                            </span>
-                            <span className="text-xs text-muted-foreground block mt-0.5 truncate">
-                              {fileName} {fileDate && `• ${fileDate}`}
-                            </span>
-                            {doc?.notes && (
-                              <span className="text-xs text-muted-foreground block mt-1 italic">
-                                Catatan: {doc.notes}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          {statusDisplay && (
-                            <Badge variant={statusDisplay.badge} className="rounded-md font-medium px-2.5 py-0.5">
-                              {statusDisplay.label}
-                            </Badge>
-                          )}
-                          {doc?.filePath && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 border rounded-lg hover:bg-accent shrink-0"
-                              onClick={() => handleDownload(doc.filePath!, doc.fileName)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  const doc = documents.find((d) => (d.requirementId || d.documentTypeId) === dt.id);
+                  return (
+                    <RequirementDocumentRow
+                      key={dt.id}
+                      name={dt.name}
+                      status={doc?.status}
+                      fileName={doc?.fileName}
+                      submittedAt={doc?.submittedAt}
+                      notes={doc?.notes}
+                      onView={doc?.filePath ? () => handleDownload(doc.filePath!, doc.fileName) : undefined}
+                    />
+                  );
+                })}
               </CardContent>
             </Card>
           )}

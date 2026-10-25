@@ -108,8 +108,8 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
       ),
     },
     {
-      key: 'verified',
-      header: 'Diverifikasi',
+      key: 'validated',
+      header: 'Validasi',
       width: 200,
       render: (row) => {
         const validatorName = row.validatedBy ?? row.verifiedBy ?? null;
@@ -122,7 +122,7 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
           return (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <X className="h-3.5 w-3.5" />
-              <span>Belum diverifikasi</span>
+              <span>Belum divalidasi</span>
             </div>
           );
         }
@@ -131,8 +131,9 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
               <Check className="h-3.5 w-3.5" strokeWidth={3} />
-              <span className="line-clamp-2" title={validatorName || 'Terverifikasi'}>{validatorName || 'Terverifikasi'}</span>
+              <span>Divalidasi</span>
             </div>
+            {validatorName && <div className="line-clamp-2 text-xs text-foreground" title={validatorName}>{validatorName}</div>}
             <div className="text-[10px] text-muted-foreground">
               {validatedAt ? formatDateTime(validatedAt) : '-'}
               {validatorNip ? ` • NIP ${validatorNip}` : ''}

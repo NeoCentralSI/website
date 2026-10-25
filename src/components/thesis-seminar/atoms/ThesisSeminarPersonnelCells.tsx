@@ -70,5 +70,6 @@ export function ThesisSeminarLecturerCell({ name }: ThesisSeminarLecturerCellPro
     return <span className="text-muted-foreground text-sm">-</span>;
   }
 
-  return <span className="text-sm">{name}</span>;
+  // Truncated with its tooltip so a long name never runs into the next cell.
+  return <span className="block truncate text-sm" title={name}>{name}</span>;
 }

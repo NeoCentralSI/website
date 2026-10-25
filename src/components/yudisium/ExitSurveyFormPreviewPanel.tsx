@@ -234,7 +234,7 @@ const ExitSurveyFormPreviewPanel = ({ form }: ExitSurveyFormPreviewPanelProps) =
         <div className="bg-muted/20 border border-border/40 border-t-0 rounded-b-2xl p-4 space-y-3">
           {currentSession?.questions?.length === 0 ? (
             <div className="text-center py-10 text-muted-foreground/50 text-sm">
-              Belum ada pertanyaan di bagian ini.
+              Belum ada pertanyaan di bagian ini
             </div>
           ) : (
             currentSession?.questions?.map((question, qIdx) => (

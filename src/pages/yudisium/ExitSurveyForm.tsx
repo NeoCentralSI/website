@@ -1,16 +1,12 @@
+import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { useEffect, useState, useRef } from 'react';
 import { useOutletContext, useNavigate, useParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
-import { 
-  ArrowLeft, 
-  PenTool,
-  Eye,
-  MessageSquare
+import {
+  ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Loading } from '@/components/ui/spinner';
 import {
   AlertDialog,
@@ -23,7 +19,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import {
   getExitSurveyFormById,
   updateExitSurveyForm,
@@ -323,7 +318,7 @@ export default function ExitSurveyFormPage() {
   if (!form) return null;
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50/50 min-h-screen">
+    <div className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -337,64 +332,21 @@ export default function ExitSurveyFormPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Formulir Exit Survey</h1>
-            <p className="text-muted-foreground text-sm">
-              Kelola formulir exit survey mahasiswa
-            </p>
+            <p className="text-muted-foreground">Kelola formulir exit survey mahasiswa</p>
           </div>
         </div>
 
-        {/* Panel Switcher */}
-        <div className="flex items-center bg-white p-1 rounded-xl border border-gray-200 shadow-sm shrink-0">
-           <Button 
-             variant="ghost" 
-             size="sm" 
-             className={cn(
-               "h-9 gap-2 px-5 rounded-lg font-semibold transition-all",
-               activePanel === 'editor' ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-gray-50"
-             )}
-             onClick={() => setActivePanel('editor')}
-           >
-              <PenTool className="h-4 w-4" />
-              Edit
-           </Button>
-           <div className="w-[1px] h-4 bg-gray-200 mx-1" />
-           <Button 
-             variant="ghost" 
-             size="sm" 
-             className={cn(
-               "h-9 gap-2 px-5 rounded-lg font-semibold transition-all",
-               activePanel === 'preview' ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-gray-50"
-             )}
-             onClick={() => setActivePanel('preview')}
-           >
-              <Eye className="h-4 w-4" />
-              Preview
-           </Button>
-           <div className="w-[1px] h-4 bg-gray-200 mx-1" />
-           <Button 
-             variant="ghost" 
-             size="sm" 
-             className={cn(
-               "h-9 gap-2 px-5 rounded-lg font-semibold transition-all",
-               activePanel === 'responses' ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:bg-gray-50"
-             )}
-             onClick={() => setActivePanel('responses')}
-           >
-              <MessageSquare className="h-4 w-4" />
-              <span>Respons</span>
-              <Badge 
-                className={cn(
-                  "ml-1 px-1.5 py-0 min-w-[20px] h-5 justify-center text-[10px] font-bold border-none",
-                  activePanel === 'responses' ? "bg-white text-primary" : "bg-primary text-white"
-                )}
-              >
-                {form.usedCount || 0}
-              </Badge>
-           </Button>
-        </div>
       </div>
 
-      <Separator />
+      <LocalTabsNav
+        tabs={[
+          { label: 'Edit', value: 'editor' },
+          { label: 'Pratinjau', value: 'preview' },
+          { label: `Respons (${form.usedCount || 0})`, value: 'responses' },
+        ]}
+        activeTab={activePanel}
+        onTabChange={(value) => setActivePanel(value as typeof activePanel)}
+      />
 
       <div className="max-w-[1600px] mx-auto w-full">
         {activePanel === 'editor' && (
@@ -477,7 +429,7 @@ export default function ExitSurveyFormPage() {
             <AlertDialogTitle>Hapus Pertanyaan?</AlertDialogTitle>
             <AlertDialogDescription>
               Apakah Anda yakin ingin menghapus pertanyaan ini? 
-              Tindakan ini tidak dapat dibatalkan.
+              Tindakan ini tidak dapat dibatalkan
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

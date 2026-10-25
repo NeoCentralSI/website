@@ -2,7 +2,7 @@ import { StudentThesisSeminarStatusCard } from './StudentThesisSeminarStatusCard
 import { StudentThesisSeminarIdentityCard } from './StudentThesisSeminarIdentityCard';
 import { StudentThesisSeminarChecklistRequirementsCard } from './StudentThesisSeminarChecklistRequirementsCard';
 import { StudentThesisSeminarDocumentCard } from './StudentThesisSeminarDocumentCard';
-import { StudentThesisSeminarHistoryCard } from './StudentThesisSeminarHistoryCard';
+import { ThesisEventHistoryTable } from '@/components/shared/ThesisEventHistoryTable';
 import type { SeminarHistoryItem, SeminarOverviewResponse } from '@/types/seminar.types';
 
 interface OverviewPanelProps {
@@ -65,24 +65,7 @@ export const StudentThesisSeminarOverviewPanel = ({
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[820px] grid-cols-[48px_minmax(200px,1.5fr)_minmax(150px,1fr)_minmax(120px,0.8fr)_80px_minmax(145px,1fr)_104px] items-center gap-4 border-y border-gray-200 bg-muted/40 px-4 py-2.5">
-              {['No', 'Dosen Penguji', 'Tanggal', 'Ruangan', 'Nilai', 'Status', 'Aksi'].map((column) => (
-                <span key={column} className="text-xs font-medium text-muted-foreground">
-                  {column}
-                </span>
-              ))}
-            </div>
-
-            {historyItems.map((item, index) => (
-              <StudentThesisSeminarHistoryCard
-                key={item.id}
-                index={index + 1}
-                item={item}
-                onClick={() => onDetailClick(item.id)}
-              />
-            ))}
-          </div>
+          <ThesisEventHistoryTable items={historyItems} onDetail={onDetailClick} />
         </section>
       ) : null}
     </div>

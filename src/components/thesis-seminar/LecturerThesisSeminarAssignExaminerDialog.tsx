@@ -346,7 +346,7 @@ export function LecturerThesisSeminarAssignExaminerDialog({
               <ScrollArea className="h-[140px] rounded-md border p-2">
                 {scheduleDashboard.sharedSlots.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Belum ada irisan jadwal yang valid di antara profil terpilih.
+                    Belum ada irisan jadwal yang valid di antara profil terpilih
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -370,7 +370,7 @@ export function LecturerThesisSeminarAssignExaminerDialog({
               <p className="text-xs text-muted-foreground">Jadwal Kesibukan:</p>
               <ScrollArea className="h-[140px] rounded-md border p-2">
                 {(scheduleDashboard.combinedIntervals ?? []).length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Belum ada acara terjadwal untuk profil terpilih.</p>
+                  <p className="text-xs text-muted-foreground">Belum ada acara terjadwal untuk profil terpilih</p>
                 ) : (
                   <div className="space-y-2">
                     {(scheduleDashboard.combinedIntervals ?? []).map((ev: any, idx: number) => (

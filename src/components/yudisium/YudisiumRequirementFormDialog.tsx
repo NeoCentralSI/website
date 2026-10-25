@@ -132,7 +132,7 @@ export function YudisiumRequirementFormDialog({
                             <div className="space-y-1 leading-none">
                                 <Label htmlFor="isActive" className="cursor-pointer">Aktif</Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Status keaktifan data.
+                                    Status keaktifan data
                                 </p>
                             </div>
                         </div>
@@ -146,7 +146,7 @@ export function YudisiumRequirementFormDialog({
                             <div className="space-y-1 leading-none">
                                 <Label htmlFor="isPublic" className="cursor-pointer">Publik</Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Terlihat oleh mahasiswa.
+                                    Terlihat oleh mahasiswa
                                 </p>
                             </div>
                         </div>

@@ -562,7 +562,7 @@ function RevisionBoardSection({
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Tambah Item Revisi</DialogTitle>
-            <DialogDescription>Tambahkan catatan revisi baru untuk dosen penguji sidang.</DialogDescription>
+            <DialogDescription>Tambahkan catatan revisi baru untuk dosen penguji sidang</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -602,7 +602,7 @@ function RevisionBoardSection({
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>Edit Revisi</DialogTitle>
-            <DialogDescription>Ubah catatan revisi atau perbaikan yang telah dituliskan.</DialogDescription>
+            <DialogDescription>Ubah catatan revisi atau perbaikan yang telah dituliskan</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2"><Label>Catatan Revisi</Label><Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} rows={3} /></div>
@@ -622,7 +622,7 @@ function RevisionBoardSection({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Ajukan Perbaikan?</AlertDialogTitle>
-            <AlertDialogDescription>Perbaikan akan menunggu persetujuan pembimbing.</AlertDialogDescription>
+            <AlertDialogDescription>Perbaikan akan menunggu persetujuan pembimbing</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitMutation.isPending}>Batal</AlertDialogCancel>
@@ -651,7 +651,7 @@ function RevisionBoardSection({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Item Revisi?</AlertDialogTitle>
-            <AlertDialogDescription>Data akan dihapus permanen.</AlertDialogDescription>
+            <AlertDialogDescription>Data akan dihapus permanen</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteMutation.isPending}>Batal</AlertDialogCancel>
@@ -681,7 +681,7 @@ function RevisionBoardSection({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Finalisasi Revisi?</AlertDialogTitle>
-            <AlertDialogDescription>Menandai seluruh revisi selesai dan siap untuk yudisium.</AlertDialogDescription>
+            <AlertDialogDescription>Menandai seluruh revisi selesai dan siap untuk yudisium</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={finalizeMutation.isPending}>Batal</AlertDialogCancel>
@@ -702,7 +702,7 @@ function RevisionBoardSection({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Batalkan Persetujuan?</AlertDialogTitle>
-            <AlertDialogDescription>Status item revisi ini akan kembali menjadi "Diajukan".</AlertDialogDescription>
+            <AlertDialogDescription>Status item revisi ini akan kembali menjadi "Diajukan"</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={unapproveMutation.isPending}>Batal</AlertDialogCancel>
@@ -731,7 +731,7 @@ function RevisionBoardSection({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Batalkan Pengajuan?</AlertDialogTitle>
-            <AlertDialogDescription>Status akan kembali menjadi "Diproses" dan Anda dapat mengeditnya kembali.</AlertDialogDescription>
+            <AlertDialogDescription>Status akan kembali menjadi "Diproses" dan Anda dapat mengeditnya kembali</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={cancelSubmitMutation.isPending}>Batal</AlertDialogCancel>
@@ -760,7 +760,7 @@ function RevisionBoardSection({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Batal Finalisasi Revisi?</AlertDialogTitle>
-            <AlertDialogDescription>Anda akan dapat mengubah status persetujuan item revisi kembali.</AlertDialogDescription>
+            <AlertDialogDescription>Anda akan dapat mengubah status persetujuan item revisi kembali</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={unfinalizeMutation.isPending}>Batal</AlertDialogCancel>

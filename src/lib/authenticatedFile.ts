@@ -19,6 +19,11 @@ const FILE_ERROR_MESSAGES: Record<number, string> = {
  * history, proxy logs, Referer, copied links). The caller revokes the URL when done.
  */
 export async function fetchAuthenticatedBlobUrl(url: string | null | undefined): Promise<string> {
+  return URL.createObjectURL(await fetchAuthenticatedBlob(url));
+}
+
+/** The protected file itself (e.g. to show its size next to a preview). */
+export async function fetchAuthenticatedBlob(url: string | null | undefined): Promise<Blob> {
   const fullUrl = resolveApiFileUrl(url);
   if (!fullUrl) throw new Error(FILE_ERROR_MESSAGES[404]);
 
@@ -29,7 +34,7 @@ export async function fetchAuthenticatedBlobUrl(url: string | null | undefined):
   if (!response.ok) {
     throw new Error(FILE_ERROR_MESSAGES[response.status] ?? "Gagal membuka berkas.");
   }
-  return URL.createObjectURL(await response.blob());
+  return response.blob();
 }
 
 /**

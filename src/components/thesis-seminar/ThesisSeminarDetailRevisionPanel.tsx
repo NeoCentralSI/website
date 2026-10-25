@@ -574,42 +574,42 @@ function RevisionBoardSection({
       {/* Confirmation Modals */}
       <AlertDialog open={!!submitConfirmId} onOpenChange={open => !open && setSubmitConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Ajukan Perbaikan?</AlertDialogTitle><AlertDialogDescription>Perbaikan akan menunggu persetujuan pembimbing.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Ajukan Perbaikan?</AlertDialogTitle><AlertDialogDescription>Perbaikan akan menunggu persetujuan pembimbing</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await submitMutation.mutateAsync({ seminarId, revisionId: submitConfirmId! }); setSubmitConfirmId(null); refetch(); onRefresh(); }}>Ajukan</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={!!deleteConfirmId} onOpenChange={open => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Hapus Item Revisi?</AlertDialogTitle><AlertDialogDescription>Data akan dihapus permanen.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Hapus Item Revisi?</AlertDialogTitle><AlertDialogDescription>Data akan dihapus permanen</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction className="bg-red-600 hover:bg-red-700" onClick={async () => { await deleteMutation.mutateAsync({ seminarId, revisionId: deleteConfirmId! }); setDeleteConfirmId(null); refetch(); onRefresh(); }}>Hapus</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={finalizeConfirmOpen} onOpenChange={setFinalizeConfirmOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Finalisasi Revisi?</AlertDialogTitle><AlertDialogDescription>Menandai seluruh revisi selesai dan siap untuk sidang.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Finalisasi Revisi?</AlertDialogTitle><AlertDialogDescription>Menandai seluruh revisi selesai dan siap untuk sidang</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={handleFinalizeRevisions}>Ya, Finalisasi</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={!!unapproveConfirmId} onOpenChange={open => !open && setUnapproveConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Batalkan Persetujuan?</AlertDialogTitle><AlertDialogDescription>Status item revisi ini akan kembali menjadi "Diajukan".</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Batalkan Persetujuan?</AlertDialogTitle><AlertDialogDescription>Status item revisi ini akan kembali menjadi "Diajukan"</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await unapproveMutation.mutateAsync({ seminarId, revisionId: unapproveConfirmId! }); setUnapproveConfirmId(null); refetch(); onRefresh(); }}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={!!cancelSubmitConfirmId} onOpenChange={open => !open && setCancelSubmitConfirmId(null)}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Batalkan Pengajuan?</AlertDialogTitle><AlertDialogDescription>Status akan kembali menjadi "Diproses" dan Anda dapat mengeditnya kembali.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Batalkan Pengajuan?</AlertDialogTitle><AlertDialogDescription>Status akan kembali menjadi "Diproses" dan Anda dapat mengeditnya kembali</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={async () => { await cancelSubmitMutation.mutateAsync({ seminarId, revisionId: cancelSubmitConfirmId! }); setCancelSubmitConfirmId(null); refetch(); onRefresh(); }}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <AlertDialog open={unfinalizeConfirmOpen} onOpenChange={setUnfinalizeConfirmOpen}>
         <AlertDialogContent>
-          <AlertDialogHeader><AlertDialogTitle>Batal Finalisasi Revisi?</AlertDialogTitle><AlertDialogDescription>Anda akan dapat mengubah status persetujuan item revisi kembali.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogHeader><AlertDialogTitle>Batal Finalisasi Revisi?</AlertDialogTitle><AlertDialogDescription>Anda akan dapat mengubah status persetujuan item revisi kembali</AlertDialogDescription></AlertDialogHeader>
           <AlertDialogFooter><AlertDialogCancel>Batal</AlertDialogCancel><AlertDialogAction onClick={handleUnfinalizeRevisions}>Ya, Batalkan</AlertDialogAction></AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

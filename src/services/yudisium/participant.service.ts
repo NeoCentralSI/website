@@ -13,6 +13,22 @@ import type {
 
 const EP = API_CONFIG.ENDPOINTS.YUDISIUM;
 
+export interface YudisiumParticipantSummary {
+  total: number;
+  enrollmentYears: { id: string; name: string; count: number }[];
+  /** `value` is the predicate, or "none" for the participants without one. */
+  predicates: { id: string; name: string; value: string; count: number }[];
+  topics: { id: string; name: string; count: number }[];
+}
+
+/** Participants of the period per cohort, predicate and thesis topic (the detail charts). */
+export async function getYudisiumParticipantSummary(yudisiumId: string): Promise<YudisiumParticipantSummary> {
+  const res = await apiRequest(getApiUrl(EP.PARTICIPANT_SUMMARY(yudisiumId)));
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message || 'Gagal memuat ringkasan peserta yudisium');
+  return json.data;
+}
+
 export async function getYudisiumParticipants(
   yudisiumId: string
 ): Promise<AdminYudisiumParticipantsResponse> {

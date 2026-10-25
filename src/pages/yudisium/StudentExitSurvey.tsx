@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { Link, useOutletContext } from 'react-router-dom';
+import { Link, useOutletContext, useNavigate } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import {
   AlertDialog,
@@ -243,6 +243,7 @@ export default function StudentExitSurvey() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { data, isLoading, isError, error } = useStudentExitSurvey();
   const submitMutation = useSubmitStudentExitSurvey();
+  const navigate = useNavigate();
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -358,6 +359,8 @@ export default function StudentExitSurvey() {
     try {
       await submitMutation.mutateAsync({ answers: payloadAnswers });
       setShowConfirm(false);
+      // Back to the Yudisium overview, like after Pengajuan Pembimbing in Proposal.
+      navigate('/yudisium', { replace: true });
     } catch (e: any) {
       toast.error(e.message || 'Gagal mengirim exit survey');
     }
@@ -523,7 +526,7 @@ export default function StudentExitSurvey() {
           <AlertDialogHeader>
             <AlertDialogTitle>Kirim Exit Survey?</AlertDialogTitle>
             <AlertDialogDescription>
-              Jawaban yang telah dikirim tidak dapat diubah kembali. Pastikan seluruh jawaban Anda sudah benar.
+              Jawaban yang telah dikirim tidak dapat diubah kembali. Pastikan seluruh jawaban Anda sudah benar
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

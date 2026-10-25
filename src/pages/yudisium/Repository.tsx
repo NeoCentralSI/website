@@ -1,18 +1,19 @@
+import EmptyState from '@/components/ui/empty-state';
+import { TableIconAction } from '@/components/shared/TableIconAction';
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { Eye, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toTitleCaseName } from '@/lib/text';
 import { useYudisiumRepository } from '@/hooks/yudisium/useYudisium';
-import { openProtectedFile } from '@/lib/protected-file';
-import { toast } from 'sonner';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
 import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import CustomTable, { type Column } from '@/components/layout/CustomTable';
 import { RefreshButton } from '@/components/ui/refresh-button';
 
 export default function Repository() {
+  const { openDocument, viewer } = useDocumentViewer();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
@@ -79,14 +80,7 @@ export default function Repository() {
     return filteredData.slice(start, start + pageSize);
   }, [filteredData, page, pageSize]);
 
-  const handleViewDocument = async (filePath: string | null, fileName: string | null) => {
-    if (!filePath) return;
-    try {
-      await openProtectedFile(filePath, fileName || undefined);
-    } catch (error) {
-      toast.error((error as Error).message || 'Gagal membuka dokumen');
-    }
-  };
+  const handleViewDocument = (filePath: string | null, fileName: string | null) => openDocument(filePath, fileName);
 
   const columns = useMemo<Column<any>[]>(() => [
     {
@@ -102,9 +96,9 @@ export default function Repository() {
       className: 'min-w-[300px] max-w-[600px] whitespace-normal',
       render: (doc) => (
         <div className="flex flex-col gap-1 py-1">
-          <span className="text-sm font-medium text-foreground leading-snug break-words">{doc.thesisTitle}</span>
+          <span className="line-clamp-2 text-sm font-medium leading-snug text-foreground break-words" title={doc.thesisTitle}>{doc.thesisTitle}</span>
           <div className="flex lg:hidden">
-            <Badge variant="secondary" className="text-[10px] px-1.5 h-4">
+            <Badge variant="secondary" className="text-xs">
               {doc.topicName}
             </Badge>
           </div>
@@ -117,7 +111,7 @@ export default function Repository() {
       width: 250,
       render: (doc) => (
         <div className="flex flex-col">
-          <span className="text-sm font-medium text-foreground">{toTitleCaseName(doc.studentName)}</span>
+          <span className="truncate text-sm font-medium text-foreground" title={toTitleCaseName(doc.studentName)}>{toTitleCaseName(doc.studentName)}</span>
           <span className="text-xs text-muted-foreground">{doc.studentNim}</span>
         </div>
       ),
@@ -148,35 +142,26 @@ export default function Repository() {
       width: 80,
       className: 'text-center',
       render: (doc) => (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-          onClick={() => handleViewDocument(doc.filePath, doc.fileName)}
-          title="Lihat Dokumen"
-        >
-          <Eye size={16} />
-        </Button>
+        <TableIconAction icon={Eye} label="Lihat Dokumen" onClick={() => handleViewDocument(doc.filePath, doc.fileName)} />
       ),
     },
   ], [page, pageSize, topicFilter, availableTopics]);
 
   return (
     <div className="p-6 space-y-6">
+      {viewer}
       {/* Page Header */}
-      <div className="rounded-lg border border-gray-200 bg-card p-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Repositori Karya Ilmiah</h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Pusat pencarian dokumen publik mahasiswa yang telah menyelesaikan proses yudisium.
-            </p>
-          </div>
-          <Badge variant="outline" className="h-8 gap-1.5 border-gray-200 bg-card text-xs font-medium text-foreground shrink-0 w-fit">
-            <FileText className="h-3.5 w-3.5 text-muted-foreground" />
-            {currentPanel?.documents.length ?? 0} Dokumen
-          </Badge>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Repositori Karya Ilmiah</h1>
+          <p className="text-muted-foreground">
+            Dokumen publik yang disetujui dari mahasiswa yang telah lulus yudisium
+          </p>
         </div>
+        <Badge variant="outline" className="h-8 w-fit shrink-0 gap-1.5 text-sm font-medium">
+          <FileText className="h-4 w-4 text-muted-foreground" />
+          {currentPanel?.documents.length ?? 0} Dokumen
+        </Badge>
       </div>
 
       {/* Tabs Navigation - Always rendered once loaded */}
@@ -190,13 +175,10 @@ export default function Repository() {
 
       {/* Content */}
       {!isLoading && tabs.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-gray-200 bg-card p-10 text-center space-y-2">
-          <FileText className="mx-auto h-10 w-10 text-muted-foreground/40" />
-          <h2 className="text-base font-semibold text-foreground">Belum Ada Kategori Publik</h2>
-          <p className="text-xs text-muted-foreground max-w-md mx-auto">
-            Repositori akan muncul setelah persyaratan yudisium ditandai publik dan memiliki dokumen dari peserta yang lulus.
-          </p>
-        </div>
+        <EmptyState
+          title="Belum Ada Kategori Publik"
+          description="Repositori muncul setelah persyaratan yudisium ditandai publik dan memiliki dokumen dari peserta yang lulus"
+        />
       ) : (
         <CustomTable
           columns={columns}
@@ -211,7 +193,7 @@ export default function Repository() {
           searchValue={search}
           onSearchChange={(v) => { setSearch(v); setPage(1); }}
           enableColumnFilters
-          emptyText="Tidak ada dokumen publik yang tersedia di kategori ini."
+          emptyText="Tidak ada dokumen publik yang tersedia di kategori ini"
           actions={
             <RefreshButton
               onClick={() => refetch()}

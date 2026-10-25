@@ -5,8 +5,7 @@ import { StudentYudisiumIdentityCard } from './StudentYudisiumIdentityCard';
 import { StudentYudisiumStatusCard } from './StudentYudisiumStatusCard';
 import { StudentYudisiumChecklistRequirementsCard } from './StudentYudisiumChecklistRequirementsCard';
 import { StudentYudisiumDocumentCard } from './StudentYudisiumDocumentCard';
-import { StudentYudisiumCplTable } from './StudentYudisiumCplTable';
-import { StudentYudisiumHistoryCard } from './StudentYudisiumHistoryCard';
+import { StudentYudisiumHistoryTable } from './StudentYudisiumHistoryTable';
 import type { StudentYudisiumOverviewResponse, StudentYudisiumHistoryItem } from '@/types/student-yudisium.types';
 
 interface OverviewPanelProps {
@@ -14,7 +13,6 @@ interface OverviewPanelProps {
   history: StudentYudisiumHistoryItem[];
   onDetailClick: (id: string, yudisiumId: string) => void;
   onRefetch?: () => void;
-  isFetching?: boolean;
 }
 
 export function StudentYudisiumOverviewPanel({
@@ -22,7 +20,6 @@ export function StudentYudisiumOverviewPanel({
   history,
   onDetailClick,
   onRefetch,
-  isFetching,
 }: OverviewPanelProps) {
   const navigate = useNavigate();
   const yudisium = overview.yudisium;
@@ -79,8 +76,6 @@ export function StudentYudisiumOverviewPanel({
         </div>
       </div>
 
-      <StudentYudisiumCplTable cplScores={overview.cplScores ?? []} onRefetch={onRefetch} isFetching={isFetching} />
-
       {historyItems.length > 0 ? (
         <section className="overflow-hidden rounded-lg border border-gray-200 bg-card">
           <div className="flex items-center justify-between gap-4 px-5 py-4">
@@ -95,24 +90,7 @@ export function StudentYudisiumOverviewPanel({
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[820px] grid-cols-[48px_minmax(200px,1.5fr)_minmax(150px,1fr)_minmax(120px,0.8fr)_minmax(145px,1fr)_104px] items-center gap-4 border-y border-gray-200 bg-muted/40 px-4 py-2.5">
-              {['No', 'Periode Yudisium', 'Rentang Pendaftaran', 'Pelaksanaan', 'Status', 'Aksi'].map((column) => (
-                <span key={column} className="text-xs font-medium text-muted-foreground">
-                  {column}
-                </span>
-              ))}
-            </div>
-
-            {historyItems.map((item, index) => (
-              <StudentYudisiumHistoryCard
-                key={item.id}
-                index={index + 1}
-                item={item}
-                onClick={() => onDetailClick(item.id, item.yudisiumId || '')}
-              />
-            ))}
-          </div>
+          <StudentYudisiumHistoryTable items={historyItems} onDetail={onDetailClick} />
         </section>
       ) : null}
     </div>

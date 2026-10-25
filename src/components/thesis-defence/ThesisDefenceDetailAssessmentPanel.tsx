@@ -73,7 +73,7 @@ export function ThesisDefenceDetailAssessmentPanel({ defenceId, detail }: Props)
         <Card className="border-gray-200 bg-card shadow-none">
           <CardContent className="pt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Penilaian sidang sedang berlangsung dan belum difinalisasi oleh dosen pembimbing.
+              Penilaian sidang sedang berlangsung dan belum difinalisasi oleh dosen pembimbing
             </p>
           </CardContent>
         </Card>
@@ -108,7 +108,7 @@ function AdminAssessmentInfo({ detail }: { detail: any }) {
     <Card className="border-gray-200 bg-card shadow-none">
       <CardContent className="pt-4 text-center">
         <p className="text-muted-foreground text-sm">
-          Menunggu pelaksanaan sidang dan penilaian dari seluruh penguji serta pembimbing.
+          Menunggu pelaksanaan sidang dan penilaian dari seluruh penguji serta pembimbing
         </p>
       </CardContent>
     </Card>
@@ -460,7 +460,7 @@ function AssessmentFormSection({ defenceId }: { defenceId: string }) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tindakan ini akan mengunci seluruh penilaian Anda. Nilai yang telah disubmit tidak dapat diubah lagi.
+                    Tindakan ini akan mengunci seluruh penilaian Anda. Nilai yang telah disubmit tidak dapat diubah lagi
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -986,7 +986,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground italic">Menunggu penetapan hasil oleh dosen pembimbing.</p>
+          <p className="text-xs text-muted-foreground italic">Menunggu penetapan hasil oleh dosen pembimbing</p>
         )}
       </div>
     </div>
