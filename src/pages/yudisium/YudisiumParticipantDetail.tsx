@@ -214,41 +214,41 @@ export default function YudisiumParticipantDetail() {
       {
         key: 'no',
         header: 'No',
-        width: 48,
+        width: 52,
         className: 'text-center',
         render: (_, idx) => <span className="text-sm text-muted-foreground">{idx + 1}</span>
       },
       {
         key: 'code',
         header: 'Kode CPL',
-        width: 88,
+        width: 104,
         render: (row) => <span className="font-medium">{row.code ?? '-'}</span>
       },
       {
         key: 'description',
         header: 'Deskripsi',
-        // The rest of the width, wrapped on as many lines as it needs (no horizontal scroll).
+        // Only this column gives up width: two lines, the full text in the tooltip.
         className: 'whitespace-normal break-words',
-        render: (row) => <p className="text-sm text-muted-foreground leading-relaxed">{row.description}</p>
+        render: (row) => <p title={row.description} className="line-clamp-2 text-sm text-muted-foreground leading-relaxed">{row.description}</p>
       },
       {
         key: 'score',
         header: 'Nilai',
-        width: 64,
+        width: 72,
         className: 'text-center',
         render: (row) => <span className="font-semibold">{row.score ?? '-'}</span>
       },
       {
         key: 'minimalScore',
         header: 'Minimal',
-        width: 76,
+        width: 92,
         className: 'text-center',
         accessor: 'minimalScore'
       },
       {
         key: 'status',
         header: 'Status',
-        width: 130,
+        width: 150,
         className: 'text-center',
         render: (row) => (
           <Badge variant="outline" className={row.passed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}>

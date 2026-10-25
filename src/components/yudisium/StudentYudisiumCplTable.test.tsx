@@ -17,7 +17,7 @@ it('shows scores and verification as read-only data and searches descriptions', 
     { code: 'CPL02', description: 'Manajemen', score: 40, minimalScore: 60, passed: false, status: 'calculated' },
   ]} />);
   expect(screen.getByText('Dosen Satu')).toBeInTheDocument();
-  expect(screen.getByText('Divalidasi')).toBeInTheDocument();
+  expect(screen.getByText(/^Divalidasi/)).toBeInTheDocument();
   expect(screen.getByText('Belum divalidasi')).toBeInTheDocument();
   expect(screen.getByText('Belum Tercapai')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /Validasi|Ubah/i })).not.toBeInTheDocument();
