@@ -5,7 +5,7 @@ import { StudentThesisSeminarChecklistRequirementsCard } from './StudentThesisSe
 import { StudentThesisDefenceChecklistRequirementsCard } from '@/components/thesis-defence/StudentThesisDefenceChecklistRequirementsCard';
 
 const reason = 'Anda tidak tercatat mengambil mata kuliah Tugas Akhir semester ini. Hubungi Admin Departemen bila ini keliru.';
-const course = { met: false, label: 'Mengambil mata kuliah Tugas Akhir semester ini', reason };
+const course = { met: false, label: 'Mengambil Mata Kuliah Tugas Akhir Semester Ini', reason };
 
 describe('requirement lists show the Tugas Akhir course of the semester', () => {
   it('seminar: the row with its reason', () => {
@@ -20,7 +20,7 @@ describe('requirement lists show the Tugas Akhir course of the semester', () => 
         } as never}
       />,
     );
-    expect(screen.getByText('Mengambil mata kuliah Tugas Akhir semester ini')).toBeInTheDocument();
+    expect(screen.getByText('Mengambil Mata Kuliah Tugas Akhir Semester Ini')).toBeInTheDocument();
     expect(screen.getByText(reason)).toBeInTheDocument();
   });
 
@@ -36,7 +36,7 @@ describe('requirement lists show the Tugas Akhir course of the semester', () => 
         } as never}
       />,
     );
-    expect(screen.getByText('Mengambil mata kuliah Tugas Akhir semester ini')).toBeInTheDocument();
+    expect(screen.getByText('Mengambil Mata Kuliah Tugas Akhir Semester Ini')).toBeInTheDocument();
     expect(screen.queryByText(reason)).not.toBeInTheDocument();
   });
 });
