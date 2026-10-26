@@ -1,5 +1,4 @@
-import { format } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
+import { eventInstant, formatWibDate, formatWibTime, wibDayKey } from '@/lib/eventTime';
 import { Calendar, ExternalLink, MapPin, Users, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -33,14 +32,12 @@ const LEGACY_STATUS: Record<string, { label: string; variant: 'default' | 'secon
 
 const ROLE_LABELS: Record<string, string> = { student: 'Mahasiswa', lecturer: 'Dosen', admin: 'Admin', moderator: 'Moderator' };
 
-/** "Selasa, 12 Maret 2031 · 09.00–11.00" */
-function formatWhen(event: CalendarEvent): string {
-  const start = new Date(event.allDay ? `${event.startDate}T00:00:00+07:00` : event.startDate);
-  const day = format(start, 'EEEE, dd MMMM yyyy', { locale: idLocale });
+/** "Selasa, 12 Maret 2031 · 09.00–11.00", always in WIB whatever the device's zone. */
+export function formatWhen(event: CalendarEvent): string {
+  const day = formatWibDate(event.startDate);
   if (event.allDay) return `${day} · Sepanjang hari`;
-  const from = format(start, 'HH.mm');
-  const end = event.endDate ? new Date(event.endDate) : null;
-  const to = end && end.getTime() !== start.getTime() ? format(end, 'HH.mm') : null;
+  const from = formatWibTime(event.startDate);
+  const to = event.endDate && eventInstant(event.endDate).getTime() !== eventInstant(event.startDate).getTime() ? formatWibTime(event.endDate) : null;
   return to ? `${day} · ${from}–${to}` : `${day} · ${from}`;
 }
 
@@ -53,7 +50,7 @@ function outlookLink(event: CalendarEvent): string | null {
   if (event.outlookEventId) return `https://outlook.office.com/calendar/item/${encodeURIComponent(event.outlookEventId)}`;
   // KP events keep their former link: Outlook opened on the day of the event.
   if (event.type === 'internship_seminar') {
-    return `https://outlook.live.com/calendar/0/view/day/${new Date(event.startDate).toISOString().split('T')[0]}`;
+    return `https://outlook.live.com/calendar/0/view/day/${wibDayKey(event.startDate)}`;
   }
   return null;
 }

@@ -1,3 +1,4 @@
+import { toWibWallClock } from '@/lib/eventTime';
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Cloud, CloudOff, Loader2, RefreshCw, Link2 } from 'lucide-react';
 // The "Buat Event" button is hidden for now (see below); its icon stays for when it returns.
@@ -287,8 +288,10 @@ export function CalendarDashboard({
     return events.map((event) => ({
       id: event.id,
       title: event.title,
-      start: event.startDate,
-      end: event.allDay ? undefined : event.endDate ?? undefined,
+      // FullCalendar uses the device's zone: give it WIB wall-clock times so every event sits on
+      // its WIB date and hour on any device (an all-day date stays a date).
+      start: toWibWallClock(event.startDate),
+      end: event.allDay ? undefined : toWibWallClock(event.endDate),
       allDay: event.allDay ?? false,
       backgroundColor: getEventColor(event.type),
       borderColor: getEventColor(event.type),
@@ -450,6 +453,8 @@ export function CalendarDashboard({
             slotMaxTime="20:00:00"
             allDaySlot={true}
             nowIndicator={true}
+            // "Today" and the now line follow WIB too.
+            now={() => toWibWallClock(new Date()) ?? new Date()}
             weekends={true}
             eventTimeFormat={{
               hour: '2-digit',

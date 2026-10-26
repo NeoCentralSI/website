@@ -1,12 +1,11 @@
 
+import { eventInstant, formatWibDate, formatWibTime, wibDaysFromToday } from '@/lib/eventTime';
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getUpcomingEventsAPI } from '@/services/calendar.service';
 import type { CalendarEvent } from '@/types/calendar.types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format, differenceInDays, isSameDay } from 'date-fns';
-import { id as idLocale } from 'date-fns/locale';
 import { Calendar, Clock, MapPin, Loader2, VideoIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -43,11 +42,11 @@ export function UpcomingEventsCard({
       // Still going on or coming: it ends now or later (the server already sends only these).
       .filter(event => {
         const end = event.allDay
-          ? new Date(new Date(`${event.startDate}T00:00:00+07:00`).getTime() + 24 * 60 * 60 * 1000)
-          : new Date(event.endDate ?? event.startDate);
+          ? new Date(eventInstant(event.startDate).getTime() + 24 * 60 * 60 * 1000)
+          : eventInstant(event.endDate ?? event.startDate);
         return end >= new Date();
       })
-      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+      .sort((a, b) => eventInstant(a.startDate).getTime() - eventInstant(b.startDate).getTime())
       .slice(0, LIMIT);
   }, [data?.events, extraEvents]);
 
@@ -95,17 +94,9 @@ export function UpcomingEventsCard({
           <div className="space-y-6">
             {events.map((event, index) => {
               const isLast = index === events.length - 1;
-              const eventDate = new Date(event.allDay ? `${event.startDate}T00:00:00+07:00` : event.startDate);
-              const now = new Date();
-              const isToday = isSameDay(eventDate, now);
-
-              // Calculate remaining days
-              // We reset time to midnight for accurate day comparison
-              const date1 = new Date(eventDate);
-              date1.setHours(0, 0, 0, 0);
-              const date2 = new Date(now);
-              date2.setHours(0, 0, 0, 0);
-              const daysLeft = differenceInDays(date1, date2);
+              // Days and times in WIB, whatever the device's zone.
+              const daysLeft = Math.max(0, wibDaysFromToday(event.startDate));
+              const isToday = daysLeft === 0;
 
               let daysText = '';
               if (daysLeft === 0) daysText = 'Hari ini';
@@ -160,8 +151,8 @@ export function UpcomingEventsCard({
                       <Clock className="h-3.5 w-3.5" />
                       <span>
                         {event.allDay
-                          ? `${format(eventDate, 'EEE, d MMM yyyy', { locale: idLocale })} • Sepanjang hari`
-                          : format(eventDate, 'EEE, d MMM yyyy • HH:mm', { locale: idLocale })}
+                          ? `${formatWibDate(event.startDate, 'short')} • Sepanjang hari`
+                          : `${formatWibDate(event.startDate, 'short')} • ${formatWibTime(event.startDate)}`}
                       </span>
                     </div>
 
