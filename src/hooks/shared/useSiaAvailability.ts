@@ -18,5 +18,5 @@ export function useSiaAvailability(enabled = true) {
     staleTime: 60_000,
   });
   const configured = data ? data.configured !== false : true;
-  return { configured, isLoading, reason: configured ? null : SIA_NOT_AVAILABLE };
+  return { configured, isLoading, reason: configured ? null : SIA_NOT_AVAILABLE, status: data ?? null };
 }

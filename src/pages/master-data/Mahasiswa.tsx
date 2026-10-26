@@ -1,3 +1,4 @@
+import { SiaSyncSummary, siaSyncSummaryLines } from '@/components/master-data/SiaSyncSummary';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -147,18 +148,14 @@ export default function Mahasiswa() {
   const syncMutation = useMutation({
     mutationFn: triggerSiaSyncAPI,
     onSuccess: (result) => {
-      const cplCreated = result.summary?.cplCreated ?? 0;
-      const cplUpdated = result.summary?.cplUpdated ?? 0;
-      const cplSkippedProtected = result.summary?.cplSkippedProtected ?? 0;
-      const cplUnmatchedCodes = result.summary?.cplUnmatchedCodes ?? 0;
-
-      toast.success(
-        `Sinkronisasi SIA Berhasil | CPL Baru: ${cplCreated}, Diperbarui: ${cplUpdated}, Data Manual Dipertahankan: ${cplSkippedProtected}, Kode Tidak Valid: ${cplUnmatchedCodes}`
-      );
+      const summary = result.summary ?? {};
+      if (summary.skipped) toast.info(summary.message ?? 'Sinkronisasi SIA dilewati');
+      else toast.success('Sinkronisasi SIA selesai', { description: siaSyncSummaryLines(summary).join(' · ') });
+      queryClient.invalidateQueries({ queryKey: ['sia', 'sync-status'] });
       queryClient.invalidateQueries({ queryKey: ['students'] });
     },
     onError: (err) => {
-      toast.error((err as Error).message || 'Sync SIA gagal');
+      toast.error((err as Error).message || 'Sinkronisasi SIA gagal');
     },
   });
 
@@ -415,6 +412,8 @@ export default function Mahasiswa() {
           )}
         </div>
       </div>
+
+      {showSyncButton() && <SiaSyncSummary status={sia.status} />}
 
       {academicYearContext && (
         <p className="text-sm text-muted-foreground">
