@@ -290,13 +290,17 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
             <Loading text="Memuat aksi cepat..." className="py-4" size="sm" />
           </div>
         ) : allDone ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground px-6">
-            <CompleteLottie size="w-24 h-24" />
-            <p className="font-medium mt-2">Semua Selesai!</p>
-            <p className="text-sm">Tidak ada antrean persetujuan yang aktif</p>
+          <div className="flex items-center gap-3 px-6 pb-4 text-muted-foreground">
+            <CompleteLottie size="w-12 h-12 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Semua Selesai!</p>
+              <p className="text-xs">Tidak ada antrean persetujuan yang aktif</p>
+            </div>
           </div>
         ) : (
-          <ScrollArea className="h-full max-h-100">
+          // At most about three items high, the rest scrolls inside, so "Agenda Mendatang" below
+          // stays in view at 1366×768 and 1920×1080.
+          <ScrollArea className="[&>[data-slot=scroll-area-viewport]]:max-h-56">
             <div className="space-y-3 px-6 pb-6">
               {quickActions.map((action) => (
                 <Link key={action.id} to={action.link}>

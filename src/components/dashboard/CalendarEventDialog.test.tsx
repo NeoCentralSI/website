@@ -51,6 +51,20 @@ describe('CalendarEventDialog', () => {
     expect(screen.queryByText(/00\.00/)).not.toBeInTheDocument();
   });
 
+  it('an Outlook event: no raw meeting URL, "Buka di Outlook" in the footer', () => {
+    const longUrl = `https://teams.microsoft.com/l/meetup-join/${'x'.repeat(300)}`;
+    const outlookEvent = {
+      id: 'outlook-1', type: 'outlook_event', title: 'Rapat Prodi', status: 'accepted',
+      startDate: '2026-11-15T02:00:00.000Z', endDate: '2026-11-15T03:00:00.000Z',
+      meetingLink: longUrl, metadata: { webLink: 'https://outlook.office.com/calendar/item/abc' },
+    } as unknown as CalendarEvent;
+    render(<MemoryRouter><CalendarEventDialog event={outlookEvent} onClose={vi.fn()} /></MemoryRouter>);
+    expect(screen.queryByText(longUrl)).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Buka tautan rapat' })).toHaveAttribute('href', longUrl);
+    expect(screen.getByRole('link', { name: /Buka di Outlook/ })).toHaveAttribute('href', 'https://outlook.office.com/calendar/item/abc');
+    expect(screen.getByRole('button', { name: 'Tutup' })).toBeInTheDocument();
+  });
+
   it('uses full, uniform kind labels', () => {
     expect(getEventKindLabel({ type: 'student_guidance' } as CalendarEvent)).toBe('Bimbingan');
     expect(getEventKindLabel({ type: 'defense_as_examiner' } as CalendarEvent)).toBe('Sidang');

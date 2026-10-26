@@ -71,15 +71,15 @@ export function CalendarEventDialog({ event, onClose }: { event: CalendarEvent |
 
   return (
     <Dialog open={!!event} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="overflow-hidden sm:max-w-lg">
         {event && (
           <>
             <DialogHeader>
-              <DialogTitle>{event.title}</DialogTitle>
+              <DialogTitle className="break-words">{event.title}</DialogTitle>
               <DialogDescription>{formatWhen(event)}</DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4 break-words">
               <div className="flex flex-wrap items-center gap-2">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
                 <Badge variant="outline" className={event.type === 'outlook_event' ? 'bg-[#0078d4] text-white hover:bg-[#0078d4]/90' : ''}>
@@ -97,9 +97,9 @@ export function CalendarEventDialog({ event, onClose }: { event: CalendarEvent |
               {event.location && (
                 <div className="flex items-start gap-2">
                   <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm font-medium">Lokasi</div>
-                    <p className="text-sm text-muted-foreground">{event.location}</p>
+                    <p className="text-sm text-muted-foreground break-words">{event.location}</p>
                   </div>
                 </div>
               )}
@@ -108,9 +108,10 @@ export function CalendarEventDialog({ event, onClose }: { event: CalendarEvent |
                 <div className="flex items-start gap-2">
                   <Video className="mt-0.5 h-4 w-4 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium">Tautan Rapat</div>
-                    <a href={event.meetingLink} target="_blank" rel="noopener noreferrer" className="block truncate text-sm text-primary hover:underline" title={event.meetingLink}>
-                      {event.meetingLink}
+                    <div className="text-sm font-medium">Rapat Daring</div>
+                    {/* Never the raw URL: long links pushed the modal wider than the screen. */}
+                    <a href={event.meetingLink} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                      Buka tautan rapat
                     </a>
                   </div>
                 </div>
@@ -119,7 +120,7 @@ export function CalendarEventDialog({ event, onClose }: { event: CalendarEvent |
               {event.description && (
                 <div>
                   <div className="mb-1 text-sm font-medium">Deskripsi</div>
-                  <p className="text-sm text-muted-foreground">{event.description}</p>
+                  <p className="whitespace-pre-line break-words text-sm text-muted-foreground">{event.description}</p>
                 </div>
               )}
 
@@ -142,11 +143,12 @@ export function CalendarEventDialog({ event, onClose }: { event: CalendarEvent |
                 </div>
               )}
 
-              <div className="flex gap-2 border-t border-gray-200 pt-4">
-                <Button variant="outline" className="flex-1" onClick={onClose}>Tutup</Button>
+              {/* Equal-width buttons that always stay inside the modal. */}
+              <div className="grid auto-cols-fr grid-flow-col gap-2 border-t border-gray-200 pt-4 [&>*]:min-w-0">
+                <Button variant="outline" className="w-full" onClick={onClose}>Tutup</Button>
                 {/* KP events keep their meeting button. */}
                 {event.type === 'internship_seminar' && event.meetingLink && (
-                  <Button className="flex-1 gap-2" asChild>
+                  <Button className="w-full gap-2" asChild>
                     <a href={event.meetingLink} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-4 w-4" />
                       Buka Meeting
@@ -154,15 +156,15 @@ export function CalendarEventDialog({ event, onClose }: { event: CalendarEvent |
                   </Button>
                 )}
                 {event.detailPath && (
-                  <Button className="flex-1" asChild>
+                  <Button className="w-full" asChild>
                     <Link to={event.detailPath} onClick={onClose}>Lihat Detail</Link>
                   </Button>
                 )}
                 {outlook && (
-                  <Button variant="outline" className="flex-1 gap-2" asChild>
+                  <Button variant="outline" className="w-full gap-2" asChild>
                     <a href={outlook} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                      Lihat di Outlook
+                      <ExternalLink className="h-4 w-4 shrink-0" />
+                      <span className="truncate">{event.type === 'outlook_event' ? 'Buka di Outlook' : 'Lihat di Outlook'}</span>
                     </a>
                   </Button>
                 )}

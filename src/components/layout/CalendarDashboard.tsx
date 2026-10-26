@@ -180,7 +180,8 @@ export function CalendarDashboard({
       startDate: event.start,
       endDate: event.end,
       location: event.location || undefined,
-      meetingLink: event.onlineMeetingUrl || event.webLink || undefined,
+      // Only a real meeting link; the Outlook page of the event is the webLink below.
+      meetingLink: event.onlineMeetingUrl || undefined,
       status: 'accepted' as const,
       // Required fields with default values for display purposes
       userId: '',
