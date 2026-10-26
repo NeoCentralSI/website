@@ -1,5 +1,33 @@
 # React + TypeScript + Vite
 
+## Installation and running
+
+Requirements: Node.js 22 and pnpm 10.
+
+```bash
+cp .env.example .env    # VITE_API_BASE_URL and Firebase values
+pnpm install
+pnpm dev                # http://localhost:5173
+```
+
+`VITE_*` values are baked in at build time; rebuild after changing them.
+
+### Production with Docker
+
+```bash
+docker compose up -d --build    # nginx on 127.0.0.1:8080 (FRONTEND_BIND, FRONTEND_PORT)
+```
+
+Put a reverse proxy in front of `127.0.0.1:8080`.
+
+### Production without Docker
+
+```bash
+pnpm build              # output in dist/
+```
+
+Serve `dist/` with any static server that falls back to `index.html` for unknown paths (see `nginx.conf`).
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:
