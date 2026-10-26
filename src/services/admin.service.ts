@@ -619,12 +619,7 @@ export const getStudentsAPI = async (params?: {
 export const triggerSiaSyncAPI = async (): Promise<{
   success: boolean;
   message?: string;
-  summary?: {
-    cplCreated?: number;
-    cplUpdated?: number;
-    cplSkippedProtected?: number;
-    cplUnmatchedCodes?: number;
-  };
+  summary?: Partial<import('./sia.service').SiaSyncStatus> & { skipped?: boolean; message?: string };
 }> => {
   let response: Response;
   try {

@@ -1,5 +1,6 @@
 import { getApiUrl } from '@/config/api';
 
+/** One academic record as SIA sends it (`GET /students`, K45). */
 export interface SiaCourse {
   code?: string;
   name?: string;
@@ -7,8 +8,10 @@ export interface SiaCourse {
 }
 
 export interface SiaCplScore {
-  code: string;
-  description: string;
+  cplCode?: string;
+  /** Earlier name of `cplCode`. */
+  code?: string;
+  description?: string | null;
   score: number;
   inputAt: string;
 }
@@ -16,10 +19,13 @@ export interface SiaCplScore {
 export interface SiaStudent {
   nim: string;
   name: string;
-  sksCompleted: number;
+  enrollmentYear?: number;
+  studentStatus?: string;
   currentSemester?: number;
-  currentSemesterCourses?: SiaCourse[];
+  sksCompleted: number;
+  gpa?: number;
   internshipCompleted?: boolean;
+  currentCourses?: SiaCourse[];
   cplScores?: SiaCplScore[];
 }
 
@@ -28,15 +34,25 @@ export interface SiaSyncStatus {
   /** False while SIA_BASE_URL is empty: every SIA read is refused ("Sinkronisasi SIA belum tersedia."). */
   configured?: boolean;
   lastRun: string | null;
-  fetched?: number;
-  dbUpdated?: number;
-  periodSnapshotsCreated?: number;
-  /** Semester flags read from SIA's per-semester endpoint (plan 10.6). */
-  periodFlagsUpdated?: number;
-  periodFlagsUnknownStudents?: number;
+  /** The semester SIA's data is about, e.g. "2026/2027 ganjil". */
+  period?: string;
+  fetched?: number | string;
+  notFound?: number | string;
+  dbUpdated?: number | string;
+  statusChanged?: number | string;
+  gpaChanged?: number | string;
+  failedStudents?: number | string;
+  periodFlagsCreated?: number | string;
+  periodFlagsUpdated?: number | string;
+  periodFlagsKeptAdmin?: number | string;
+  /** Records whose semester flags were not written because SIA's period is another semester. */
+  periodFlagsSkipped?: number | string;
+  periodMismatch?: string;
   periodFlagsError?: string | null;
+  cplCreated?: number | string;
+  cplUpdated?: number | string;
   error?: string | null;
-  durationMs?: number;
+  durationMs?: number | string;
   periodSnapshots: {
     academicYear: { id: string; semester: string; year: string };
     totalStudents: number;
