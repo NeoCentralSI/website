@@ -201,3 +201,31 @@ export function truncateFileName(name?: string | null, maxLength = 26): string {
 }
 
 
+
+const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+
+/** Day, month and year of a date in WIB, or null. */
+function wibParts(date?: string | Date | null) {
+  if (!date) return null;
+  const d = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(d.getTime())) return null;
+  const wib = new Date(d.getTime() + 7 * 60 * 60 * 1000);
+  return { day: wib.getUTCDate(), month: wib.getUTCMonth(), year: wib.getUTCFullYear() };
+}
+
+/** Short date for narrow table cells: `24 Okt 2026` (WIB). */
+export function formatDateAbbrId(date?: string | Date | null): string {
+  const p = wibParts(date);
+  return p ? `${p.day} ${SHORT_MONTHS[p.month]} ${p.year}` : "-";
+}
+
+/** Short date range: `24 Okt – 8 Nov 2026`, with the year on both ends when it differs. */
+export function formatDateRangeShort(start?: string | Date | null, end?: string | Date | null): string {
+  const a = wibParts(start);
+  const b = wibParts(end);
+  if (!a && !b) return "-";
+  if (!a) return formatDateAbbrId(end);
+  if (!b) return formatDateAbbrId(start);
+  const left = a.year === b.year ? `${a.day} ${SHORT_MONTHS[a.month]}` : `${a.day} ${SHORT_MONTHS[a.month]} ${a.year}`;
+  return `${left} – ${b.day} ${SHORT_MONTHS[b.month]} ${b.year}`;
+}

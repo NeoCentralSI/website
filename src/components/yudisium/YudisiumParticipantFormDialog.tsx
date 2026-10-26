@@ -49,7 +49,7 @@ export function YudisiumParticipantFormDialog({
         <DialogHeader>
           <DialogTitle>Tambah Peserta Yudisium</DialogTitle>
           <DialogDescription>
-            Pilih mahasiswa yang akan ditambahkan sebagai peserta arsip yudisium.
+            Pilih mahasiswa yang akan ditambahkan sebagai peserta arsip yudisium
           </DialogDescription>
         </DialogHeader>
 
@@ -70,7 +70,7 @@ export function YudisiumParticipantFormDialog({
             />
             {!isLoading && thesisOptions.length === 0 && (
               <p className="text-xs text-muted-foreground">
-                Semua peserta yang tersedia sudah terdaftar pada yudisium ini.
+                Semua peserta yang tersedia sudah terdaftar pada yudisium ini
               </p>
             )}
           </div>

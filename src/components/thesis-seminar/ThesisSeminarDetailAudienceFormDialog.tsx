@@ -71,7 +71,7 @@ export function AdminThesisSeminarAudienceDialog({
               onChange={(value) => setSelectedStudentId(value)}
             />
             {studentOptions.length === 0 && (
-              <p className="text-xs text-muted-foreground">Semua mahasiswa sudah terdaftar sebagai audience.</p>
+              <p className="text-xs text-muted-foreground">Semua mahasiswa sudah terdaftar sebagai audience</p>
             )}
           </div>
         </div>

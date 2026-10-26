@@ -238,7 +238,7 @@ export function ExitSurveyFormTable({
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Form Exit Survey</AlertDialogTitle>
             <AlertDialogDescription>
-              Apakah Anda yakin ingin menghapus form ini? Semua deskripsi, bagian, dan pertanyaan dari exit survey form akan terhapus secara permanen. Tekan Hapus jika anda yakin.
+              Apakah Anda yakin ingin menghapus form ini? Semua deskripsi, bagian, dan pertanyaan dari exit survey form akan terhapus secara permanen. Tekan Hapus jika anda yakin
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

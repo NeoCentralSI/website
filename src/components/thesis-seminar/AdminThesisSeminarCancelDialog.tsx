@@ -10,8 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
 import { useCancelAdminThesisSeminar } from '@/hooks/thesis-seminar/useAdminThesisSeminar';
 
 interface AdminThesisSeminarCancelModalProps {
@@ -56,49 +55,32 @@ export function AdminThesisSeminarCancelModal({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="gap-5 sm:max-w-xl">
-        <DialogHeader className="space-y-2 pr-8">
-          <DialogTitle className="flex items-center gap-2 text-foreground">
-            <AlertCircle className="h-5 w-5 text-destructive" />
-            Batalkan Seminar Hasil
-          </DialogTitle>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Batalkan Seminar Hasil</DialogTitle>
           <DialogDescription>
-            Apakah Anda yakin ingin membatalkan pendaftaran seminar untuk{' '}
-            <span className="font-semibold text-foreground">{studentName || 'mahasiswa ini'}</span>?
+            Status seminar <span className="font-medium text-foreground">{studentName || 'mahasiswa ini'}</span> menjadi Dibatalkan, dan mahasiswa harus mendaftar ulang untuk dijadwalkan kembali
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-5">
-          <Alert variant="destructive" className="border-red-200 bg-red-50/60 p-4">
-            <AlertCircle className="h-4 w-4 text-destructive" />
-            <AlertTitle className="text-destructive">Peringatan</AlertTitle>
-            <AlertDescription className="text-sm leading-relaxed text-red-700">
-              Tindakan ini akan mengubah status seminar menjadi "Dibatalkan". Mahasiswa harus mendaftar ulang jika ingin menjadwalkan kembali.
-            </AlertDescription>
-          </Alert>
-
-          <div className="space-y-2">
-            <Label htmlFor="reason">Alasan Pembatalan (opsional)</Label>
-            <Textarea
-              id="reason"
-              placeholder="Masukkan alasan mengapa seminar ini dibatalkan..."
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              rows={4}
-            />
-          </div>
+        <div className="space-y-2">
+          <Label htmlFor="cancel-reason">Alasan pembatalan</Label>
+          <Textarea
+            id="cancel-reason"
+            placeholder="Opsional"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={4}
+          />
         </div>
 
-        <DialogFooter className="border-t border-gray-200 pt-4">
+        <DialogFooter>
           <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={cancelMutation.isPending}>
-            Kembali
+            Batal
           </Button>
-          <Button
-            variant="destructive"
-            onClick={handleCancel}
-            disabled={cancelMutation.isPending}
-          >
-            {cancelMutation.isPending ? 'Memproses...' : 'Ya, Batalkan Seminar'}
+          <Button variant="destructive" onClick={handleCancel} disabled={cancelMutation.isPending}>
+            {cancelMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Batalkan Seminar
           </Button>
         </DialogFooter>
       </DialogContent>

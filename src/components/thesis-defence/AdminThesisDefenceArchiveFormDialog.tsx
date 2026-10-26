@@ -253,7 +253,7 @@ export function AdminThesisDefenceArchiveFormDialog({
               value={examinerSearch}
               onChange={(e) => setExaminerSearch(e.target.value)}
             />
-            <div className="max-h-[220px] overflow-y-auto rounded-md border p-3 space-y-2">
+            <div className="max-h-[220px] overflow-y-auto rounded-md border p-3 space-y-2 border-gray-200">
               {filteredLecturers.map((lec) => {
                 const checked = examinerIds.includes(lec.id);
                 return (
@@ -274,7 +274,7 @@ export function AdminThesisDefenceArchiveFormDialog({
                 );
               })}
               {filteredLecturers.length === 0 && (
-                <p className="text-sm text-muted-foreground">Tidak ada dosen ditemukan.</p>
+                <p className="text-sm text-muted-foreground">Tidak ada dosen ditemukan</p>
               )}
             </div>
             <p className="text-xs text-muted-foreground">

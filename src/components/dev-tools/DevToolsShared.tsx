@@ -7,15 +7,13 @@ import { Check, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import { STUDENT_STATUS_LABELS } from '@/lib/thesisLabels';
 import type { StudentStatus } from '@/types/devTools.types';
 
-export const STUDENT_STATUSES: { value: StudentStatus; label: string }[] = [
-  { value: 'active', label: 'Aktif' },
-  { value: 'dropout', label: 'Dropout' },
-  { value: 'bss', label: 'BSS' },
-  { value: 'lulus', label: 'Lulus' },
-  { value: 'mengundurkan_diri', label: 'Mengundurkan Diri' },
-];
+// Labels from the shared map, so DevTools and Data Master say the same.
+export const STUDENT_STATUSES: { value: StudentStatus; label: string }[] = (
+  ['active', 'bss', 'lulus', 'mengundurkan_diri', 'dropout'] as StudentStatus[]
+).map((value) => ({ value, label: STUDENT_STATUS_LABELS[value] }));
 
 const STUDENT_STATUS_CLASSES: Record<string, string> = {
   active: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',

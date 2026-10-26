@@ -10,7 +10,7 @@ import { formatDateTimeWib, formatLecturerName } from '@/lib/text';
 import { cn } from '@/lib/utils';
 import type { FinalProposalAttempt, ProposalRevision, StudentProposalOverview } from '@/types/thesis-proposal.types';
 
-const MAX_SIZE_MB = 50;
+const MAX_SIZE_MB = 10;
 const LABELS = { final: 'Proposal Final', revision: 'Proposal Revisi' } as const;
 export const NOT_OPEN_YET = 'Terbuka setelah penetapan pembimbing';
 
@@ -72,11 +72,12 @@ function Notice({ children }: { children: React.ReactNode }) {
 }
 
 /** File information stays above the card footer: icon, name and status. */
-function FileRow({ title, fileName, meta, status }: {
+function FileRow({ title, fileName, meta, status, actions }: {
   title: string;
   fileName?: string | null;
   meta?: string | null;
   status: FileStatus;
+  actions?: React.ReactNode;
 }) {
   return (
     <div className="flex items-center gap-[10px] rounded-[7px] border border-gray-200 bg-card p-[9px_10px]">
@@ -91,6 +92,7 @@ function FileRow({ title, fileName, meta, status }: {
         </div>
         {meta && <div className="mt-0.5 text-[11px] text-muted-foreground">{meta}</div>}
       </div>
+      {actions && <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">{actions}</div>}
     </div>
   );
 }
@@ -119,10 +121,9 @@ export function StudentProposalFileCard({ overview, kind }: { overview: StudentP
   const sent = kind === 'final'
     ? (current?.file?.url ? { name: current.file.fileName ?? 'Proposal final.pdf', url: current.file.url, at: current.file.submittedAt } : null)
     : (currentRevision ? { name: currentRevision.file.fileName, url: currentRevision.file.url, at: currentRevision.file.submittedAt } : null);
-  const blockReason = kind === 'final' ? final.blockReason : revision.blockReason;
+  const blockReason = kind === 'final' ? (final.blockReason ?? (!overview.assignment?.assigned ? NOT_OPEN_YET : null)) : revision.blockReason;
   const status = kind === 'final' ? getFinalProposalStatus(current) : getRevisionStatus(currentRevision);
   const fileProblem = file ? getProposalFileProblem(file, kind) : null;
-  const open = kind === 'revision' || (overview.assignment?.assigned ?? false);
 
   const choose = () => inputRef.current?.click();
   const clear = () => {
@@ -138,12 +139,9 @@ export function StudentProposalFileCard({ overview, kind }: { overview: StudentP
     <section aria-label={`Kartu ${LABELS[kind]}`} className="flex flex-1 flex-col gap-3 rounded-[10px] border border-gray-200 bg-card p-[16px_18px]">
       <div className="flex items-center justify-between gap-3">
         <div className="text-base font-semibold text-foreground">{LABELS[kind]}</div>
-        {open && <span className="text-xs text-muted-foreground">PDF, maks. {MAX_SIZE_MB} MB</span>}
+        <span className="text-xs text-muted-foreground">PDF, maks. {MAX_SIZE_MB} MB</span>
       </div>
 
-      {!open ? (
-        <p className="text-sm text-muted-foreground">{NOT_OPEN_YET}</p>
-      ) : (
         <div className="flex flex-col gap-1.5">
           {blockReason && !file && <Notice>{blockReason}</Notice>}
           <FileRow
@@ -151,35 +149,7 @@ export function StudentProposalFileCard({ overview, kind }: { overview: StudentP
             fileName={sent?.name}
             meta={sent?.at ? `Diajukan ${formatDateTimeWib(sent.at)}` : null}
             status={status}
-          />
-
-          {file && (
-            <FileRow
-              title="Berkas yang akan diajukan"
-              fileName={file.name}
-              meta={formatFileSize(file.size)}
-              status={fileProblem ? { text: 'Tidak bisa diajukan', tone: 'failed' } : { text: 'Belum dikirim', tone: 'none' }}
-            />
-          )}
-          {fileProblem && <p className="text-xs text-destructive">{fileProblem}</p>}
-
-          {currentRevision?.reviewNotes && (
-            currentRevision.status === 'revision_requested' ? (
-              <SoftWarning title={`Catatan ${currentRevision.reviewerName ? formatLecturerName(currentRevision.reviewerName) : 'Pembimbing 1'}`}>
-                {currentRevision.reviewNotes}
-              </SoftWarning>
-            ) : (
-              <p className="whitespace-pre-line rounded-md bg-muted/50 px-2 py-1.5 text-xs">
-                <span className="font-medium">Catatan {currentRevision.reviewerName ? formatLecturerName(currentRevision.reviewerName) : 'Pembimbing 1'}:</span>{' '}
-                {currentRevision.reviewNotes}
-              </p>
-            )
-          )}
-        </div>
-      )}
-
-      {open && (
-        <div className="mt-auto flex flex-wrap items-center justify-end gap-2 border-t pt-3">
+            actions={<>
           {sent && (
             <Button type="button" variant="outline" size="sm" className={OUTLINE_PRIMARY} onClick={() => setViewer({ name: sent.name, path: sent.url })}>
               <Eye className="mr-2 h-4 w-4" />Lihat
@@ -207,8 +177,32 @@ export function StudentProposalFileCard({ overview, kind }: { overview: StudentP
               </Button>
             </>
           )}
+            </>}
+          />
+
+          {file && (
+            <FileRow
+              title="Berkas yang akan diajukan"
+              fileName={file.name}
+              meta={formatFileSize(file.size)}
+              status={fileProblem ? { text: 'Tidak bisa diajukan', tone: 'failed' } : { text: 'Belum dikirim', tone: 'none' }}
+            />
+          )}
+          {fileProblem && <p className="text-xs text-destructive">{fileProblem}</p>}
+
+          {currentRevision?.reviewNotes && (
+            currentRevision.status === 'revision_requested' ? (
+              <SoftWarning title={`Catatan ${currentRevision.reviewerName ? formatLecturerName(currentRevision.reviewerName) : 'Pembimbing 1'}`}>
+                {currentRevision.reviewNotes}
+              </SoftWarning>
+            ) : (
+              <p className="whitespace-pre-line rounded-md bg-muted/50 px-2 py-1.5 text-xs">
+                <span className="font-medium">Catatan {currentRevision.reviewerName ? formatLecturerName(currentRevision.reviewerName) : 'Pembimbing 1'}:</span>{' '}
+                {currentRevision.reviewNotes}
+              </p>
+            )
+          )}
         </div>
-      )}
 
       <input
         ref={inputRef}

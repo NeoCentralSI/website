@@ -116,7 +116,7 @@ function openMenu(trigger: HTMLElement) {
 describe('Tugas Akhir > Permohonan (the lecturer approval inbox)', () => {
   const lecturerInbox = (level: 'available' | 'full'): LecturerInbox => ({
     academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' },
-    load: { activeCount: level === 'full' ? 10 : 3, softLimit: 8, hardLimit: 10, level, acceptingRequests: true },
+    load: { acceptedCount: 1, activeCount: level === 'full' ? 10 : 3, semesterQuota: 8, totalLimit: 10, level, acceptingRequests: true },
     waiting: [request()],
     history: [],
   });

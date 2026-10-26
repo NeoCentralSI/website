@@ -9,14 +9,28 @@ import { MONITORING_CARD_CLASS } from "./MonitoringListCard";
 interface BatchDistributionChartProps {
   batchDistribution: BatchDistribution[] | undefined;
   isLoading: boolean;
+  /** The same bars for another cohort distribution (Yudisium); defaults are Monitoring's own. */
+  title?: string;
+  emptyDescription?: string;
+  /** Unit in the tooltip ("tugas akhir"). */
+  unit?: string;
+  /** Bar colour; Monitoring keeps its indigo. */
+  color?: string;
 }
 
-export function BatchDistributionChart({ batchDistribution, isLoading }: BatchDistributionChartProps) {
+export function BatchDistributionChart({
+  batchDistribution,
+  isLoading,
+  title = "Distribusi per Angkatan",
+  emptyDescription = "Belum ada data angkatan",
+  unit = "tugas akhir",
+  color = "#6366f1",
+}: BatchDistributionChartProps) {
   if (isLoading) {
     return (
       <Card className={MONITORING_CARD_CLASS}>
         <CardHeader>
-          <CardTitle className="text-base">Distribusi per Angkatan</CardTitle>
+          <CardTitle className="text-base">{title}</CardTitle>
         </CardHeader>
         <CardContent className="flex items-center justify-center h-62.5">
           <Loading size="md" text="Memuat..." />
@@ -28,17 +42,17 @@ export function BatchDistributionChart({ batchDistribution, isLoading }: BatchDi
   const data = batchDistribution ?? [];
 
   const chartConfig: ChartConfig = {
-    count: { label: "Jumlah TA", color: "#6366f1" },
+    count: { label: "Jumlah TA", color },
   };
 
   return (
     <Card className={MONITORING_CARD_CLASS}>
       <CardHeader>
-        <CardTitle className="text-base">Distribusi per Angkatan</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
       <CardContent>
         {data.length === 0 ? (
-          <EmptyState size="sm" title="Tidak Ada Data" description="Belum ada data angkatan" />
+          <EmptyState size="sm" title="Tidak Ada Data" description={emptyDescription} />
         ) : (
           <ChartContainer config={chartConfig} className="h-62.5 w-full">
             <BarChart data={data} margin={{ left: 0, right: 16 }}>
@@ -53,14 +67,14 @@ export function BatchDistributionChart({ batchDistribution, isLoading }: BatchDi
                 content={
                   <ChartTooltipContent
                     formatter={(value, _name, props) => (
-                      <span>{props.payload?.name}: {value} tugas akhir</span>
+                      <span>{props.payload?.name}: {value} {unit}</span>
                     )}
                   />
                 }
               />
               <Bar
                 dataKey="count"
-                fill="#6366f1"
+                fill={color}
                 radius={[4, 4, 0, 0]}
                 barSize={32}
               />

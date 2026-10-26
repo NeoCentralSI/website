@@ -30,8 +30,13 @@ interface UserFormDialogProps {
   setFormData: (data: CreateUserRequest | UpdateUserRequest) => void;
   onSubmit: (e: React.FormEvent) => void;
   roleOptions: Array<{ value: string; label: string }>;
+  /** The Admin edits their own account: roles and activation are locked. */
+  isSelf?: boolean;
   isSubmitting?: boolean;
 }
+
+const ADMIN_EXCLUSIVE_REASON = 'Peran Admin tidak dapat digabung dengan peran lain';
+const SELF_LOCK_REASON = 'Peran dan status akun Anda sendiri tidak dapat diubah';
 
 export function UserFormDialog({
   open,
@@ -41,12 +46,19 @@ export function UserFormDialog({
   setFormData,
   onSubmit,
   roleOptions,
+  isSelf = false,
   isSubmitting = false,
 }: UserFormDialogProps) {
+  const selectedRoles = Array.isArray(formData.roles)
+    ? formData.roles.map((r) => (typeof r === 'string' ? r : r?.name)).filter((r): r is string => !!r)
+    : [];
+  const hasAdmin = selectedRoles.includes(ROLES.ADMIN);
+  const hasOtherRole = selectedRoles.some((r) => r !== ROLES.ADMIN);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={onSubmit}>
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col overflow-hidden">
+        {/* Only the fields scroll; the title and the footer stay visible. */}
+        <form onSubmit={onSubmit} className="flex min-h-0 flex-1 flex-col">
           <DialogHeader>
             <DialogTitle>
               {editingUser ? 'Edit User' : 'Tambah User Baru'}
@@ -58,7 +70,7 @@ export function UserFormDialog({
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4 py-4">
+          <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-1 py-4">
             <div className="grid gap-2">
               <Label htmlFor="fullName">Nama Lengkap</Label>
               <Input
@@ -149,7 +161,10 @@ export function UserFormDialog({
 
             <div className="grid gap-2">
               <Label>Role</Label>
-              <div className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto">
+              <div
+                className="border rounded-md p-3 space-y-2 max-h-48 overflow-y-auto"
+                title={isSelf ? SELF_LOCK_REASON : undefined}
+              >
                 {formData.identityType === 'NIM' ? (
                   // For NIM, only show Mahasiswa and it's auto-selected
                   <div className="flex items-center space-x-2">
@@ -168,24 +183,23 @@ export function UserFormDialog({
                 ) : (
                   // For NIP/OTHER, show all roles except Mahasiswa
                   roleOptions
-                    .filter(role => {
-                      // Peran Admin tidak bisa ditugaskan lewat endpoint ini: backend
-                      // membuangnya saat create dan tidak menyentuhnya saat update.
-                      if (role.value === ROLES.ADMIN) return false;
-                      // NIP/OTHER tidak boleh memegang peran Mahasiswa (ditolak backend).
-                      if (role.value === ROLES.MAHASISWA) return false;
-                      return true;
-                    })
+                    // NIP/OTHER tidak boleh memegang peran Mahasiswa (ditolak backend).
+                    .filter(role => role.value !== ROLES.MAHASISWA)
                     .map((role) => {
-                      const isChecked = Array.isArray(formData.roles) && 
-                        formData.roles.some(r => 
-                          typeof r === 'string' ? r === role.value : r?.name === role.value
-                        );
+                      const isChecked = selectedRoles.includes(role.value);
+                      // Admin is exclusive: it cannot be combined with any other role.
+                      const exclusiveBlock = !isChecked && (role.value === ROLES.ADMIN ? hasOtherRole : hasAdmin);
+                      const disabled = isSelf || exclusiveBlock;
                       return (
-                        <div key={role.value} className="flex items-center space-x-2">
+                        <div
+                          key={role.value}
+                          className="flex items-center space-x-2"
+                          title={!isSelf && exclusiveBlock ? ADMIN_EXCLUSIVE_REASON : undefined}
+                        >
                           <Checkbox
                             id={`role-${role.value}`}
                             checked={isChecked}
+                            disabled={disabled}
                             onCheckedChange={(checked) => {
                               const currentRoles = Array.isArray(formData.roles) 
                                 ? formData.roles.filter((r): r is string => typeof r === 'string')
@@ -211,13 +225,15 @@ export function UserFormDialog({
               {formData.identityType !== 'NIM' && (!formData.roles || formData.roles.length === 0) && (
                 <p className="text-xs text-muted-foreground">Pilih minimal satu role</p>
               )}
+              {isSelf && <p className="text-xs text-muted-foreground">{SELF_LOCK_REASON}</p>}
             </div>
 
             {editingUser && 'isVerified' in formData && (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between" title={isSelf ? SELF_LOCK_REASON : undefined}>
                 <Label htmlFor="isVerified">Status Verifikasi</Label>
                 <Switch
                   id="isVerified"
+                  disabled={isSelf}
                   checked={formData.isVerified}
                   onCheckedChange={(checked) =>
                     setFormData({ ...formData, isVerified: checked })

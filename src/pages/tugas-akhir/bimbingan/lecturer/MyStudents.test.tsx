@@ -86,8 +86,8 @@ describe("LecturerMyStudentsPage table", () => {
     expect(headers).toEqual(["", "Mahasiswa", "Milestone", "Bimbingan", "Masa Bimbingan", "Aktivitas", "Aksi"]);
     // Only "Mahasiswa" has no width: it takes what the other columns leave.
     const widths = screen.getAllByRole("columnheader").map((header) => (header as HTMLElement).style.width);
-    // Aksi fits four icons; the minimum width keeps Mahasiswa as wide as its
-    // longest badge ("Berhenti Studi Sementara (BSS)", 229 px) beside the 782 px of fixed columns.
+    // Aksi fits four icons; the minimum width keeps Mahasiswa wide enough for its badges
+    // (the status with "Cuti") beside the 782 px of fixed columns.
     expect(widths).toEqual(["44px", "", "140px", "140px", "170px", "124px", "164px"]);
     expect(screen.getByRole("table").className).toContain("table-fixed");
     expect(screen.getByRole("table").className).toContain("min-w-[1014px]");
@@ -144,13 +144,14 @@ describe("LecturerMyStudentsPage table", () => {
     expect(within(actions).getByText("Detail")).toBeInTheDocument();
   });
 
-  it("The longest status badge is clipped inside the Mahasiswa cell, never over the next one", async () => {
-    vi.mocked(getMyStudents).mockResolvedValue({ success: true, count: 1, students: [row({ thesisStatus: "on_leave" })] });
+  it("shows the Cuti badge beside the status for a student on leave, clipped inside the Mahasiswa cell", async () => {
+    vi.mocked(getMyStudents).mockResolvedValue({ success: true, count: 1, students: [row({ thesisStatus: "research", isOnLeave: true })] });
     renderPage();
     const tableRow = (await screen.findByText("Ilham Nofaldi")).closest("tr")!;
     const cell = within(tableRow).getAllByRole("cell")[1];
     expect(cell.className).toContain("overflow-hidden");
-    expect(within(cell).getByText("Berhenti Studi Sementara (BSS)").className).toContain("truncate");
+    expect(within(cell).getByText("Penelitian").className).toContain("truncate");
+    expect(within(cell).getByText("Cuti")).toBeInTheDocument();
     const fixed = [0, 2, 3, 4, 5, 6].map((index) => Number.parseFloat((screen.getAllByRole("columnheader")[index] as HTMLElement).style.width));
     const minWidth = Number(/min-w-\[(\d+)px\]/.exec(screen.getByRole("table").className)?.[1]);
     expect(minWidth - fixed.reduce((sum, width) => sum + width, 0)).toBeGreaterThanOrEqual(MEASURED_MIN_WIDTH["Berhenti Studi Sementara (BSS)"]);
@@ -160,13 +161,13 @@ describe("LecturerMyStudentsPage table", () => {
     vi.mocked(getMyStudents).mockResolvedValue({
       success: true,
       count: 1,
-      students: [row({ thesisTitle: undefined, activityLevel: null, supervisionClock: null, lastGuidanceAt: null, completedGuidanceCount: 0, latestMilestone: undefined, thesisStatus: "on_leave" })],
+      students: [row({ thesisTitle: undefined, activityLevel: null, supervisionClock: null, lastGuidanceAt: null, completedGuidanceCount: 0, latestMilestone: undefined, thesisStatus: "research", isOnLeave: true })],
     });
     renderPage();
     const tableRow = (await screen.findByText("Ilham Nofaldi")).closest("tr")!;
 
     expect(within(tableRow).getByText("Judul belum ditentukan")).toBeInTheDocument();
-    expect(within(tableRow).getByText("Berhenti Studi Sementara (BSS)")).toBeInTheDocument();
+    expect(within(tableRow).getByText("Cuti")).toBeInTheDocument();
     expect(within(tableRow).getByText("0 sesi")).toBeInTheDocument();
     expect(within(tableRow).getByText("Belum pernah")).toBeInTheDocument();
     // No warning for a thesis without an activity level.

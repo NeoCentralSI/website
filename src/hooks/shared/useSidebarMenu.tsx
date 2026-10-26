@@ -8,6 +8,7 @@ import {
   Wrench,
   GraduationCap,
   Megaphone,
+  History,
   type LucideIcon,
 } from "lucide-react";
 import { useMemo } from "react";
@@ -16,6 +17,9 @@ import { useAuth } from '@/hooks/shared';
 import { useAvatarBlob } from "@/hooks/profile";
 import { useLecturerApprovalInbox } from "@/hooks/thesis-proposal/useSupervisorRequests";
 import { ENV } from "@/config/env";
+
+/** Log Aktivitas: under Master Data for the Admin; below Kelola, read-only, for the Ketua and Sekretaris Departemen. */
+const ACTIVITY_LOG_MENU = { title: "Log Aktivitas", url: "/master-data/log", icon: History, items: [] };
 
 /** `badge`: a count shown next to the sub-item, e.g. waiting supervisor requests. */
 type SidebarLeafItem = { title: string; url: string; badge?: number };
@@ -102,7 +106,7 @@ export const useSidebarMenu = () => {
           { title: "Penilaian Proposal", url: "/metode-penelitian/penilaian" },
         ];
       }
-      if (role.kadep || role.sekdep) return [{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }];
+      if (role.kadep || role.sekdep || role.admin) return [{ title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" }];
       return [];
     };
 
@@ -122,7 +126,7 @@ export const useSidebarMenu = () => {
       { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
       ...proposalItems,
       { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-      { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+      { title: "Sidang", url: "/tugas-akhir/sidang" },
     ];
     /** The Ketua Departemen's two decision queues, last in Tugas Akhir. */
     const KADEP_DECISION_ITEMS: SidebarLeafItem[] = [
@@ -166,7 +170,7 @@ export const useSidebarMenu = () => {
             { title: "Bimbingan", url: "/tugas-akhir/bimbingan" },
             { title: "Proposal", url: "/tugas-akhir/proposal" },
             { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-            { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+            { title: "Sidang", url: "/tugas-akhir/sidang" },
           ],
         },
         // Yudisium — leaf item (no children)
@@ -328,6 +332,9 @@ export const useSidebarMenu = () => {
         ],
       });
 
+      // Log Aktivitas, read-only, last item of the sidebar.
+      menuItems.push(ACTIVITY_LOG_MENU);
+
       return {
         user: {
           name: authUser?.fullName || "User",
@@ -414,6 +421,9 @@ export const useSidebarMenu = () => {
           { title: "CPL", url: "/kelola/cpl" },
         ],
       });
+
+      // Log Aktivitas, read-only, last item of the sidebar.
+      menuItems.push(ACTIVITY_LOG_MENU);
 
       return {
         user: {
@@ -541,13 +551,14 @@ export const useSidebarMenu = () => {
               },
             ],
           },
+          { title: "Metode Penelitian", url: "#", icon: BookOpen, items: buildResearchMethodItems() },
           {
             title: "Tugas Akhir",
             url: "#",
             icon: FileText,
             items: [
               { title: "Seminar Hasil", url: "/tugas-akhir/seminar-hasil" },
-              { title: "Sidang TA", url: "/tugas-akhir/sidang" },
+              { title: "Sidang", url: "/tugas-akhir/sidang" },
             ],
           },
           {
@@ -593,6 +604,8 @@ export const useSidebarMenu = () => {
               // No "Batas Bimbingan" for Admin; Kadep and Sekdep set it.
             ],
           },
+          // Log Aktivitas: its own item right under Master Data (above Development).
+          ACTIVITY_LOG_MENU,
           ...(ENV.ENABLE_DEV_TOOLS
             ? [
                 {

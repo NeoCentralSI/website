@@ -9,16 +9,18 @@ import CustomTable from '@/components/layout/CustomTable';
 import type { User, CreateUserRequest, UpdateUserRequest } from '@/services/admin.service';
 import { createUserAPI, updateUserAPI, importStudentsCsvAPI, importUsersExcelAPI, getUsersAPI } from '@/services/admin.service';
 import { toTitleCaseName } from '@/lib/text';
-import { assignableRoleOptions, formatRoleName, roleOptions, ROLES } from '@/lib/roles';
+import { formatRoleName, roleOptions, ROLES } from '@/lib/roles';
+import { useAuth } from '@/hooks/shared/useAuth';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { SEARCH_DEBOUNCE_MS, useDebounce } from '@/hooks/useDebounce';
-import { UserFormDialog, ImportStudentDialog, AdminAuditLogCard } from '@/components/master-data';
+import { UserFormDialog, ImportStudentDialog } from '@/components/master-data';
 import { RefreshButton } from '@/components/ui/refresh-button';
 import * as XLSX from 'xlsx';
 
 export default function UserManagementPage() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
   
   // Local UI state only
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -139,7 +141,13 @@ export default function UserManagementPage() {
     
     try {
       if (editingUser) {
-        await updateUserAPI(editingUser.id, formData as UpdateUserRequest);
+        // An Admin cannot change the roles or the activation of their own account.
+        const payload = { ...(formData as UpdateUserRequest) };
+        if (editingUser.id === currentUser?.id) {
+          delete payload.roles;
+          delete payload.isVerified;
+        }
+        await updateUserAPI(editingUser.id, payload);
         toast.success('User berhasil diupdate');
       } else {
         await createUserAPI(formData as CreateUserRequest);
@@ -212,7 +220,7 @@ export default function UserManagementPage() {
         <div>
           <div className="font-medium">{row.identityNumber || '-'}</div>
           {row.identityType && (
-            <div className="text-xs text-muted-foreground">{row.identityType}</div>
+            <div className="text-xs text-muted-foreground">{row.identityType === 'OTHER' ? 'Lainnya' : row.identityType}</div>
           )}
         </div>
       ),
@@ -348,7 +356,8 @@ export default function UserManagementPage() {
         formData={formData}
         setFormData={setFormData}
         onSubmit={handleSubmit}
-        roleOptions={assignableRoleOptions}
+        roleOptions={roleOptions}
+        isSelf={!!editingUser && editingUser.id === currentUser?.id}
         isSubmitting={isSubmitting}
       />
 
@@ -361,7 +370,6 @@ export default function UserManagementPage() {
         isImporting={isImporting}
       />
 
-      <AdminAuditLogCard />
     </div>
   );
 }

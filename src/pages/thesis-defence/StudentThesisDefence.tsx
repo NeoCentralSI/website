@@ -1,3 +1,4 @@
+import EmptyState from '@/components/ui/empty-state';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -23,8 +24,8 @@ export default function StudentThesisDefence() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: studentTaParentHref },
-      { label: 'Sidang TA', href: '/tugas-akhir/sidang' },
-      { label: 'Status & Pendaftaran' },
+      // Tabs do not add a breadcrumb level.
+      { label: 'Sidang' },
     ],
     [studentTaParentHref]
   );
@@ -62,9 +63,7 @@ export default function StudentThesisDefence() {
           onDetailClick={(id) => navigate(`/tugas-akhir/sidang/${id}`)}
         />
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          Data sidang tugas akhir belum tersedia.
-        </div>
+        <EmptyState title="Belum Ada Data" description="Data sidang tugas akhir belum tersedia" />
       )}
     </div>
   );

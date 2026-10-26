@@ -266,7 +266,7 @@ export function LecturerThesisSeminarAssignExaminerDialog({
                   <Spinner className="h-6 w-6" />
                 </div>
               ) : (
-              <ScrollArea className="h-[360px] rounded-md border p-2">
+              <ScrollArea className="h-[360px] rounded-md border p-2 border-gray-200">
                 {filteredLecturers.length === 0 ? (
                   <div className="text-center text-sm text-muted-foreground py-8">
                     {search ? 'Tidak ditemukan' : 'Tidak ada dosen tersedia'}
@@ -333,7 +333,7 @@ export function LecturerThesisSeminarAssignExaminerDialog({
           </div>
 
           {showDashboard && (
-            <div className="space-y-3 rounded-md border p-3 md:col-span-5">
+            <div className="space-y-3 rounded-md border p-3 md:col-span-5 border-gray-200">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold">Dashboard Rekomendasi Jadwal</h4>
               <Badge variant={scheduleDashboard.sharedSlots.length > 0 ? 'success' : 'secondary'}>
@@ -343,15 +343,15 @@ export function LecturerThesisSeminarAssignExaminerDialog({
 
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">Irisan ketersediaan bersama:</p>
-              <ScrollArea className="h-[140px] rounded-md border p-2">
+              <ScrollArea className="h-[140px] rounded-md border p-2 border-gray-200">
                 {scheduleDashboard.sharedSlots.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Belum ada irisan jadwal yang valid di antara profil terpilih.
+                    Belum ada irisan jadwal yang valid di antara profil terpilih
                   </p>
                 ) : (
                   <div className="space-y-2">
                     {scheduleDashboard.sharedSlots.map((slot) => (
-                      <div key={`${slot.day}-${slot.startTime}-${slot.endTime}`} className="rounded border p-2">
+                      <div key={`${slot.day}-${slot.startTime}-${slot.endTime}`} className="rounded border p-2 border-gray-200">
                         <div className="text-sm font-medium">
                           {slot.dayLabel}: {slot.startTime} - {slot.endTime}
                         </div>
@@ -368,13 +368,13 @@ export function LecturerThesisSeminarAssignExaminerDialog({
 
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">Jadwal Kesibukan:</p>
-              <ScrollArea className="h-[140px] rounded-md border p-2">
+              <ScrollArea className="h-[140px] rounded-md border p-2 border-gray-200">
                 {(scheduleDashboard.combinedIntervals ?? []).length === 0 ? (
-                  <p className="text-xs text-muted-foreground">Belum ada acara terjadwal untuk profil terpilih.</p>
+                  <p className="text-xs text-muted-foreground">Belum ada acara terjadwal untuk profil terpilih</p>
                 ) : (
                   <div className="space-y-2">
                     {(scheduleDashboard.combinedIntervals ?? []).map((ev: any, idx: number) => (
-                      <div key={`${ev.type}-${ev.date}-${ev.lecturerName}-${idx}`} className="rounded border p-2">
+                      <div key={`${ev.type}-${ev.date}-${ev.lecturerName}-${idx}`} className="rounded border p-2 border-gray-200">
                         <div className="text-sm font-medium">
                           {ev.title} · {toTitleCaseName(ev.studentName)}
                         </div>

@@ -85,7 +85,7 @@ export function LecturerThesisSeminarExaminerResponseDialog({
         {seminar && (
           <div className="space-y-4">
             {/* Student & Thesis Info Card */}
-            <div className="rounded-lg border bg-muted/50 p-4 space-y-3">
+            <div className="rounded-lg border bg-muted/50 p-4 space-y-3 border-gray-200">
               <div className="flex items-start gap-3">
                 <GraduationCap className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
                 <div className="min-w-0">
@@ -104,7 +104,7 @@ export function LecturerThesisSeminarExaminerResponseDialog({
               </div>
 
               {seminar.supervisors.length > 0 && (
-                <div className="pt-2 border-t space-y-1">
+                <div className="pt-2 border-t space-y-1 border-gray-200">
                   {[...seminar.supervisors]
                     .sort((a, b) => {
                       const rankA = a.role.toLowerCase().includes('1') ? 1 : a.role.toLowerCase().includes('2') ? 2 : 3;

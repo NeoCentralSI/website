@@ -44,9 +44,9 @@ export const getMyCalendarEventsAPI = async (filter: {
   return data;
 };
 
-// Get upcoming events (next 7 days)
-export const getUpcomingEventsAPI = async (days: number = 7): Promise<{ events: CalendarEvent[] }> => {
-  const response = await fetch(getApiUrl(`/calendar/upcoming?days=${days}`), {
+/** Agenda Mendatang: the calendar events from now on, the first `limit` (same source as the calendar). */
+export const getUpcomingEventsAPI = async (limit: number = 5): Promise<{ events: CalendarEvent[] }> => {
+  const response = await fetch(getApiUrl(`/calendar/upcoming?limit=${limit}`), {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
@@ -55,7 +55,7 @@ export const getUpcomingEventsAPI = async (days: number = 7): Promise<{ events: 
 
   if (!response.ok) {
     const errorData = await response.json();
-    throw new Error(errorData.message || 'Gagal memuat upcoming events');
+    throw new Error(errorData.message || 'Gagal memuat agenda mendatang');
   }
 
   return response.json();

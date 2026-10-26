@@ -1,3 +1,4 @@
+import { ThesisStatusBadge } from '@/components/shared/ThesisStatusBadge';
 import { useEffect, useMemo } from 'react';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -271,11 +272,7 @@ export default function DosenDetail() {
                           <Badge variant="outline" className="text-xs">
                             {formatRoleName(item.role)}
                           </Badge>
-                          <Badge
-                            className="text-xs bg-blue-100 text-blue-700 hover:bg-blue-100"
-                          >
-                            {item.status || 'Berjalan'}
-                          </Badge>
+                          <ThesisStatusBadge status={item.status} onLeave={item.isOnLeave} className="text-xs" />
                         </div>
                       </div>
                     </div>

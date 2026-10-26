@@ -227,7 +227,7 @@ export function YudisiumRequirementTable({
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Persyaratan Yudisium</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Apakah Anda yakin ingin menghapus persyaratan ini? Lanjutkan.
+                            Apakah Anda yakin ingin menghapus persyaratan ini? Lanjutkan
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

@@ -1,7 +1,8 @@
+import { YudisiumParticipantCharts } from '@/components/yudisium/YudisiumParticipantCharts';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileDown, Eye, CheckSquare, FileText, Plus, Upload, Trash2, Check, Clock } from 'lucide-react';
-import { openProtectedFile } from '@/lib/protected-file';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
 import { cn } from '@/lib/utils';
 
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -69,6 +70,7 @@ const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string 
 };
 
 export default function YudisiumDetailPage() {
+  const { openDocument, viewer } = useDocumentViewer();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
@@ -225,7 +227,7 @@ export default function YudisiumDetailPage() {
                 {/* Task 1: Verifikasi Dokumen */}
                 <div
                   className={cn(
-                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border",
+                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border border-gray-200",
                     isDocDone
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : "bg-amber-50/70 text-amber-700 border-amber-200/80"
@@ -244,7 +246,7 @@ export default function YudisiumDetailPage() {
                 {/* Task 2: Validasi CPL */}
                 <div
                   className={cn(
-                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border",
+                    "flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-md border border-gray-200",
                     isCplDone
                       ? "bg-emerald-50 text-emerald-700 border-emerald-200"
                       : "bg-amber-50/70 text-amber-700 border-amber-200/80"
@@ -339,6 +341,7 @@ export default function YudisiumDetailPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {viewer}
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -357,6 +360,8 @@ export default function YudisiumDetailPage() {
       </div>
 
       <div className="space-y-6">
+        <YudisiumParticipantCharts yudisiumId={detail.id} />
+
         {/* Peserta Section */}
         <CustomTable
           columns={columns}
@@ -386,12 +391,7 @@ export default function YudisiumDetailPage() {
                       variant="outline"
                       size="sm"
                       className="h-9"
-                      onClick={() => {
-                        const decreeFilePath = detail.decreeDocument?.filePath;
-                        if (decreeFilePath) {
-                          openProtectedFile(decreeFilePath);
-                        }
-                      }}
+                      onClick={() => openDocument(detail.decreeDocument?.filePath, detail.decreeDocument?.fileName || 'SK Yudisium')}
                     >
                       <FileText className="mr-2 h-4 w-4" />
                       Lihat SK

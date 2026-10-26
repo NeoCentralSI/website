@@ -1,3 +1,6 @@
+import EmptyState from '@/components/ui/empty-state';
+import { FieldLabel } from '@/components/shared/RequiredField';
+import { RequirementDocumentRow } from '@/components/shared/RequirementDocumentRow';
 import { useEffect, useState, useMemo, useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import { useLocation, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom';
@@ -35,8 +38,8 @@ import {
   useRepairCplScore,
 } from '@/hooks/yudisium/useYudisiumParticipants';
 import { useRole } from '@/hooks/shared';
-import { openProtectedFile } from '@/lib/protected-file';
-import { formatDateId, formatDateShortId, formatDateTimeId, formatRoleName, toTitleCaseName, truncateFileName } from '@/lib/text';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
+import { formatDateId, formatDateTimeId, formatRoleName, toTitleCaseName, truncateFileName } from '@/lib/text';
 import { exportParticipantCplReport } from '@/services/yudisium/participant.service';
 import type { CplScoreItem } from '@/types/admin-yudisium.types';
 import { toast } from 'sonner';
@@ -68,6 +71,7 @@ const PARTICIPANT_STATUS_MAP: Record<string, { label: string; className: string 
 
 
 export default function YudisiumParticipantDetail() {
+  const { openDocument, viewer } = useDocumentViewer();
   const { id: yudisiumId, yudisiumParticipantId } = useParams<{ id: string; yudisiumParticipantId: string }>();
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
@@ -210,40 +214,41 @@ export default function YudisiumParticipantDetail() {
       {
         key: 'no',
         header: 'No',
-        width: 50,
+        width: 52,
         className: 'text-center',
         render: (_, idx) => <span className="text-sm text-muted-foreground">{idx + 1}</span>
       },
       {
         key: 'code',
         header: 'Kode CPL',
-        width: 100,
+        width: 104,
         render: (row) => <span className="font-medium">{row.code ?? '-'}</span>
       },
       {
         key: 'description',
         header: 'Deskripsi',
-        className: 'whitespace-normal',
-        render: (row) => <p className="text-sm text-muted-foreground leading-relaxed line-clamp-2">{row.description}</p>
+        // Only this column gives up width: two lines, the full text in the tooltip.
+        className: 'whitespace-normal break-words',
+        render: (row) => <p title={row.description} className="line-clamp-2 text-sm text-muted-foreground leading-relaxed">{row.description}</p>
       },
       {
         key: 'score',
         header: 'Nilai',
-        width: 80,
+        width: 72,
         className: 'text-center',
         render: (row) => <span className="font-semibold">{row.score ?? '-'}</span>
       },
       {
         key: 'minimalScore',
         header: 'Minimal',
-        width: 80,
+        width: 92,
         className: 'text-center',
         accessor: 'minimalScore'
       },
       {
         key: 'status',
         header: 'Status',
-        width: 130,
+        width: 150,
         className: 'text-center',
         render: (row) => (
           <Badge variant="outline" className={row.passed ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-red-50 text-red-700 border-red-200'}>
@@ -368,8 +373,8 @@ export default function YudisiumParticipantDetail() {
     return (
       <div className="p-6">
         <Card>
-          <CardContent className="py-10 text-center text-muted-foreground">
-            Data peserta tidak ditemukan.
+          <CardContent>
+            <EmptyState title="Peserta Tidak Ditemukan" description="Data peserta tidak ditemukan" />
           </CardContent>
         </Card>
       </div>
@@ -385,6 +390,7 @@ export default function YudisiumParticipantDetail() {
 
   return (
     <div className="p-6 space-y-6 max-w-full overflow-x-hidden">
+      {viewer}
 
       {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -470,61 +476,17 @@ export default function YudisiumParticipantDetail() {
           </CardHeader>
           <CardContent className="space-y-3 flex-1 flex flex-col justify-between">
             <div className="space-y-2.5">
-              {data.documents.map((doc: any) => {
-                const isUploaded = !!doc.document?.filePath;
-                const fileName = doc.document?.fileName ? truncateFileName(doc.document.fileName, 24) : 'Belum diunggah';
-                const fileDate = doc.submittedAt ? formatDateShortId(doc.submittedAt) : '';
-
-                return (
-                  <div
-                    key={doc.requirementId}
-                    className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-card p-3.5"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`p-2.5 rounded-lg shrink-0 ${
-                          doc.status === 'approved'
-                            ? 'border border-emerald-200 bg-emerald-50 text-emerald-600'
-                            : doc.status === 'declined'
-                              ? 'border border-red-200 bg-red-50 text-red-600'
-                              : isUploaded
-                                ? 'border border-blue-200 bg-blue-50 text-blue-600'
-                                : 'border border-gray-200 bg-gray-50 text-gray-400'
-                        }`}
-                      >
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <span className="font-medium text-sm text-foreground block truncate" title={doc.requirementName}>
-                          {doc.requirementName}
-                        </span>
-                        <span className="text-xs text-muted-foreground block mt-0.5 truncate" title={doc.document?.fileName || 'Belum diunggah'}>
-                          {fileName} {fileDate && `• ${fileDate}`}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge
-                        variant={doc.status === 'approved' ? 'success' : doc.status === 'declined' ? 'destructive' : 'warning'}
-                        className="rounded-md font-medium px-2.5 py-0.5 whitespace-nowrap"
-                      >
-                        {doc.status === 'approved' ? 'Disetujui' : doc.status === 'declined' ? 'Ditolak' : 'Menunggu'}
-                      </Badge>
-                      {doc.document?.filePath && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 gap-1.5 border-gray-200 text-xs shrink-0"
-                          onClick={() => openProtectedFile(doc.document.filePath, doc.document.fileName)}
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Lihat
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              {data.documents.map((doc: any) => (
+                <RequirementDocumentRow
+                  key={doc.requirementId}
+                  name={doc.requirementName}
+                  status={doc.status}
+                  fileName={doc.document?.fileName ? truncateFileName(doc.document.fileName, 24) : null}
+                  submittedAt={doc.submittedAt}
+                  notes={doc.notes}
+                  onView={doc.document?.filePath ? () => openDocument(doc.document.filePath, doc.document.fileName) : undefined}
+                />
+              ))}
             </div>
           </CardContent>
         </Card>
@@ -610,11 +572,7 @@ export default function YudisiumParticipantDetail() {
                 )}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center flex-1 py-12 text-center text-muted-foreground">
-                <BarChart3 className="h-10 w-10 text-muted-foreground/40 mb-2" />
-                <p className="text-sm font-medium">Belum ada data nilai CPL</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Grafik radar akan ditampilkan setelah data CPL dimuat.</p>
-              </div>
+              <EmptyState size="sm" className="flex-1" title="Belum Ada Nilai CPL" description="Grafik radar tampil setelah data CPL dimuat" />
             )}
           </CardContent>
         </Card>
@@ -626,6 +584,7 @@ export default function YudisiumParticipantDetail() {
           Capaian Pembelajaran Lulusan (CPL)
         </h2>
         <CustomTable
+          tableClassName="table-fixed"
           columns={cplColumns}
           data={cplScores}
           loading={loadingCpl}
@@ -667,15 +626,16 @@ export default function YudisiumParticipantDetail() {
             <DialogTitle>Perbaikan / Remedial CPL</DialogTitle>
             <DialogDescription>Masukkan nilai baru dan unggah dokumen pendukung untuk {selectedCpl?.code}</DialogDescription>
           </DialogHeader>
-          <div className="space-y-5 py-4">
+          <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Skor Lama</Label>
+                <Label>Skor lama</Label>
                 <Input value={selectedCpl?.score ?? '-'} disabled className="bg-muted" />
               </div>
               <div className="space-y-2">
-                <Label>Skor Baru</Label>
+                <FieldLabel htmlFor="repair-new-score" required>Skor baru</FieldLabel>
                 <Input
+                  id="repair-new-score"
                   type="number"
                   min={selectedCpl?.minimalScore ?? 0}
                   max={100}
@@ -686,7 +646,7 @@ export default function YudisiumParticipantDetail() {
             </div>
 
             <div className="space-y-2">
-              <Label>Dokumen Rekomendasi (PDF)</Label>
+              <FieldLabel required>Dokumen rekomendasi (PDF)</FieldLabel>
               <Input
                 ref={recFileInputRef}
                 type="file"
@@ -720,7 +680,7 @@ export default function YudisiumParticipantDetail() {
                       variant="outline"
                       size="sm"
                       className="h-8"
-                      onClick={() => openProtectedFile(
+                      onClick={() => openDocument(
                         selectedCpl.recommendationDocument!.filePath,
                         selectedCpl.recommendationDocument!.fileName,
                       )}
@@ -753,11 +713,11 @@ export default function YudisiumParticipantDetail() {
                   )}
                 </div>
               </div>
-              <p className="text-[10px] text-muted-foreground italic">* Dokumen yang berisi detail perbaikan/quiz</p>
+              <p className="text-xs text-muted-foreground">Berisi detail perbaikan atau kuis</p>
             </div>
 
             <div className="space-y-2">
-              <Label>Dokumen Penyelesaian (PDF)</Label>
+              <FieldLabel required>Dokumen penyelesaian (PDF)</FieldLabel>
               <Input
                 ref={setFileInputRef}
                 type="file"
@@ -791,7 +751,7 @@ export default function YudisiumParticipantDetail() {
                       variant="outline"
                       size="sm"
                       className="h-8"
-                      onClick={() => openProtectedFile(
+                      onClick={() => openDocument(
                         selectedCpl.settlementDocument!.filePath,
                         selectedCpl.settlementDocument!.fileName,
                       )}
@@ -824,7 +784,7 @@ export default function YudisiumParticipantDetail() {
                   )}
                 </div>
               </div>
-              <p className="text-[10px] text-muted-foreground italic">* Jawaban atau bukti perbaikan dari mahasiswa</p>
+              <p className="text-xs text-muted-foreground">Jawaban atau bukti perbaikan dari mahasiswa</p>
             </div>
           </div>
           <DialogFooter>
@@ -939,7 +899,7 @@ export default function YudisiumParticipantDetail() {
                     size="sm"
                     className="h-8 gap-1.5 shrink-0 text-xs font-medium border-gray-200"
                     onClick={() =>
-                      openProtectedFile(
+                      openDocument(
                         selectedCpl.recommendationDocument!.filePath,
                         selectedCpl.recommendationDocument!.fileName || 'Surat Rekomendasi',
                       )
@@ -978,7 +938,7 @@ export default function YudisiumParticipantDetail() {
                     size="sm"
                     className="h-8 gap-1.5 shrink-0 text-xs font-medium border-gray-200"
                     onClick={() =>
-                      openProtectedFile(
+                      openDocument(
                         selectedCpl.settlementDocument!.filePath,
                         selectedCpl.settlementDocument!.fileName || 'Bukti Penyelesaian',
                       )
@@ -1016,8 +976,8 @@ export default function YudisiumParticipantDetail() {
             </div>
           </div>
 
-          <DialogFooter className="border-t border-gray-200 pt-3">
-            <Button variant="outline" size="sm" onClick={() => setViewModalOpen(false)}>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewModalOpen(false)}>
               Tutup
             </Button>
           </DialogFooter>
@@ -1028,9 +988,9 @@ export default function YudisiumParticipantDetail() {
       <AlertDialog open={!!verifyConfirmId} onOpenChange={(open) => !open && setVerifyConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Verifikasi Nilai CPL?</AlertDialogTitle>
+            <AlertDialogTitle>Validasi Nilai CPL</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini akan memverifikasi nilai CPL mahasiswa ini. Pastikan nilai sudah sesuai.
+              Nilai CPL mahasiswa ini ditandai divalidasi; pastikan nilainya sudah sesuai
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

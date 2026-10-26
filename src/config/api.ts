@@ -114,6 +114,7 @@ export const API_CONFIG = {
       // Participants & Validation
       PARTICIPANTS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants`,
       PARTICIPANT_OPTIONS: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants/options`,
+      PARTICIPANT_SUMMARY: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants/summary`,
       PARTICIPANTS_IMPORT: (yudisiumId: string) => `/yudisiums/${yudisiumId}/participants/import`,
       PARTICIPANT_DETAIL: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}`,
       PARTICIPANT_REQUIREMENTS: (yudisiumId: string, participantId: string) => `/yudisiums/${yudisiumId}/participants/${participantId}/requirements`,
@@ -162,7 +163,6 @@ export const API_CONFIG = {
       // Session Summary
       NEEDS_SUMMARY: '/thesisGuidance/student/needs-summary',
       SUBMIT_SUMMARY: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/submit-summary`,
-      COMPLETED_HISTORY: '/thesisGuidance/student/completed-history',
       EXPORT_GUIDANCE: (guidanceId: string) => `/thesisGuidance/student/guidance/${guidanceId}/export`,
       GENERATE_LOG: '/thesisGuidance/student/guidance/generate-log',
       // My Thesis

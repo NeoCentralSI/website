@@ -40,7 +40,7 @@ export function useSetGeneralLimits() {
 }
 
 export function useSetPeriodLimits() {
-  return useLimitAction(({ academicYearId, limits }: { academicYearId: string; limits: SupervisionLimits }) =>
+  return useLimitAction(({ academicYearId, limits }: { academicYearId: string; limits: Pick<SupervisionLimits, 'semesterQuota'> }) =>
     service.setPeriodLimits(academicYearId, limits));
 }
 

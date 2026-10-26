@@ -8,8 +8,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertCircle,
   ArrowRight,
+  CalendarClock,
   ClipboardCheck,
   FileCheck,
+  Users,
   ShieldCheck,
   UserPlus,
 } from "lucide-react";
@@ -37,7 +39,8 @@ type QuickAction = {
   id: string;
   title: string;
   description: string;
-  count: number;
+  /** Items waiting; null for a plain shortcut (never dimmed, not in the total). */
+  count: number | null;
   icon: React.ElementType;
   color: string;
   bgColor: string;
@@ -60,7 +63,8 @@ interface QuickActionsCardProps {
 }
 
 export function QuickActionsCard({ className }: QuickActionsCardProps) {
-  const { isKadep, isPembimbing } = useRole();
+  const { isKadep, isPembimbing, isAdmin } = useRole();
+  const showAdminActions = isAdmin();
   const showKadepActions = isKadep();
   const showSupervisorActions = isPembimbing();
   const { academicYear } = useActiveAcademicYear();
@@ -132,8 +136,8 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
         },
         {
           id: "pending-supervisor2",
-          title: "Approval Pembimbing",
-          description: "Approve permintaan Pembimbing 2",
+          title: "Persetujuan Pembimbing 2",
+          description: "Permintaan menjadi Pembimbing 2 yang menunggu jawaban Anda",
           count: pendingSupervisor2Count,
           icon: UserPlus,
           color: "text-teal-600",
@@ -206,8 +210,61 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
       ]
     : [];
 
-  const quickActions = [...kadepActions, ...supervisorActions];
-  const totalPending = quickActions.reduce((sum, action) => sum + action.count, 0);
+  // The Admin's most used pages. No counts: they would need the full lists.
+  const adminActions: QuickAction[] = showAdminActions
+    ? [
+        {
+          id: "admin-seminar-verification",
+          title: "Verifikasi Seminar Hasil",
+          description: "Dokumen pendaftaran seminar hasil yang perlu diperiksa",
+          count: null,
+          icon: FileCheck,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+          link: "/tugas-akhir/seminar-hasil",
+          loading: false,
+        },
+        {
+          id: "admin-defence-verification",
+          title: "Verifikasi Sidang",
+          description: "Dokumen pendaftaran sidang dan penjadwalannya",
+          count: null,
+          icon: CalendarClock,
+          color: "text-purple-600",
+          bgColor: "bg-purple-50",
+          link: "/tugas-akhir/sidang",
+          loading: false,
+        },
+        {
+          id: "admin-yudisium",
+          title: "Verifikasi Berkas Yudisium",
+          description: "Berkas persyaratan peserta pada periode yudisium",
+          count: null,
+          icon: ClipboardCheck,
+          color: "text-amber-600",
+          bgColor: "bg-amber-50",
+          link: "/yudisium",
+          loading: false,
+        },
+        {
+          id: "admin-students",
+          title: "Data Mahasiswa",
+          description: "Data induk mahasiswa",
+          count: null,
+          icon: Users,
+          color: "text-teal-600",
+          bgColor: "bg-teal-50",
+          link: "/master-data/mahasiswa",
+          loading: false,
+        },
+      ]
+    : [];
+
+  const quickActions = [...adminActions, ...kadepActions, ...supervisorActions];
+  const counted = quickActions.filter((action) => action.count !== null);
+  const totalPending = counted.reduce((sum, action) => sum + (action.count ?? 0), 0);
+  // "Semua Selesai" only when every action is a queue and all queues are empty.
+  const allDone = counted.length === quickActions.length && totalPending === 0;
   const isLoading = quickActions.some((action) => action.loading);
 
   if (quickActions.length === 0) {
@@ -232,14 +289,18 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
           <div className="px-6 pb-6">
             <Loading text="Memuat aksi cepat..." className="py-4" size="sm" />
           </div>
-        ) : totalPending === 0 ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center text-muted-foreground px-6">
-            <CompleteLottie size="w-24 h-24" />
-            <p className="font-medium mt-2">Semua Selesai!</p>
-            <p className="text-sm">Tidak ada antrean persetujuan yang aktif.</p>
+        ) : allDone ? (
+          <div className="flex items-center gap-3 px-6 pb-4 text-muted-foreground">
+            <CompleteLottie size="w-12 h-12 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">Semua Selesai!</p>
+              <p className="text-xs">Tidak ada antrean persetujuan yang aktif</p>
+            </div>
           </div>
         ) : (
-          <ScrollArea className="h-full max-h-100">
+          // At most about three items high, the rest scrolls inside, so "Agenda Mendatang" below
+          // stays in view at 1366×768 and 1920×1080.
+          <ScrollArea className="[&>[data-slot=scroll-area-viewport]]:max-h-56">
             <div className="space-y-3 px-6 pb-6">
               {quickActions.map((action) => (
                 <Link key={action.id} to={action.link}>
@@ -247,7 +308,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
                     className={cn(
                       "flex items-start gap-3 p-3 rounded-lg border transition-all",
                       "hover:shadow-md hover:border-primary/50 cursor-pointer",
-                      action.count > 0 ? "border-primary/20" : "border-border opacity-60",
+                      action.count === null || action.count > 0 ? "border-gray-200" : "border-gray-200 opacity-60",
                     )}
                   >
                     <div className={cn("p-2 rounded-lg shrink-0", action.bgColor)}>
@@ -259,7 +320,7 @@ export function QuickActionsCard({ className }: QuickActionsCardProps) {
                           <p className="font-medium text-sm leading-tight">{action.title}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">{action.description}</p>
                         </div>
-                        {action.count > 0 && (
+                        {action.count !== null && action.count > 0 && (
                           <Badge variant="secondary" className="shrink-0">
                             {action.count}
                           </Badge>

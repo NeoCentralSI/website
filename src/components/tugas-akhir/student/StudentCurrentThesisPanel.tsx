@@ -131,6 +131,7 @@ export function StudentCurrentThesisPanel() {
           guidanceBlockReason={getGuidanceActionBlockReason(current.status, "Anda", {
             repeatingProposal: current.repeatingProposal,
             proposalPhaseOpen: current.proposalPhaseOpen,
+            onLeave: current.supervisionClock?.isPaused,
           })}
         />
       )}

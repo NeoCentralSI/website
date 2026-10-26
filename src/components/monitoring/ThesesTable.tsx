@@ -1,15 +1,7 @@
-import { useState, useMemo, useCallback, type ReactNode } from "react";
+import { useState, useMemo, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { CustomTable } from "@/components/layout/CustomTable";
 import type { Column } from "@/components/layout/CustomTable";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,16 +12,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { CheckCircle2, XCircle, X, Eye, Bell, AlertTriangle, Info } from "lucide-react";
-import { useThesesList, useFilterOptions, monitoringKeys } from "@/hooks/monitoring";
+import { CheckCircle2, XCircle, Eye, Bell, AlertTriangle } from "lucide-react";
+import { useThesesList, monitoringKeys } from "@/hooks/monitoring";
 import { useRole } from "@/hooks/shared/useRole";
-import { toTitleCaseName, formatDateTimeWib, formatLecturerName } from "@/lib/text";
+import { toTitleCaseName, formatDateShortId, formatLecturerName } from "@/lib/text";
 import type { ThesisListItem, WarningType } from "@/services/monitoring.service";
 import { sendWarningToStudent } from "@/services/monitoring.service";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -37,12 +23,48 @@ import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { RefreshButton } from "@/components/ui/refresh-button";
 import { ThesisStatusBadge } from "@/components/shared/ThesisStatusBadge";
-import { getThesisActivityOptions, getThesisStatusLabel } from "@/lib/thesisLabels";
+import { TableIconAction } from "@/components/shared/TableIconAction";
+import { getThesisActivityOptions, getThesisStatusLabel, THESIS_ON_LEAVE_LABEL } from "@/lib/thesisLabels";
 import { ThesisActivityBadge } from "@/components/shared/ThesisActivityBadge";
 import { SupervisionClockCell } from "@/components/shared/SupervisionClockCell";
+import { CLIP_CELL } from "@/lib/tableColumnWidths";
 
+/**
+ * Fixed layout: every column but "Mahasiswa" has a width (884 px), so the table fits the card at
+ * 1366 px without scrolling sideways; "Mulai" sits under the name, the seminar approvals under
+ * Progress, and the last activity under Aktivitas.
+ */
+const THESES_TABLE_CLASS = "table-fixed min-w-[1000px]";
 
+const ALL_OPTION = { label: "Semua", value: "" };
+/** "Cuti" is not a thesis status: it matches the theses paused by the student's leave. */
+const ON_LEAVE_FILTER = "on_leave";
+const STATUS_OPTIONS = [
+  ALL_OPTION,
+  ...(["research", "completed", "failed"] as const).map((value) => ({ label: getThesisStatusLabel(value), value })),
+  { label: THESIS_ON_LEAVE_LABEL, value: ON_LEAVE_FILTER },
+];
+const SEMINAR_OPTIONS = [
+  ALL_OPTION,
+  { label: "Acc seminar lengkap", value: "approved" },
+  { label: "Belum acc seminar", value: "pending" },
+];
+const ACTIVITY_OPTIONS = [ALL_OPTION, ...getThesisActivityOptions()];
 
+/** Distinct non-empty values as select options, sorted by their label. */
+function optionsOf(values: (string | null | undefined)[], label: (value: string) => string = (value) => value) {
+  return [...new Set(values.filter((value): value is string => !!value))]
+    .map((value) => ({ value, label: label(value) }))
+    .sort((a, b) => a.label.localeCompare(b.label, "id"));
+}
+
+function ApprovalIcon({ approved, label }: { approved: boolean; label: string }) {
+  return approved ? (
+    <CheckCircle2 className="h-3.5 w-3.5 text-green-500" aria-label={`${label}: disetujui`} />
+  ) : (
+    <XCircle className="h-3.5 w-3.5 text-muted-foreground/40" aria-label={`${label}: belum`} />
+  );
+}
 
 /** A warning can be sent while the activity level is Lambat or Berisiko. */
 const needsWarning = (level?: string | null): level is WarningType => level === "slow" || level === "at_risk";
@@ -104,127 +126,80 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity, 
       warningType: thesis.activityLevel,
     });
   };
-  // Filter state for dropdowns (backend filtering)
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
-  const [lecturerFilter, setLecturerFilter] = useState<string | undefined>(undefined);
-  const [topicFilter, setTopicFilter] = useState<string | undefined>(undefined);
-  const [activityFilter, setActivityFilter] = useState<string | undefined>(initialActivity);
-
-  // Frontend pagination & search state
-  const [frontendSearch, setFrontendSearch] = useState("");
+  // Every filter runs in the browser on the theses of the semester (the list is small).
+  const [statusFilter, setStatusFilter] = useState("");
+  const [topicFilter, setTopicFilter] = useState("");
+  const [lecturerFilter, setLecturerFilter] = useState("");
+  const [seminarFilter, setSeminarFilter] = useState("");
+  const [activityFilter, setActivityFilter] = useState(initialActivity ?? "");
+  const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Fetch ALL data with pageSize 1000 to disable backend pagination
-  // Filters (status, lecturer, academicYear) are still applied on backend
-  const apiFilters = useMemo(() => ({
-    status: statusFilter,
-    lecturerId: lecturerFilter,
-    topicId: topicFilter,
-    academicYear,
-    page: 1,
-    pageSize: 1000, // Fetch all data for frontend pagination & search
-  }), [statusFilter, lecturerFilter, topicFilter, academicYear]);
-
+  const apiFilters = useMemo(() => ({ academicYear, page: 1, pageSize: 1000 }), [academicYear]);
   const { data, isLoading, refetch, isFetching } = useThesesList(apiFilters);
   const isLoadingAny = isLoading || isFetching || isSyncing;
-  const { data: filterOptions } = useFilterOptions();
+  const rows = useMemo(() => data?.data ?? [], [data?.data]);
 
-  // Frontend search & activity filter applied to ALL data (the activity level is derived)
-  const searchFilteredData = useMemo(() => {
-    if (!data?.data) return [];
+  // Column filter options come from the rows themselves.
+  const topicOptions = useMemo(() => optionsOf(rows.map((t) => t.topic?.name ?? null)), [rows]);
+  const lecturerOptions = useMemo(
+    () => optionsOf(rows.flatMap((t) => [t.supervisors.pembimbing1, t.supervisors.pembimbing2]), formatLecturerName),
+    [rows],
+  );
 
-    let filtered = data.data;
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return rows.filter((thesis) => {
+      if (statusFilter === ON_LEAVE_FILTER ? !thesis.isOnLeave : statusFilter && thesis.status !== statusFilter) return false;
+      if (topicFilter && thesis.topic?.name !== topicFilter) return false;
+      if (lecturerFilter && thesis.supervisors.pembimbing1 !== lecturerFilter && thesis.supervisors.pembimbing2 !== lecturerFilter) return false;
+      if (seminarFilter === "approved" && !thesis.seminarApproval.isFullyApproved) return false;
+      if (seminarFilter === "pending" && thesis.seminarApproval.isFullyApproved) return false;
+      if (activityFilter && thesis.activityLevel !== activityFilter) return false;
+      if (!query) return true;
+      return [
+        thesis.student.name,
+        thesis.student.nim,
+        thesis.title,
+        thesis.topic?.name,
+        thesis.supervisors.pembimbing1,
+        thesis.supervisors.pembimbing2,
+      ].some((value) => value?.toLowerCase().includes(query));
+    });
+  }, [rows, search, statusFilter, topicFilter, lecturerFilter, seminarFilter, activityFilter]);
 
-    // Apply activity filter (frontend)
-    if (activityFilter) {
-      filtered = filtered.filter((thesis) => thesis.activityLevel === activityFilter);
-    }
-
-    // Apply search filter
-    if (frontendSearch.trim()) {
-      const searchLower = frontendSearch.toLowerCase();
-      filtered = filtered.filter((thesis) =>
-        thesis.student.name.toLowerCase().includes(searchLower) ||
-        thesis.student.nim.toLowerCase().includes(searchLower) ||
-        thesis.title?.toLowerCase().includes(searchLower) ||
-        thesis.topic?.name?.toLowerCase().includes(searchLower) ||
-        thesis.supervisors.pembimbing1?.toLowerCase().includes(searchLower) ||
-        thesis.supervisors.pembimbing2?.toLowerCase().includes(searchLower)
-      );
-    }
-
-    return filtered;
-  }, [data?.data, frontendSearch, activityFilter]);
-
-  // Frontend pagination - slice the search-filtered data
-  const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * pageSize;
-    return searchFilteredData.slice(startIndex, startIndex + pageSize);
-  }, [searchFilteredData, page, pageSize]);
-
-  const handleFilterChange = useCallback((key: 'status' | 'lecturerId' | 'topicId' | 'activity', value: string | undefined) => {
-    if (key === 'status') {
-      setStatusFilter(value === "all" ? undefined : value);
-    } else if (key === 'lecturerId') {
-      setLecturerFilter(value === "all" ? undefined : value);
-    } else if (key === 'topicId') {
-      setTopicFilter(value === "all" ? undefined : value);
-    } else if (key === 'activity') {
-      setActivityFilter(value === "all" ? undefined : value);
-    }
-    setPage(1); // Reset to first page when filter changes
-  }, []);
-
-  const handleSearchChange = useCallback((value: string) => {
-    setFrontendSearch(value);
-    setPage(1); // Reset to first page when search changes
-  }, []);
-
-  const handlePageChange = useCallback((newPage: number) => {
-    setPage(newPage);
-  }, []);
-
-  const handlePageSizeChange = useCallback((newSize: number) => {
-    setPageSize(newSize);
-    setPage(1); // Reset to first page when page size changes
-  }, []);
-
-  const clearFilters = useCallback(() => {
-    setStatusFilter(undefined);
-    setLecturerFilter(undefined);
-    setTopicFilter(undefined);
-    setActivityFilter(undefined);
-    setFrontendSearch("");
+  // The rows change with the semester; never stay on a page that no longer exists.
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filtered.length / pageSize)));
+  const paginatedData = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const hasFilters = !!(search || statusFilter || topicFilter || lecturerFilter || seminarFilter || activityFilter);
+  const onFilter = (set: (value: string) => void) => (value: string) => {
+    set(value);
     setPage(1);
-  }, []);
-
-  const hasActiveFilters = statusFilter || lecturerFilter || topicFilter || activityFilter || frontendSearch;
+  };
 
   const columns: Column<ThesisListItem>[] = [
     {
       key: "student",
       header: "Mahasiswa",
+      className: CLIP_CELL,
       render: (thesis) => (
-        <div className="space-y-0.5">
-          <p className="font-medium">{toTitleCaseName(thesis.student.name)}</p>
-          <p className="text-sm text-muted-foreground">{thesis.student.nim}</p>
+        <div className="min-w-0 space-y-0.5">
+          <p className="truncate font-medium" title={toTitleCaseName(thesis.student.name)}>{toTitleCaseName(thesis.student.name)}</p>
+          <p className="text-xs text-muted-foreground">{thesis.student.nim}</p>
+          {/* The semester the thesis started in; the semester filter is about when it runs. */}
+          <p className="truncate text-xs text-muted-foreground" title="Semester mulai">Mulai: {thesis.startSemester || "-"}</p>
         </div>
-      ),
-    },
-    {
-      key: "startSemester",
-      // The semester the thesis started in; the Semester filter is about when it runs.
-      header: "Mulai",
-      render: (thesis) => (
-        <span className="whitespace-nowrap">{thesis.startSemester || "-"}</span>
       ),
     },
     {
       key: "topic",
       header: "Topik",
+      width: 128,
+      className: CLIP_CELL,
+      filter: { type: "select", value: topicFilter, onChange: onFilter(setTopicFilter), options: [ALL_OPTION, ...topicOptions] },
       render: (thesis) => (
-        <span className="block max-w-45 truncate text-sm" title={thesis.topic?.name || "-"}>
+        <span className="line-clamp-2 whitespace-normal break-words text-sm" title={thesis.topic?.name || undefined}>
           {thesis.topic?.name || "-"}
         </span>
       ),
@@ -232,15 +207,20 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity, 
     {
       key: "status",
       header: "Status",
-      render: (thesis) => <ThesisStatusBadge status={thesis.status} />,
+      width: 120,
+      className: CLIP_CELL,
+      filter: { type: "select", value: statusFilter, onChange: onFilter(setStatusFilter), options: STATUS_OPTIONS },
+      render: (thesis) => <ThesisStatusBadge status={thesis.status} onLeave={thesis.isOnLeave} className="whitespace-nowrap" />,
     },
     {
       key: "progress",
       header: "Progress",
-      className: "text-center",
+      width: 124,
+      className: CLIP_CELL,
+      filter: { type: "select", value: seminarFilter, onChange: onFilter(setSeminarFilter), options: SEMINAR_OPTIONS },
       render: (thesis) => (
-        <div className="flex flex-col items-center gap-1">
-          <div className="w-20 h-2 rounded-full bg-muted overflow-hidden">
+        <div className="flex flex-col gap-1">
+          <div className="h-2 w-20 overflow-hidden rounded-full bg-muted">
             <div
               className={`h-full rounded-full transition-all ${getProgressColor(thesis.progress.percent)}`}
               style={{ width: `${thesis.progress.percent}%` }}
@@ -249,21 +229,32 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity, 
           <span className="text-xs text-muted-foreground">
             {thesis.progress.completed}/{thesis.progress.total} ({thesis.progress.percent}%)
           </span>
+          {/* Persetujuan seminar of each supervisor (green = disetujui). */}
+          <span className="flex items-center gap-1 text-xs text-muted-foreground" title="Persetujuan seminar pembimbing">
+            Acc
+            <ApprovalIcon approved={thesis.seminarApproval.supervisor1} label="Pembimbing 1" />
+            {thesis.seminarApproval.hasPembimbing2 && (
+              <ApprovalIcon approved={thesis.seminarApproval.supervisor2} label="Pembimbing 2" />
+            )}
+          </span>
         </div>
       ),
     },
     {
       key: "supervisors",
       header: "Pembimbing",
+      width: 156,
+      className: CLIP_CELL,
+      filter: { type: "select", value: lecturerFilter, onChange: onFilter(setLecturerFilter), options: [ALL_OPTION, ...lecturerOptions] },
       render: (thesis) => (
-        <div className="space-y-0.5 text-sm">
+        <div className="min-w-0 space-y-0.5 text-sm">
           {thesis.supervisors.pembimbing1 && (
-            <p className="truncate max-w-37.5" title={thesis.supervisors.pembimbing1}>
+            <p className="truncate" title={formatLecturerName(thesis.supervisors.pembimbing1)}>
               1. {formatLecturerName(thesis.supervisors.pembimbing1)}
             </p>
           )}
           {thesis.supervisors.pembimbing2 && (
-            <p className="truncate max-w-37.5 text-muted-foreground" title={thesis.supervisors.pembimbing2}>
+            <p className="truncate text-muted-foreground" title={formatLecturerName(thesis.supervisors.pembimbing2)}>
               2. {formatLecturerName(thesis.supervisors.pembimbing2)}
             </p>
           )}
@@ -271,208 +262,53 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity, 
       ),
     },
     {
-      key: "seminarApproval",
-      header: "Acc Seminar",
-      className: "text-center",
-      render: (thesis) => (
-        <div className="flex justify-center gap-1">
-          <span title="Pembimbing 1">
-            {thesis.seminarApproval.supervisor1 ? (
-              <CheckCircle2 className="h-4 w-4 text-green-500" />
-            ) : (
-              <XCircle className="h-4 w-4 text-muted-foreground/40" />
-            )}
-          </span>
-          {thesis.seminarApproval.hasPembimbing2 && (
-            <span title="Pembimbing 2">
-              {thesis.seminarApproval.supervisor2 ? (
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-              ) : (
-                <XCircle className="h-4 w-4 text-muted-foreground/40" />
-              )}
-            </span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "lastActivity",
-      header: (
-        <div className="flex items-center justify-center gap-1">
-          <span>Aktivitas Terakhir</span>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help mb-0.5" />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs">
-                <p className="font-semibold mb-1">Indikator Aktivitas Terakhir:</p>
-                <ul className="list-disc list-inside text-xs space-y-0.5">
-                  <li>Approval Catatan Bimbingan</li>
-                  <li>Approval Milestone</li>
-                  <li>Approval Seminar</li>
-                </ul>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      ),
-      render: (thesis) => (
-        <span className="text-sm text-muted-foreground whitespace-nowrap">
-          {formatDateTimeWib(thesis.lastActivity)}
-        </span>
-      ),
-    },
-    {
       key: "supervisionClock",
       header: "Masa Bimbingan",
-      render: (thesis) => <SupervisionClockCell clock={thesis.supervisionClock} />,
+      width: 136,
+      className: CLIP_CELL,
+      render: (thesis) => <SupervisionClockCell clock={thesis.supervisionClock} wrap />,
     },
     {
       key: "activity",
       header: "Aktivitas",
+      width: 132,
+      className: CLIP_CELL,
+      filter: { type: "select", value: activityFilter, onChange: onFilter(setActivityFilter), options: ACTIVITY_OPTIONS },
       render: (thesis) => (
-        <div className="flex items-center gap-2">
-          <ThesisActivityBadge level={thesis.activityLevel} className="whitespace-nowrap" />
-          {needsWarning(thesis.activityLevel) && (
-            <AlertTriangle className="h-4 w-4 text-orange-500" aria-label="Perlu perhatian" />
-          )}
+        <div className="flex flex-col items-start gap-1">
+          <div className="flex items-center gap-1.5">
+            <ThesisActivityBadge level={thesis.activityLevel} className="whitespace-nowrap" />
+            {needsWarning(thesis.activityLevel) && (
+              <AlertTriangle className="h-4 w-4 text-orange-500" aria-label="Perlu perhatian" />
+            )}
+          </div>
+          {/* Last approval of a session summary, a milestone or the seminar readiness. */}
+          <span className="text-xs text-muted-foreground" title="Aktivitas terakhir: persetujuan catatan bimbingan, milestone, atau seminar">
+            {formatDateShortId(thesis.lastActivity)}
+          </span>
         </div>
       ),
     },
     {
       key: "actions",
       header: "Aksi",
-      className: "text-center w-24",
-      render: (thesis) => {
-        return (
-          <div className="flex items-center justify-center gap-1">
-            {needsWarning(thesis.activityLevel) && canSendWarning && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setWarningDialog({ open: true, thesis })}
-                      className="h-8 w-8 p-0 text-orange-500 hover:text-orange-600 hover:bg-orange-50"
-                    >
-                      <Bell className="h-4 w-4" />
-                      <span className="sr-only">Kirim Peringatan</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Kirim Peringatan</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => navigate(`/tugas-akhir/monitoring/${thesis.id}`)}
-                    className="h-8 w-8 p-0"
-                  >
-                    <Eye className="h-4 w-4" />
-                    <span className="sr-only">Detail</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Lihat Detail</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        );
-      },
+      width: 88,
+      className: "text-center",
+      render: (thesis) => (
+        <div className="flex items-center justify-center gap-1">
+          {needsWarning(thesis.activityLevel) && canSendWarning && (
+            <TableIconAction icon={Bell} label="Kirim Peringatan" onClick={() => setWarningDialog({ open: true, thesis })} />
+          )}
+          <TableIconAction icon={Eye} label="Lihat Detail" onClick={() => navigate(`/tugas-akhir/monitoring/${thesis.id}`)} />
+        </div>
+      ),
     },
   ];
 
+  // Toolbar: search on the left; semester, Download Laporan and Muat Ulang on the right.
   const actions = (
     <>
       {semesterSelect}
-      <Select
-        value={statusFilter || "all"}
-        onValueChange={(value) => handleFilterChange("status", value)}
-      >
-        <SelectTrigger className="w-40">
-          <SelectValue placeholder="Status" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Status</SelectItem>
-          {filterOptions?.statuses.map((status) => (
-            <SelectItem key={status.value} value={status.value}>
-              {getThesisStatusLabel(status.value)} ({status.count})
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={topicFilter || "all"}
-        onValueChange={(value) => handleFilterChange("topicId", value)}
-      >
-        <SelectTrigger className="w-50">
-          <SelectValue placeholder="Topik" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Topik</SelectItem>
-          {filterOptions?.topics.map((topic) => (
-            <SelectItem key={topic.value} value={topic.value}>
-              {topic.label}{topic.count !== undefined ? ` (${topic.count})` : ""}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={lecturerFilter || "all"}
-        onValueChange={(value) => handleFilterChange("lecturerId", value)}
-      >
-        <SelectTrigger className="w-50">
-          <SelectValue placeholder="Pembimbing" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Pembimbing</SelectItem>
-          {filterOptions?.supervisors.map((supervisor) => (
-            <SelectItem key={supervisor.value} value={supervisor.value}>
-              {formatLecturerName(supervisor.label)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={activityFilter || "all"}
-        onValueChange={(value) => handleFilterChange("activity", value)}
-      >
-        <SelectTrigger className="w-36">
-          <SelectValue placeholder="Aktivitas" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Semua Aktivitas</SelectItem>
-          {getThesisActivityOptions().map((option) => (
-            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      {hasActiveFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={clearFilters}
-          className="text-muted-foreground"
-        >
-          <X className="h-4 w-4 mr-1" />
-          Reset
-        </Button>
-      )}
-
       {extraActions}
       <RefreshButton
         onClick={() => (onRefresh ? onRefresh() : void refetch())}
@@ -486,18 +322,21 @@ export function ThesesTable({ isSyncing = false, academicYear, initialActivity, 
       <CustomTable<ThesisListItem>
         columns={columns}
         data={paginatedData}
-        loading={isLoadingAny}
+        loading={isLoading}
         isRefreshing={isFetching && !isLoading}
         subtleRefresh
-        total={searchFilteredData.length}
-        page={page}
+        total={filtered.length}
+        page={currentPage}
         pageSize={pageSize}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        searchValue={frontendSearch}
-        onSearchChange={handleSearchChange}
+        onPageChange={setPage}
+        onPageSizeChange={(size) => { setPageSize(size); setPage(1); }}
+        searchValue={search}
+        onSearchChange={(value) => { setSearch(value); setPage(1); }}
+        searchPlaceholder="Cari nama, NIM, judul, atau pembimbing..."
+        enableColumnFilters
+        tableClassName={THESES_TABLE_CLASS}
         actions={actions}
-        emptyText="Tidak ada data tugas akhir"
+        emptyText={hasFilters ? "Tidak ada tugas akhir yang cocok dengan pencarian atau filter." : "Tidak ada data tugas akhir"}
         rowKey={(row) => row.id}
       />
 

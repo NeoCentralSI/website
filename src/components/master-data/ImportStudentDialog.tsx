@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ImportFilePicker } from '@/components/shared/ImportFilePicker';
 import {
   Dialog,
   DialogContent,
@@ -9,10 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { Progress } from '@/components/ui/progress';
-import { Upload, Download, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
+import { Upload, Download, FileSpreadsheet, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface ImportStudentDialogProps {
@@ -89,7 +88,7 @@ export function ImportStudentDialog({
         'Nama Lengkap': 'Ahmad Fauzi',
         'Email': 'ahmad@student.unand.ac.id',
         'Role': 'Mahasiswa',
-        'Status Mahasiswa': 'active',
+        'Status Mahasiswa': 'Aktif',
       },
       {
         'NIM/NIP': '198501012010011001',
@@ -119,8 +118,8 @@ export function ImportStudentDialog({
       { 'Kolom': 'NIM/NIP', 'Keterangan': 'Nomor Induk Mahasiswa (NIM) atau Nomor Induk Pegawai (NIP). Wajib diisi.' },
       { 'Kolom': 'Nama Lengkap', 'Keterangan': 'Nama lengkap user beserta gelar jika ada.' },
       { 'Kolom': 'Email', 'Keterangan': 'Email user yang unik (contoh: @student.unand.ac.id atau @fti.unand.ac.id). Wajib diisi.' },
-      { 'Kolom': 'Role', 'Keterangan': 'Role user. Jika memiliki multiple role, pisahkan dengan koma (contoh: "Pembimbing 1, Penguji", "Ketua Departemen, Pembimbing 1"). Pilihan role baku: Mahasiswa, Pembimbing 1, Pembimbing 2, Penguji, Ketua Departemen, Sekretaris Departemen, GKM, Koordinator Metode Penelitian, Koordinator Yudisium, Tim Pengelola CPL, Admin.' },
-      { 'Kolom': 'Status Mahasiswa', 'Keterangan': 'Status mahasiswa (khusus mahasiswa). Pilihan: active, bss, lulus, dropout, mengundurkan_diri. Default: active. Kosongkan untuk Dosen.' },
+      { 'Kolom': 'Role', 'Keterangan': 'Role user. Jika memiliki multiple role, pisahkan dengan koma (contoh: "Pembimbing 1, Penguji", "Ketua Departemen, Pembimbing 1"). Pilihan role baku: Mahasiswa, Pembimbing 1, Pembimbing 2, Penguji, Ketua Departemen, Sekretaris Departemen, GKM, Koordinator Metode Penelitian, Koordinator Yudisium, Admin. Admin tidak dapat digabung dengan role lain.' },
+      { 'Kolom': 'Status Mahasiswa', 'Keterangan': 'Status mahasiswa (khusus mahasiswa). Pilihan: Aktif, Cuti, Lulus, Mengundurkan Diri, Drop Out. Kosong untuk mahasiswa baru berarti Aktif; kosong untuk mahasiswa lama tidak mengubah status. Kosongkan untuk Dosen.' },
     ];
 
     const wb = XLSX.utils.book_new();
@@ -162,12 +161,6 @@ export function ImportStudentDialog({
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
-  };
-
   return (
     <Dialog open={open} onOpenChange={(val) => !isImporting && onOpenChange(val)}>
       <DialogContent className="max-w-md">
@@ -180,22 +173,7 @@ export function ImportStudentDialog({
 
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="user-file">File Excel / CSV</Label>
-            <Input
-              id="user-file"
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              onChange={(e) => onFileChange(e.target.files?.[0] || null)}
-              disabled={isImporting}
-            />
-
-            {selectedFile && (
-              <div className="flex items-center gap-2 p-2 mt-1 rounded-md bg-muted/60 border text-xs">
-                <FileText className="w-4 h-4 text-primary shrink-0" />
-                <span className="font-medium truncate flex-1">{selectedFile.name}</span>
-                <span className="text-muted-foreground shrink-0">{formatFileSize(selectedFile.size)}</span>
-              </div>
-            )}
+            <ImportFilePicker file={selectedFile} onChange={onFileChange} disabled={isImporting} label="File Excel / CSV" />
 
             {/* Loading Indicator & Progress Stage */}
             {isImporting && (

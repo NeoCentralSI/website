@@ -2,7 +2,7 @@ import { StudentThesisDefenceStatusCard } from './StudentThesisDefenceStatusCard
 import { StudentThesisDefenceIdentityCard } from './StudentThesisDefenceIdentityCard';
 import { StudentThesisDefenceChecklistRequirementsCard } from './StudentThesisDefenceChecklistRequirementsCard';
 import { StudentThesisDefenceDocumentCard } from './StudentThesisDefenceDocumentCard';
-import { StudentThesisDefenceHistoryCard } from './StudentThesisDefenceHistoryCard';
+import { ThesisEventHistoryTable } from '@/components/shared/ThesisEventHistoryTable';
 import type { StudentDefenceHistoryItem, DefenceOverviewResponse } from '@/types/defence.types';
 
 interface OverviewPanelProps {
@@ -51,7 +51,6 @@ export const StudentThesisDefenceOverviewPanel = ({
         </div>
       </div>
 
-      {/* Riwayat percobaan — single card with table rows */}
       {historyItems.length > 0 ? (
         <section className="overflow-hidden rounded-lg border border-gray-200 bg-card">
           <div className="flex items-center justify-between gap-4 px-5 py-4">
@@ -66,24 +65,7 @@ export const StudentThesisDefenceOverviewPanel = ({
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <div className="grid min-w-[820px] grid-cols-[48px_minmax(200px,1.5fr)_minmax(150px,1fr)_minmax(120px,0.8fr)_80px_minmax(145px,1fr)_104px] items-center gap-4 border-y border-gray-200 bg-muted/40 px-4 py-2.5">
-              {['No', 'Dosen Penguji', 'Tanggal', 'Ruangan', 'Nilai', 'Status', 'Aksi'].map((column) => (
-                <span key={column} className="text-xs font-medium text-muted-foreground">
-                  {column}
-                </span>
-              ))}
-            </div>
-
-            {historyItems.map((item, index) => (
-              <StudentThesisDefenceHistoryCard
-                key={item.id}
-                index={index + 1}
-                item={item}
-                onClick={() => onDetailClick(item.id)}
-              />
-            ))}
-          </div>
+          <ThesisEventHistoryTable items={historyItems} onDetail={onDetailClick} />
         </section>
       ) : null}
     </div>

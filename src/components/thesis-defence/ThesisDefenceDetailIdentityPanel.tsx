@@ -1,5 +1,5 @@
+import { RequirementDocumentRow } from '@/components/shared/RequirementDocumentRow';
 import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toTitleCaseName, formatDateShortId, formatDateOnlyId, formatRoleName } from '@/lib/text';
@@ -9,14 +9,13 @@ import {
   CheckCircle2,
   FileText,
   XCircle,
-  Eye,
 } from 'lucide-react';
 import { ThesisExaminerAvailabilityStatusBadge } from '@/components/shared/ThesisExaminerAvailabilityStatusBadge';
-import type { DocumentSubmitStatus } from '@/types/defence.types';
 import { toast } from 'sonner';
 import { useRole } from '@/hooks/shared';
 import { useVerifyDefenceDocument } from '@/hooks/thesis-defence';
-import { fetchDefenceDocumentBlob } from '@/services/thesis-defence/doc.service';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
+import { API_CONFIG } from '@/config/api';
 import {
   Dialog,
   DialogContent,
@@ -35,17 +34,6 @@ function extractTime(timeIso?: string | null): string {
   return `${String(d.getUTCHours()).padStart(2, '0')}.${String(d.getUTCMinutes()).padStart(2, '0')}`;
 }
 
-function getDocStatusDisplay(status: DocumentSubmitStatus) {
-  switch (status) {
-    case 'approved':
-      return { label: 'Disetujui', badge: 'success' as const };
-    case 'declined':
-      return { label: 'Ditolak', badge: 'destructive' as const };
-    case 'submitted':
-    default:
-      return { label: 'Menunggu', badge: 'warning' as const };
-  }
-}
 
 interface Props {
   detail: any;
@@ -57,6 +45,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
   const [selectedDocTypeId, setSelectedDocTypeId] = useState<string | null>(null);
   const [declineNotes, setDeclineNotes] = useState('');
+  const { openDocument, viewer } = useDocumentViewer();
 
   const handleValidate = async (docTypeId: string, action: 'approve' | 'decline', notes?: string) => {
     try {
@@ -80,6 +69,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
 
   return (
     <div className="space-y-6">
+      {viewer}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Informasi Sidang */}
         <Card className="lg:col-span-1 h-full gap-4 py-6">
@@ -148,7 +138,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
               )}
 
               {detail.rejectedExaminers && detail.rejectedExaminers.length > 0 && (
-                <div className="pt-2 border-t">
+                <div className="pt-2 border-t border-gray-200">
                   <p className="text-xs text-muted-foreground mb-2">Riwayat Penolakan:</p>
                   <div className="space-y-2">
                     {detail.rejectedExaminers.map((e: any) => (
@@ -209,65 +199,20 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
             <CardContent className="space-y-3">
               {documentTypes.map((dt: any) => {
                 const doc = documents.find((d: any) => (d.requirementId || d.documentTypeId) === dt.id);
-                const statusDisplay = doc ? getDocStatusDisplay(doc.status) : null;
                 const isSubmitted = doc?.status === 'submitted';
                 const isDeclined = doc?.status === 'declined';
 
                 return (
-                  <div
+                  <RequirementDocumentRow
                     key={dt.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-lg border bg-muted/10 p-4 transition-colors hover:bg-muted/20"
-                  >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className={`p-2.5 rounded-lg shrink-0 ${doc ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-50 text-gray-400'}`}>
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <span className="font-medium text-sm text-foreground block">
-                          {dt.name}
-                        </span>
-                        <span className="text-xs text-muted-foreground block mt-0.5 truncate">
-                          {doc ? `${doc.fileName || 'File'} • ${formatDateShortId(doc.submittedAt)}` : 'Belum diunggah'}
-                        </span>
-                        {doc?.notes && (
-                          <span className="text-xs text-muted-foreground block mt-1 italic">
-                            Catatan: {doc.notes}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                      {statusDisplay && (
-                        <Badge variant={statusDisplay.badge} className="rounded-md font-medium px-2.5 py-0.5">
-                          {statusDisplay.label}
-                        </Badge>
-                      )}
-
-                      {doc && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          title="Lihat Dokumen"
-                          className="h-9 w-9 border rounded-lg hover:bg-accent shrink-0"
-                          onClick={async () => {
-                            try {
-                              const blob = await fetchDefenceDocumentBlob(detail.id, dt.id);
-                              const blobUrl = URL.createObjectURL(blob);
-                              window.open(blobUrl, '_blank', 'noopener,noreferrer');
-                              setTimeout(() => URL.revokeObjectURL(blobUrl), 30_000);
-                            } catch (error) {
-                              toast.error((error as Error).message || 'Gagal membuka dokumen');
-                            }
-                          }}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      )}
-
-                      {/* Admin Validation Actions */}
-                      {isAdmin() && doc && (isSubmitted || isDeclined) && (
-                        <div className="flex items-center gap-1.5 ml-1 pl-3 border-l">
+                    name={dt.name}
+                    status={doc?.status}
+                    fileName={doc?.fileName}
+                    submittedAt={doc?.submittedAt}
+                    notes={doc?.notes}
+                    onView={doc ? () => openDocument(API_CONFIG.ENDPOINTS.THESIS_DEFENCE.DOCUMENT_FILE(detail.id, dt.id), doc.fileName) : undefined}
+                    actions={isAdmin() && doc && (isSubmitted || isDeclined) ? (
+                        <div className="flex items-center gap-1.5 ml-1 pl-3 border-l border-gray-200">
                           <Button
                             size="sm"
                             variant="default"
@@ -296,9 +241,8 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
                             Tolak
                           </Button>
                         </div>
-                      )}
-                    </div>
-                  </div>
+                    ) : null}
+                  />
                 );
               })}
             </CardContent>
@@ -312,7 +256,7 @@ export function ThesisDefenceDetailIdentityPanel({ detail }: Props) {
           <DialogHeader>
             <DialogTitle>Tolak Dokumen</DialogTitle>
             <DialogDescription>
-              Berikan alasan penolakan dokumen ini agar mahasiswa dapat memperbaikinya.
+              Berikan alasan penolakan dokumen ini agar mahasiswa dapat memperbaikinya
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">

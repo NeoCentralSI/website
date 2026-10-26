@@ -172,11 +172,13 @@ export function useSubmitStudentExitSurvey() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: submitStudentExitSurvey,
-    onSuccess: () => {
+    // The overview is stale before the caller goes back to it, so it shows the requirement met.
+    onSuccess: async () => {
       toast.success('Exit survey berhasil dikirim');
-      void queryClient.invalidateQueries({ queryKey: exitSurveyKeys.studentSurvey() });
-      void queryClient.invalidateQueries({ queryKey: ['student-yudisium', 'overview'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: exitSurveyKeys.studentSurvey() }),
+        queryClient.invalidateQueries({ queryKey: ['student-yudisium', 'overview'] }),
+      ]);
     },
-    onError: (err: Error) => toast.error(err.message),
   });
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react'
-import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
+import { Navigate, Route, BrowserRouter as Router, Routes, useParams } from 'react-router-dom'
 import { ENV } from '@/config/env'
 import { Loading } from '@/components/ui/spinner'
 import { AuthProvider, NotificationProvider } from '@/hooks/shared'
@@ -9,7 +9,7 @@ import ProtectedLayout from './components/layout/ProtectedLayout'
 import Placeholder from './pages/Placeholder'
 import NotFoundPage from './pages/NotFound'
 import InternshipLetterVerification from './pages/kerja-praktik/public/InternshipLetterVerification'
-import OfficialDocumentVerificationPage from './pages/public/OfficialDocumentVerification'
+import CekDokumenPage from './pages/public/CekDokumen'
 // Guards
 import KerjaPraktekGuard from './pages/guards/KerjaPraktekGuard'
 import RoleGuard from './pages/guards/RoleGuard'
@@ -30,7 +30,6 @@ const Profil = lazy(() => import('./pages/profil/Profil'))
 const BimbinganEntry = lazy(() => import('./pages/tugas-akhir/bimbingan/BimbinganEntry'))
 const StudentGuidance = lazy(() => import('./pages/tugas-akhir/bimbingan/student/StudentGuidance'));
 const StudentMilestonePage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/Milestone'));
-const CompletedHistory = lazy(() => import('./pages/tugas-akhir/bimbingan/student/CompletedHistory'));
 const StudentGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/student/GuidanceSession'))
 const LecturerRequestsPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/Requests'))
 const LecturerGuidanceSessionPage = lazy(() => import('./pages/tugas-akhir/bimbingan/lecturer/GuidanceSession'))
@@ -105,6 +104,7 @@ const StudentProgressDetail = lazy(() => import('./pages/tugas-akhir/monitoring/
 const DevToolsPage = lazy(() => import('./pages/dev-tools/DevTools'))
 // Master Data
 const UserManagementPage = lazy(() => import('./pages/master-data/UserManagement'))
+const ActivityLogPage = lazy(() => import('./pages/master-data/ActivityLog'))
 const AcademicYearPage = lazy(() => import('./pages/master-data/AcademicYear'))
 const CurriculumPage = lazy(() => import('./pages/master-data/Curriculum'))
 const Cpl = lazy(() => import('./pages/master-data/Cpl'))
@@ -133,6 +133,12 @@ const FieldAssessmentLogin = lazy(() => import('./pages/kerja-praktik/public/fie
 const FieldAssessmentLayout = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentLayout'))
 const FieldAssessmentLogbook = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentLogbook'))
 const FieldAssessmentForm = lazy(() => import('./pages/kerja-praktik/public/field-assessment/FieldAssessmentForm'))
+
+/** Old QR links `/verify/document/:token` open Cek Dokumen. */
+function LegacyDocumentLinkRedirect() {
+  const { token } = useParams<{ token: string }>()
+  return <Navigate to={`/cek-dokumen/${token ?? ''}`} replace />
+}
 
 function App() {
   const [showServerError, setShowServerError] = useState(false);
@@ -178,7 +184,10 @@ function App() {
               <Route path="/verify/internship-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/lecturer-assignment/:id" element={<InternshipLetterVerification />} />
               <Route path="/verify/seminar-minutes/:id" element={<InternshipLetterVerification />} />
-              <Route path="/verify/document/:token" element={<OfficialDocumentVerificationPage />} />
+              {/* Cek Dokumen (public). QR links of documents issued before it keep working. */}
+              <Route path="/cek-dokumen" element={<CekDokumenPage />} />
+              <Route path="/cek-dokumen/:token" element={<CekDokumenPage />} />
+              <Route path="/verify/document/:token" element={<LegacyDocumentLinkRedirect />} />
 
               <Route path="/field-assessment/:token" element={<FieldAssessmentPortal />}>
                 <Route index element={<FieldAssessmentLogin />} />
@@ -241,7 +250,8 @@ function App() {
                     <Route path="bimbingan/student" element={<StudentGuidance />} />
                     <Route path="bimbingan/student/milestone" element={<StudentMilestonePage />} />
                     <Route path="bimbingan/student/session/:guidanceId" element={<StudentGuidanceSessionPage />} />
-                    <Route path="bimbingan/student/history" element={<CompletedHistory />} />
+                    {/* The old Riwayat Bimbingan page: its sessions and PDF log are on the Bimbingan page */}
+                    <Route path="bimbingan/student/history" element={<Navigate to="/tugas-akhir/bimbingan/student" replace />} />
                     {/* DangerZone (TA-05) is not restored in the guidance revival (GUIDANCE_REVIVAL_PLAN e1); redirect to TA overview */}
                     <Route path="bimbingan/danger-zone" element={<Navigate to="/tugas-akhir" replace />} />
                     {/* Seminar Hasil and Sidang handled by top-level routes (thesis-seminar/, thesis-defence/) */}
@@ -331,6 +341,11 @@ function App() {
                   <Route path="/tugas-akhir/kelola-rubrik" element={<Placeholder title="Tugas Akhir - Kelola Rubrik" />} />
                   <Route path="/tugas-akhir/kelola-yudisium" element={<Placeholder title="Tugas Akhir - Kelola Yudisium" />} />
                   <Route path="/tugas-akhir/kelola" element={<Placeholder title="Tugas Akhir - Kelola (Deprecated)" />} />
+                </Route>
+
+                {/* Log Aktivitas: Admin (Master Data), Kadep and Sekdep (read-only, same page) */}
+                <Route element={<RoleGuard allowedRoles={[ROLES.ADMIN, ROLES.KETUA_DEPARTEMEN, ROLES.SEKRETARIS_DEPARTEMEN]} />}>
+                  <Route path="/master-data/log" element={<ActivityLogPage />} />
                 </Route>
 
                 {/* Shared Kelola - Sekdep & Kadep */}

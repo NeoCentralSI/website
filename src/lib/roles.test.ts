@@ -20,7 +20,8 @@ describe("assignableRoleOptions", () => {
     expect(assignableRoleOptions).toHaveLength(roleOptions.length - 1);
   });
 
-  it("includes Tim Pengelola CPL", () => {
-    expect(assignableRoleOptions.map((option) => option.value)).toContain(ROLES.TIM_PENGELOLA_CPL);
+  it("no longer offers Tim Pengelola CPL: CPL is managed by the GKM", () => {
+    expect(assignableRoleOptions.map((option) => option.label)).not.toContain("Tim Pengelola CPL");
+    expect(assignableRoleOptions.map((option) => option.value)).toContain(ROLES.GKM);
   });
 });

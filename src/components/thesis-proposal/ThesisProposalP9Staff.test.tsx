@@ -12,6 +12,7 @@ import KadepThesisSupervisorAssignment from '@/pages/thesis-proposal/KadepThesis
 import SupervisionQuotaPage from '@/pages/thesis-proposal/SupervisionQuota';
 import * as assignments from '@/services/thesis-proposal/supervisor-assignment.service';
 import * as quota from '@/services/thesis-proposal/supervision-quota.service';
+import { downloadAuthenticatedFileOrToast } from '@/lib/authenticatedFile';
 import { expectFooter } from '@/test/dialogFooter';
 import { expectColumnFits } from '@/test/columnFit';
 import type {
@@ -25,8 +26,10 @@ import type {
 
 const roles = vi.hoisted(() => ({ kadep: true, sekdep: false }));
 
+vi.mock('@/hooks/useAuthenticatedBlobUrl', () => ({ useAuthenticatedBlobUrl: () => ({ blobUrl: 'blob:assignment', error: null, isLoading: false }) }));
 vi.mock('lottie-react', () => ({ default: () => null }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('@/lib/authenticatedFile', () => ({ downloadAuthenticatedFileOrToast: vi.fn() }));
 vi.mock('@/services/thesis-proposal/supervisor-assignment.service');
 vi.mock('@/services/thesis-proposal/supervision-quota.service');
 vi.mock('@/services/lecturerGuidance.service', () => ({ approveSupervisor2KadepRequest: vi.fn(), rejectSupervisor2KadepRequest: vi.fn() }));
@@ -58,7 +61,7 @@ function wrap(ui: ReactNode, path = '/') {
 
 const person = (lecturerId: string, fullName: string, role: string, activeCount = 3, acceptingRequests = true) => ({
   lecturerId, fullName, role, acceptingRequests,
-  load: { activeCount, softLimit: 8, hardLimit: 10, level: activeCount >= 10 ? 'full' as const : 'available' as const },
+  load: { acceptedCount: 1, activeCount, semesterQuota: 8, totalLimit: 10, level: activeCount >= 10 ? 'full' as const : 'available' as const },
 });
 const request = (overrides: Partial<SupervisorRequest> = {}): SupervisorRequest => ({
   id: 'r', status: 'pending_kadep', route: 'department', createdAt: '2026-10-10T03:00:00.000Z', updatedAt: '2026-10-10T03:00:00.000Z',
@@ -90,7 +93,7 @@ const board = (overrides: Partial<AssignmentBoard> = {}): AssignmentBoard => ({
     row('02', 'OKTA KUOTA', {
       submission: 'over_quota_waiting', waiting: true, requestStatus: 'pending_kadep', assignment: { inCohort: false, assigned: false, version: null },
       candidate: person('l9', 'DOSEN PENUH, M.T', 'Pembimbing 1', 10),
-      request: { ...request({ id: 'oq-1', route: 'over_quota' }), lecturerLoad: { activeCount: 10, softLimit: 8, hardLimit: 10, level: 'full', projectedCount: 11, overBy: 1 } },
+      request: { ...request({ id: 'oq-1', route: 'over_quota' }), lecturerLoad: { acceptedCount: 1, activeCount: 10, semesterQuota: 8, totalLimit: 10, level: 'full', projectedCount: 11, overBy: 1 } },
     }),
     row('03', 'PUTRI PEMBIMBING', {
       submission: 'supervisor2_waiting', waiting: true, supervisors: [person('l1', 'AINA HUBBY AZIIRA, M.Eng', 'Pembimbing 1')],
@@ -111,14 +114,14 @@ const board = (overrides: Partial<AssignmentBoard> = {}): AssignmentBoard => ({
 });
 
 const lecturer = (id: string, fullName: string, activeCount: number, level: LecturerLoadRow['level'], acceptingRequests = true, group = 'Sistem Informasi'): LecturerLoadRow => ({
-  lecturerId: id, fullName, identityNumber: null, scienceGroup: { id: group, name: group }, acceptingRequests, activeCount, level,
+  lecturerId: id, fullName, identityNumber: null, scienceGroup: { id: group, name: group }, acceptingRequests, activeCount, acceptedCount: 1, pendingCount: 2, level,
   breakdown: { total: activeCount, waitingAssignment: 1, proposal: 2, research: activeCount - 3, onLeave: 0, asSupervisor2: 4 },
 });
 const loads = (overrides: Partial<SupervisionLoadOverview> = {}): SupervisionLoadOverview => ({
-  academicYear: { id: 'ay-1', label: '2026/2027 Ganjil' },
-  general: { softLimit: 8, hardLimit: 10 },
+  academicYear: { id: 'ay-1', label: '2026/2027 Ganjil', isActive: true },
+  general: { semesterQuota: 8, totalLimit: 10 },
   period: null,
-  applicable: { softLimit: 8, hardLimit: 10, source: 'general' },
+  applicable: { semesterQuota: 8, totalLimit: 10, source: 'general' },
   lecturers: [
     lecturer('l1', 'ULLYA MEGA WAHYUNI, M.Kom', 7, 'available', true, 'Jaringan'),
     lecturer('l2', 'HUSNIL KAMIL, MT', 99, 'near_limit', false),
@@ -212,7 +215,7 @@ describe('Penetapan Pembimbing', () => {
     rows = tableRows();
     fireEvent.click(within(rows[1]).getByRole('button', { name: 'Lihat Detail' }));
     detail = await screen.findByRole('dialog', { name: 'Detail Penetapan' });
-    expectFooter(detail, ['Batal', 'Alihkan', 'Setujui'], 'bila disetujui 11/10 (lebih 1)');
+    expectFooter(detail, ['Batal', 'Alihkan', 'Setujui'], 'Semester ini 1/8 · Total 10/10');
     fireEvent.click(within(detail).getByRole('button', { name: 'Batal' }));
 
     rows = tableRows();
@@ -225,6 +228,33 @@ describe('Penetapan Pembimbing', () => {
     fireEvent.click(within(rows[4]).getByRole('button', { name: 'Lihat Detail' }));
     detail = await screen.findByRole('dialog', { name: 'Detail Penetapan' });
     expectFooter(detail, ['Tutup']);
+  });
+
+  it('keeps preview in the fullscreen viewer; history separates viewing from direct download', async () => {
+    vi.mocked(assignments.assignmentPreviewUrl).mockReturnValue('/thesis-proposals/supervisor-assignments/preview?academicYearId=ay-1');
+    wrap(<KadepThesisSupervisorAssignment />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Pratinjau PDF' }));
+    const preview = await screen.findByRole('dialog', { name: 'Pratinjau Penetapan Pembimbing.pdf' });
+    expect(preview).toHaveClass('h-[100vh]');
+    expect(within(preview).getByRole('button', { name: 'Buka di tab baru' })).toBeInTheDocument();
+    expect(within(preview).getByRole('button', { name: 'Unduh' })).toBeInTheDocument();
+    fireEvent.keyDown(preview, { key: 'Escape' });
+    fireEvent.click(screen.getByRole('button', { name: 'Riwayat Versi' }));
+    const current = tableRows()[0];
+    expect(within(current).getByRole('button', { name: 'Lihat' })).toBeEnabled();
+    expect(within(current).getByRole('button', { name: 'Unduh' })).toBeEnabled();
+    fireEvent.click(within(current).getByRole('button', { name: 'Lihat' }));
+    const issued = await screen.findByRole('dialog', { name: 'Penetapan-v2.pdf' });
+    expect(issued).toHaveClass('h-[100vh]');
+    expect(within(issued).getByRole('button', { name: 'Unduh' })).toBeInTheDocument();
+    fireEvent.keyDown(issued, { key: 'Escape' });
+
+    fireEvent.click(within(tableRows()[0]).getByRole('button', { name: 'Unduh' }));
+    await waitFor(() => expect(downloadAuthenticatedFileOrToast).toHaveBeenCalledWith(
+      expect.stringContaining('/thesis-proposals/supervisor-assignments/batches/b2/file'),
+      'Penetapan-v2.pdf',
+    ));
+    expect(screen.queryByRole('dialog', { name: 'Penetapan-v2.pdf' })).not.toBeInTheDocument();
   });
 
   it('a past semester is read only', async () => {
@@ -253,36 +283,35 @@ describe('Penetapan Pembimbing', () => {
     roles.sekdep = true;
     wrap(<KadepThesisSupervisorAssignment />, '/?tab=riwayat-versi');
     const table = await screen.findByRole('table');
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Versi', 'Diterbitkan', 'Oleh', 'Mahasiswa', 'Status', 'Unduh']);
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Versi', 'Diterbitkan', 'Oleh', 'Mahasiswa', 'Status', 'Aksi']);
     const [current, old] = tableRows();
     // Not up to date: the current version waits for the new issue; the old one was replaced.
-    expect(within(current).getByRole('button', { name: 'Unduh PDF' })).toBeDisabled();
-    expect(within(old).getByRole('button', { name: 'Unduh PDF' })).toBeDisabled();
+    expect(within(current).getByRole('button', { name: 'Lihat' })).toBeDisabled();
+    expect(within(current).getByRole('button', { name: 'Unduh' })).toBeDisabled();
+    expect(within(old).getByRole('button', { name: 'Lihat' })).toBeDisabled();
+    expect(within(old).getByRole('button', { name: 'Unduh' })).toBeDisabled();
   });
 
   it('Beban Dosen: the toolbar follows the semester; the dialog is prefilled and can return to the general limit', async () => {
-    vi.mocked(quota.getLoadOverview).mockResolvedValue(loads({ period: { softLimit: 6, hardLimit: 12 }, applicable: { softLimit: 6, hardLimit: 12, source: 'period' } }));
+    vi.mocked(quota.getLoadOverview).mockResolvedValue(loads({ period: { semesterQuota: 6 }, applicable: { semesterQuota: 6, totalLimit: 12, source: 'period' } }));
     vi.mocked(quota.clearPeriodLimits).mockResolvedValue({ success: true, data: loads(), message: 'ok' } as never);
     wrap(<KadepThesisSupervisorAssignment />, '/?tab=beban-dosen');
-    expect(await screen.findByText('Batas lunak: 6')).toBeInTheDocument();
-    expect(screen.getByText('Batas keras: 12')).toBeInTheDocument();
+    expect(await screen.findByText('Kuota semester: 6')).toBeInTheDocument();
     expect(screen.queryByTestId('chart')).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Ubah Batas Semester Ini' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Ubah Batas Semester Ini' });
-    expect(within(dialog).getByLabelText('Batas lunak')).toHaveValue(6);
-    expect(within(dialog).getByLabelText('Batas keras')).toHaveValue(12);
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Kembalikan ke Batas Umum' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ubah Kuota Semester Ini' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Ubah Kuota Semester Ini' });
+    expect(within(dialog).getByLabelText(/Kuota semester/)).toHaveValue(6);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Ikuti Kuota Bawaan' }));
     await waitFor(() => expect(quota.clearPeriodLimits).toHaveBeenCalledWith('ay-1'));
   });
 
   it('Beban Dosen for Sekretaris Departemen: read only, the limits shown without the edit button', async () => {
     roles.kadep = false;
     roles.sekdep = true;
-    vi.mocked(quota.getLoadOverview).mockResolvedValue(loads({ period: { softLimit: 6, hardLimit: 12 }, applicable: { softLimit: 6, hardLimit: 12, source: 'period' } }));
+    vi.mocked(quota.getLoadOverview).mockResolvedValue(loads({ period: { semesterQuota: 6 }, applicable: { semesterQuota: 6, totalLimit: 12, source: 'period' } }));
     wrap(<KadepThesisSupervisorAssignment />, '/?tab=beban-dosen');
-    expect(await screen.findByText('Batas lunak: 6')).toBeInTheDocument();
-    expect(screen.getByText('Batas keras: 12')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Ubah Batas Semester Ini' })).not.toBeInTheDocument();
+    expect(await screen.findByText('Kuota semester: 6')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ubah Kuota Semester Ini' })).not.toBeInTheDocument();
     expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
@@ -290,17 +319,19 @@ describe('Penetapan Pembimbing', () => {
     roles.kadep = false;
     roles.sekdep = true;
     wrap(<SupervisionQuotaPage />);
-    expect(await screen.findByRole('button', { name: 'Ubah Batas Umum' })).toBeEnabled();
+    expect(await screen.findByRole('button', { name: 'Ubah Batas' })).toBeEnabled();
   });
 
-  it('Beban Dosen has no semester picker: always the loads now and the running semester\'s limits', async () => {
+  it('Beban Dosen shares the semester and prevents changes to historical quota', async () => {
     vi.mocked(assignments.getAssignmentBoard).mockResolvedValue(board({ academicYear: { id: 'ay-0', label: '2025/2026 Genap', isOperational: false } }));
+    vi.mocked(quota.getLoadOverview).mockResolvedValue(loads({ academicYear: { id: 'ay-0', label: '2025/2026 Genap', isActive: false } }));
     wrap(<KadepThesisSupervisorAssignment />, '/?tab=beban-dosen&semester=ay-0');
-    await screen.findByText('Batas lunak: 8');
-    expect(quota.getLoadOverview).toHaveBeenCalledWith(undefined);
-    expect(screen.queryByRole('combobox', { name: /Semester|Periode/ })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ubah Batas Semester Ini' })).toBeEnabled();
-    expect(screen.getByRole('button', { name: 'Muat Ulang' })).toBeInTheDocument();
+    await screen.findByText('Kuota semester: 8');
+    expect(quota.getLoadOverview).toHaveBeenCalledWith('ay-0');
+    expect(screen.getByRole('combobox', { name: /Semester|Periode/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ubah Kuota Semester Ini' })).toBeDisabled();
+    expect(screen.queryByRole('columnheader', { name: 'Beban Saat Ini' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('columnheader', { name: 'Pembimbing 2' })).not.toBeInTheDocument();
   });
 
   it('Penetapan and Riwayat Versi share one semester through ?semester=', async () => {
@@ -318,10 +349,10 @@ describe('Penetapan Pembimbing', () => {
 
 describe('Batas Bimbingan', () => {
   it('three charts, then the Beban Dosen table with the general limit in its toolbar', async () => {
-    vi.mocked(quota.getLoadOverview).mockResolvedValue(loads({ general: { softLimit: 8, hardLimit: 99 }, applicable: { softLimit: 8, hardLimit: 99, source: 'general' } }));
+    vi.mocked(quota.getLoadOverview).mockResolvedValue(loads({ general: { semesterQuota: 8, totalLimit: 99 }, applicable: { semesterQuota: 8, totalLimit: 99, source: 'general' } }));
     wrap(<SupervisionQuotaPage />);
-    expect(await screen.findByText('Batas lunak: 8')).toBeInTheDocument();
-    expect(screen.getByText('Batas keras: 99')).toBeInTheDocument();
+    expect(await screen.findByText('Kuota semester bawaan: 8')).toBeInTheDocument();
+    expect(screen.getByText('Batas total: 99')).toBeInTheDocument();
     expect(screen.getAllByTestId('chart').map((c) => c.textContent)).toEqual([
       'Tingkat Beban Dosen: Penuh 1, Mendekati Batas 1, Tersedia 1',
       'Beban per Kelompok Keilmuan: Sistem Informasi 199, Jaringan 7',
@@ -332,29 +363,30 @@ describe('Batas Bimbingan', () => {
     expect(screen.queryByRole('heading', { name: 'Beban Dosen' })).not.toBeInTheDocument();
 
     const table = screen.getByRole('table');
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Dosen', 'Beban', 'Menunggu Penetapan', 'Proposal', 'Penelitian', 'BSS', 'Pembimbing 2']);
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Dosen', 'Beban', 'Menunggu Penetapan', 'Proposal', 'Penelitian', 'Cuti', 'Pembimbing 2']);
     const rows = tableRows();
     expect(rows.map((r) => within(r).getAllByRole('cell')[0].textContent)).toEqual([
       expect.stringContaining('Afriyanti'), expect.stringContaining('Husnil'), expect.stringContaining('Ullya'),
     ]);
     expect(within(rows[1]).getAllByRole('cell')[0]).toHaveTextContent('Ditutup Dosen');
-    expectColumnFits(within(table).getByRole('columnheader', { name: /Beban/ }), within(rows[1]).getAllByRole('cell')[1], '99/99 · Mendekati Batas');
+    expect(within(rows[1]).getAllByRole('cell')[1]).toHaveTextContent('Total 99/99');
     const asSupervisor2 = within(rows[0]).getAllByRole('cell')[6];
     expect(asSupervisor2).toHaveTextContent('4');
     expect(asSupervisor2.className).toContain('text-right');
   });
 
-  it('Ubah Batas Umum: soft must not exceed hard', async () => {
+  it('Ubah Batas: validates whole numbers without comparing independent limits', async () => {
     vi.mocked(quota.setGeneralLimits).mockResolvedValue({ success: true, data: loads(), message: 'ok' } as never);
     wrap(<SupervisionQuotaPage />);
-    fireEvent.click(await screen.findByRole('button', { name: 'Ubah Batas Umum' }));
-    const dialog = await screen.findByRole('dialog', { name: 'Ubah Batas Umum' });
-    expect(within(dialog).queryByRole('button', { name: 'Kembalikan ke Batas Umum' })).not.toBeInTheDocument();
-    fireEvent.change(within(dialog).getByLabelText('Batas lunak'), { target: { value: '11' } });
-    expect(within(dialog).getByText('Batas lunak tidak boleh lebih besar dari batas keras.')).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: 'Simpan' })).toBeDisabled();
-    fireEvent.change(within(dialog).getByLabelText('Batas lunak'), { target: { value: '9' } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Ubah Batas' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Ubah Batas' });
+    expect(within(dialog).queryByRole('button', { name: 'Ikuti Kuota Bawaan' })).not.toBeInTheDocument();
+    fireEvent.change(within(dialog).getByLabelText(/Kuota semester/), { target: { value: '0' } });
     fireEvent.click(within(dialog).getByRole('button', { name: 'Simpan' }));
-    await waitFor(() => expect(quota.setGeneralLimits).toHaveBeenCalledWith({ softLimit: 9, hardLimit: 10 }));
+    expect(within(dialog).getByText('Isi nilai dengan bilangan bulat 1–100.')).toBeInTheDocument();
+    expect(quota.setGeneralLimits).not.toHaveBeenCalled();
+    fireEvent.change(within(dialog).getByLabelText(/Kuota semester/), { target: { value: '9' } });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Simpan' }));
+    await waitFor(() => expect(quota.setGeneralLimits).toHaveBeenCalledWith({ semesterQuota: 9, totalLimit: 10 }));
   });
 });

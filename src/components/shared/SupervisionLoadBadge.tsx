@@ -1,18 +1,20 @@
 import { Badge } from '@/components/ui/badge';
-import { getSupervisionLoadLevelLabel, getSupervisionLoadLevelVariant } from '@/lib/thesisLabels';
+import { getSupervisionLoadLevelVariant } from '@/lib/thesisLabels';
 
 interface SupervisionLoadBadgeProps {
   activeCount: number;
-  hardLimit: number;
+  totalLimit: number;
+  acceptedCount?: number;
+  semesterQuota?: number;
   level: string;
   className?: string;
 }
 
-/** Beban bimbingan dosen terhadap batas keras yang berlaku, mis. "9/10 · Mendekati Batas". */
-export function SupervisionLoadBadge({ activeCount, hardLimit, level, className }: SupervisionLoadBadgeProps) {
+/** Semester intake and current supervision load, without disabling selection. */
+export function SupervisionLoadBadge({ activeCount, totalLimit, acceptedCount, semesterQuota, level, className }: SupervisionLoadBadgeProps) {
   return (
     <Badge variant={getSupervisionLoadLevelVariant(level)} className={className}>
-      {activeCount}/{hardLimit} · {getSupervisionLoadLevelLabel(level)}
+      {semesterQuota != null && <>Semester ini {acceptedCount ?? 0}/{semesterQuota} · </>}Total {activeCount}/{totalLimit}
     </Badge>
   );
 }

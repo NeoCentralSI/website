@@ -4,7 +4,7 @@
  * `app/backend/src/constants/thesisLabels.js`.
  */
 
-export type ThesisLifecycleStatus = "proposal" | "research" | "on_leave" | "completed" | "failed";
+export type ThesisLifecycleStatus = "proposal" | "research" | "completed" | "failed";
 export type ThesisPhase = "proposal" | "research";
 export type ThesisTerminationReason = "supervision_evaluation" | "withdrawn" | "dropped_out" | "other";
 /** Tingkat aktivitas TA fase penelitian. Nilai turunan dari tanggal aktivitas terakhir, tidak disimpan. */
@@ -12,7 +12,7 @@ export type ThesisActivityLevel = "active" | "slow" | "at_risk";
 /** Evaluasi bimbingan yang jatuh tempo. Nilai turunan dari masa bimbingan, tidak disimpan. */
 export type EvaluationDue = "six_month" | "extension_follow_up" | "one_year";
 
-/** Masa bimbingan: dihitung dari tanggal mulai, tidak menghitung masa cuti (BSS). */
+/** Masa bimbingan: dihitung dari tanggal mulai, tidak menghitung masa cuti. */
 export interface SupervisionClock {
   startedAt: string | null;
   elapsedDays: number | null;
@@ -23,7 +23,7 @@ export interface SupervisionClock {
   oneYearAt: string | null;
   extensionUntil: string | null;
   evaluationDue: EvaluationDue | null;
-  /** True selama TA berstatus BSS: masa bimbingan berhenti. */
+  /** True selama mahasiswa cuti (status mahasiswa Cuti): TA dijeda, masa bimbingan berhenti. */
   isPaused: boolean;
 }
 /** Status sesi bimbingan (`GuidanceStatus`). */
@@ -47,10 +47,12 @@ export type ThesisBadgeVariant = "default" | "secondary" | "destructive" | "outl
 export const THESIS_STATUS_LABELS: Record<ThesisLifecycleStatus, string> = {
   proposal: "Proposal",
   research: "Penelitian",
-  on_leave: "Berhenti Studi Sementara (BSS)",
   completed: "Selesai",
   failed: "Gagal",
 };
+
+/** Badge di samping status TA selama mahasiswanya cuti (status mahasiswa Cuti). */
+export const THESIS_ON_LEAVE_LABEL = "Cuti";
 
 export const THESIS_PHASE_LABELS: Record<ThesisPhase, string> = {
   proposal: "Proposal",
@@ -282,7 +284,6 @@ export const MILESTONE_STATUS_LABELS: Record<MilestoneStatusValue, string> = {
 export const THESIS_STATUS_VARIANTS: Record<ThesisLifecycleStatus, ThesisBadgeVariant> = {
   proposal: "secondary",
   research: "info",
-  on_leave: "warning",
   completed: "success",
   failed: "destructive",
 };
@@ -309,7 +310,6 @@ export const THESIS_ACTIVITY_CHART_COLORS: Record<ThesisActivityLevel, string> =
 export const THESIS_STATUS_CHART_COLORS: Record<ThesisLifecycleStatus, string> = {
   proposal: "#64748b",
   research: "#3b82f6",
-  on_leave: "#f59e0b",
   completed: "#22c55e",
   failed: "#ef4444",
 };
@@ -317,7 +317,6 @@ export const THESIS_STATUS_CHART_COLORS: Record<ThesisLifecycleStatus, string> =
 export const THESIS_STATUS_BG_CLASSES: Record<ThesisLifecycleStatus, string> = {
   proposal: "bg-slate-500",
   research: "bg-blue-500",
-  on_leave: "bg-amber-500",
   completed: "bg-green-500",
   failed: "bg-red-500 text-white",
 };
@@ -326,7 +325,7 @@ export const THESIS_STATUS_BG_CLASSES: Record<ThesisLifecycleStatus, string> = {
 export const THESIS_ACTIVITY_LEVELS: ThesisActivityLevel[] = ["active", "slow", "at_risk"];
 
 /** Status TA yang masih berjalan (belum selesai atau gagal). */
-export const OPEN_THESIS_STATUSES: ThesisLifecycleStatus[] = ["proposal", "research", "on_leave"];
+export const OPEN_THESIS_STATUSES: ThesisLifecycleStatus[] = ["proposal", "research"];
 
 /** Status Pengajuan Pembimbing (`ThesisSupervisorRequestStatus`). */
 export type SupervisorRequestStatus =
@@ -541,12 +540,11 @@ export function getThesisActivityVariant(value: string | null | undefined): Thes
 
 /**
  * Status transitions, mirrored from `backend/src/services/thesisLifecycle.service.js`.
- * `on_leave` may only return to `statusBeforeLeave` (or become `failed`).
+ * Leave is not a thesis status: it follows the student status.
  */
 export const THESIS_STATUS_TRANSITIONS: Record<ThesisLifecycleStatus, ThesisLifecycleStatus[]> = {
-  proposal: ["research", "on_leave", "failed"],
-  research: ["on_leave", "completed", "failed"],
-  on_leave: ["proposal", "research", "failed"],
+  proposal: ["research", "failed"],
+  research: ["completed", "failed"],
   completed: [],
   failed: [],
 };
@@ -557,16 +555,10 @@ export const CREATABLE_THESIS_STATUSES: ThesisLifecycleStatus[] = ["proposal", "
 /** Options for the status field: the current status plus the allowed transitions. */
 export function getAllowedThesisStatusOptions(
   current: ThesisLifecycleStatus | null | undefined,
-  statusBeforeLeave?: ThesisLifecycleStatus | null,
 ): { value: ThesisLifecycleStatus; label: string }[] {
-  let values: ThesisLifecycleStatus[];
-  if (!current) {
-    values = CREATABLE_THESIS_STATUSES;
-  } else if (current === "on_leave") {
-    values = ["on_leave", statusBeforeLeave ?? "research", "failed"];
-  } else {
-    values = [current, ...THESIS_STATUS_TRANSITIONS[current]];
-  }
+  const values: ThesisLifecycleStatus[] = !current
+    ? CREATABLE_THESIS_STATUSES
+    : [current, ...(THESIS_STATUS_TRANSITIONS[current] ?? [])];
   return values.map((value) => ({ value, label: THESIS_STATUS_LABELS[value] }));
 }
 
@@ -599,9 +591,16 @@ export function getThesisActivityOptions(): { value: ThesisActivityLevel; label:
 export function getGuidanceActionBlockReason(
   status: string | null | undefined,
   owner: "Anda" | "mahasiswa" = "Anda",
-  options: { repeatingProposal?: boolean | null; proposalPhaseOpen?: boolean | null } = {},
+  options: { repeatingProposal?: boolean | null; proposalPhaseOpen?: boolean | null; onLeave?: boolean | null; courseBlockReason?: string | null } = {},
 ): string | null {
-  if (status === "research") return null;
+  // The student is on leave: the thesis is paused (the same check runs on the server).
+  if (options.onLeave && (status === "research" || status === "proposal")) {
+    return owner === "Anda"
+      ? "Anda sedang cuti. Bimbingan dan milestone tidak dapat diubah selama cuti."
+      : "Mahasiswa sedang cuti. Bimbingan dan milestone tidak dapat diubah selama cuti.";
+  }
+  // A thesis in research needs the Tugas Akhir course of the semester (reason from the server).
+  if (status === "research") return options.courseBlockReason ?? null;
   // TA yang dikembalikan ke proposal oleh evaluasi bimbingan menyebut alasannya.
   if (status === "proposal" && options.repeatingProposal) {
     return `${REPEAT_PROPOSAL_LOCK_REASON} Bimbingan dan milestone terkunci sampai Pembimbing 1 menyetujui proposal revisi (Tugas Akhir > Proposal).`;

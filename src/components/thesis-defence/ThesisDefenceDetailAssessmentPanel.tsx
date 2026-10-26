@@ -73,7 +73,7 @@ export function ThesisDefenceDetailAssessmentPanel({ defenceId, detail }: Props)
         <Card className="border-gray-200 bg-card shadow-none">
           <CardContent className="pt-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Penilaian sidang sedang berlangsung dan belum difinalisasi oleh dosen pembimbing.
+              Penilaian sidang sedang berlangsung dan belum difinalisasi oleh dosen pembimbing
             </p>
           </CardContent>
         </Card>
@@ -108,7 +108,7 @@ function AdminAssessmentInfo({ detail }: { detail: any }) {
     <Card className="border-gray-200 bg-card shadow-none">
       <CardContent className="pt-4 text-center">
         <p className="text-muted-foreground text-sm">
-          Menunggu pelaksanaan sidang dan penilaian dari seluruh penguji serta pembimbing.
+          Menunggu pelaksanaan sidang dan penilaian dari seluruh penguji serta pembimbing
         </p>
       </CardContent>
     </Card>
@@ -460,7 +460,7 @@ function AssessmentFormSection({ defenceId }: { defenceId: string }) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Tindakan ini akan mengunci seluruh penilaian Anda. Nilai yang telah disubmit tidak dapat diubah lagi.
+                    Tindakan ini akan mengunci seluruh penilaian Anda. Nilai yang telah disubmit tidak dapat diubah lagi
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -597,9 +597,9 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-12 border-r" rowSpan={2}>No.</th>
-                <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r" rowSpan={2}>Aspek Penilaian</th>
-                <th className="px-3 py-1 text-center font-semibold text-muted-foreground border-b" colSpan={data.examiners.length}>Skor Penguji</th>
+                <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-12 border-r border-gray-200" rowSpan={2}>No.</th>
+                <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r border-gray-200" rowSpan={2}>Aspek Penilaian</th>
+                <th className="px-3 py-1 text-center font-semibold text-muted-foreground border-b border-gray-200" colSpan={data.examiners.length}>Skor Penguji</th>
               </tr>
               <tr className="bg-gray-50 border-b border-gray-200">
                 {data.examiners.map((ex: any, i: number) => (
@@ -625,8 +625,8 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                 const groupMaxScore = group.criteria.reduce((s: number, c: any) => s + (Number(c.maxScore) || 0), 0);
                 return (
                   <tr key={group.code} className="border-b border-gray-200 hover:bg-muted/5 transition-colors">
-                    <td className="px-3 py-2 text-center border-r font-medium text-muted-foreground">{gIdx + 1}</td>
-                    <td className="px-3 py-2 border-r">
+                    <td className="px-3 py-2 text-center border-r font-medium text-muted-foreground border-gray-200">{gIdx + 1}</td>
+                    <td className="px-3 py-2 border-r border-gray-200">
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">{group.code}</span>
                         <span className="text-muted-foreground">(maks. {groupMaxScore})</span>
@@ -643,7 +643,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                             <div className="p-3 space-y-3">
                               {group.criteria.map((c: any) => (
                                 <div key={c.id} className="space-y-1.5">
-                                  <div className="text-[11px] font-bold border-b pb-0.5">{c.name}</div>
+                                  <div className="text-[11px] font-bold border-b pb-0.5 border-gray-200">{c.name}</div>
                                   <div className="space-y-1">
                                     {(c.rubrics || []).map((r: any) => (
                                       <div key={r.id} className="flex gap-2 text-[10px] leading-relaxed">
@@ -672,7 +672,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                 );
               })}
               <tr className="border-b border-gray-200 font-bold bg-gray-50/50">
-                <td colSpan={2} className="px-3 py-2.5 text-center border-r uppercase tracking-wider text-[10px] text-muted-foreground">Total Skor Penguji</td>
+                <td colSpan={2} className="px-3 py-2.5 text-center border-r uppercase tracking-wider text-[10px] text-muted-foreground border-gray-200">Total Skor Penguji</td>
                 {data.examiners.map((ex: any) => (
                   <td key={ex.id} className="px-3 py-2.5 text-center border-r last:border-0 font-bold text-sm">
                     {formatScoreFraction(ex.assessmentScore, examinerMaxScore)}
@@ -680,7 +680,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                 ))}
               </tr>
               <tr className="font-bold bg-muted/20 border-b border-gray-200">
-                <td colSpan={2} className="px-3 py-2.5 text-center border-r uppercase tracking-wider text-[10px] text-foreground">Rata-Rata Penguji (A)</td>
+                <td colSpan={2} className="px-3 py-2.5 text-center border-r uppercase tracking-wider text-[10px] text-foreground border-gray-200">Rata-Rata Penguji (A)</td>
                 <td colSpan={data.examiners.length} className="px-3 py-2.5 text-center text-sm font-black text-foreground">
                   {averageExaminerScore !== null && averageExaminerScore !== undefined ? (
                     <div className="flex items-center justify-center gap-2">
@@ -737,9 +737,9 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-12 border-r" rowSpan={2}>No.</th>
-                <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r" rowSpan={2}>Aspek Penilaian</th>
-                <th className="px-3 py-1 text-center font-semibold text-muted-foreground border-b w-40">Skor</th>
+                <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-12 border-r border-gray-200" rowSpan={2}>No.</th>
+                <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r border-gray-200" rowSpan={2}>Aspek Penilaian</th>
+                <th className="px-3 py-1 text-center font-semibold text-muted-foreground border-b w-40 border-gray-200">Skor</th>
               </tr>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <th className="px-3 py-1 text-center font-semibold text-muted-foreground">Pembimbing ({data.supervisor.name})</th>
@@ -752,8 +752,8 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                   const score = group.criteria.reduce((s: number, c: any) => s + (Number(c.score) || 0), 0);
                   return (
                     <tr key={group.code} className="border-b border-gray-200 hover:bg-muted/5 transition-colors">
-                      <td className="px-3 py-2 text-center border-r font-medium text-muted-foreground">{gIdx + 1}</td>
-                      <td className="px-3 py-2 border-r">
+                      <td className="px-3 py-2 text-center border-r font-medium text-muted-foreground border-gray-200">{gIdx + 1}</td>
+                      <td className="px-3 py-2 border-r border-gray-200">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">{group.code}</span>
                           <span className="text-muted-foreground">(maks. {groupMaxScore})</span>
@@ -769,7 +769,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                 </tr>
               )}
               <tr className="font-bold bg-muted/20 border-t border-gray-200">
-                <td colSpan={2} className="px-3 py-2.5 text-center border-r uppercase tracking-wider text-[10px] text-foreground">Total Skor Pembimbing (B)</td>
+                <td colSpan={2} className="px-3 py-2.5 text-center border-r uppercase tracking-wider text-[10px] text-foreground border-gray-200">Total Skor Pembimbing (B)</td>
                 <td className="px-3 py-2.5 text-center text-sm font-black text-foreground">
                   {supervisorScore !== null && supervisorScore !== undefined
                     ? formatScoreFraction(supervisorScore, supervisorMaxScore)
@@ -814,20 +814,20 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
           <table className="w-full border-collapse text-xs">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-12 border-r">Komponen</th>
-                <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r">Deskripsi Penilaian</th>
+                <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-12 border-r border-gray-200">Komponen</th>
+                <th className="px-3 py-2 text-left font-semibold text-muted-foreground border-r border-gray-200">Deskripsi Penilaian</th>
                 <th className="px-3 py-2 text-center font-semibold text-muted-foreground w-40">Skor</th>
               </tr>
             </thead>
             <tbody>
               <tr className="border-b border-gray-200 hover:bg-muted/5 transition-colors">
-                <td className="px-3 py-2 text-center border-r font-bold text-muted-foreground">A</td>
-                <td className="px-3 py-2 border-r font-medium">Rata-Rata Nilai Rekapitulasi Penguji</td>
+                <td className="px-3 py-2 text-center border-r font-bold text-muted-foreground border-gray-200">A</td>
+                <td className="px-3 py-2 border-r font-medium border-gray-200">Rata-Rata Nilai Rekapitulasi Penguji</td>
                 <td className="px-3 py-2 text-center font-bold">{averageExaminerScore !== null && averageExaminerScore !== undefined ? averageExaminerScore.toFixed(2) : '-'}</td>
               </tr>
               <tr className="border-b border-gray-200 hover:bg-muted/5 transition-colors">
-                <td className="px-3 py-2 text-center border-r font-bold text-muted-foreground">B</td>
-                <td className="px-3 py-2 border-r font-medium">Nilai Total Penilaian Pembimbing</td>
+                <td className="px-3 py-2 text-center border-r font-bold text-muted-foreground border-gray-200">B</td>
+                <td className="px-3 py-2 border-r font-medium border-gray-200">Nilai Total Penilaian Pembimbing</td>
                 <td className="px-3 py-2 text-center font-bold">
                   {supervisorScore !== null && supervisorScore !== undefined
                     ? supervisorScore.toFixed(2)
@@ -835,7 +835,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
                 </td>
               </tr>
               <tr className="font-bold bg-gray-50 border-t-2 border-gray-200">
-                <td colSpan={2} className="px-3 py-4 text-center border-r text-sm font-black uppercase tracking-widest text-foreground">
+                <td colSpan={2} className="px-3 py-4 text-center border-r text-sm font-black uppercase tracking-widest text-foreground border-gray-200">
                   Nilai Akhir Sidang (A + B)
                 </td>
                 <td className="px-3 py-4 text-center">
@@ -986,7 +986,7 @@ function SupervisorFinalizationSection({ defenceId, isSupervisor }: { defenceId:
             </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground italic">Menunggu penetapan hasil oleh dosen pembimbing.</p>
+          <p className="text-xs text-muted-foreground italic">Menunggu penetapan hasil oleh dosen pembimbing</p>
         )}
       </div>
     </div>

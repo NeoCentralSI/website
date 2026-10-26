@@ -306,21 +306,6 @@ export interface GuidanceNeedingSummary {
   type?: string;
 }
 
-export interface CompletedGuidance {
-  id: string;
-  supervisorName?: string;
-  approvedDate?: string;
-  approvedDateFormatted?: string;
-  completedAt?: string;
-  completedAtFormatted?: string;
-  duration?: number;
-  studentNotes?: string;
-  sessionSummary?: string;
-  actionItems?: string;
-  milestoneName?: string;
-  thesisTitle?: string;
-}
-
 export interface GuidanceExport {
   id: string;
   studentName?: string;
@@ -363,15 +348,6 @@ export const submitSessionSummary = async (
   return res.json();
 };
 
-
-/**
- * Get completed guidance history for documentation
- */
-export const getCompletedGuidanceHistory = async (): Promise<{ success: boolean; guidances: CompletedGuidance[] }> => {
-  const res = await apiRequest(getApiUrl(API_CONFIG.ENDPOINTS.THESIS_STUDENT.COMPLETED_HISTORY));
-  if (!res.ok) throw new Error((await res.json()).message || "Gagal memuat riwayat bimbingan selesai");
-  return res.json();
-};
 
 /**
  * Get single guidance detail for export/download
@@ -420,6 +396,8 @@ export interface MyThesisDetail extends ThesisPhaseSummary {
   lastActivityAt?: string | null;
   daysSinceActivity?: number | null;
   supervisionClock?: SupervisionClock | null;
+  /** Why the student may not act now: leave, or the Tugas Akhir course of the semester. */
+  actionBlock?: { code: "on_leave" | "not_taking_thesis" | "thesis_course_unknown" | null; reason: string | null; takingThesisCourse: boolean | null } | null;
   /** True while the thesis is back in proposal because of a guidance evaluation. */
   repeatingProposal?: boolean;
   startDate?: string | null;
@@ -529,6 +507,9 @@ export interface AvailableSupervisor2Item {
   /** Info kuota aman untuk mahasiswa (canon §7.3): traffic light + sisa normal + beban aktif. */
   trafficLight?: 'green' | 'yellow' | 'red' | null;
   normalAvailable?: number | null;
+  acceptedCount?: number | null;
+  semesterQuota?: number | null;
+  totalLimit?: number | null;
   activeCount?: number | null;
   acceptingRequests?: boolean | null;
 }

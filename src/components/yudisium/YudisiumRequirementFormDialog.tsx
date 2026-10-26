@@ -123,7 +123,7 @@ export function YudisiumRequirementFormDialog({
 
 
                     <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 border-gray-200">
                             <Switch
                                 id="isActive"
                                 checked={isActive}
@@ -132,12 +132,12 @@ export function YudisiumRequirementFormDialog({
                             <div className="space-y-1 leading-none">
                                 <Label htmlFor="isActive" className="cursor-pointer">Aktif</Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Status keaktifan data.
+                                    Status keaktifan data
                                 </p>
                             </div>
                         </div>
 
-                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4">
+                        <div className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-4 border-gray-200">
                             <Switch
                                 id="isPublic"
                                 checked={isPublic}
@@ -146,7 +146,7 @@ export function YudisiumRequirementFormDialog({
                             <div className="space-y-1 leading-none">
                                 <Label htmlFor="isPublic" className="cursor-pointer">Publik</Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Terlihat oleh mahasiswa.
+                                    Terlihat oleh mahasiswa
                                 </p>
                             </div>
                         </div>

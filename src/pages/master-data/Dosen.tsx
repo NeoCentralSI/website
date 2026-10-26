@@ -81,10 +81,10 @@ export default function Dosen() {
     }
   }, [error]);
 
-  // Reset to page 1 when search changes
+  // Back to page 1 when the search or the filter changes
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, scienceGroupFilter]);
 
   const columns: Column<Lecturer>[] = [
     {
@@ -123,7 +123,7 @@ export default function Dosen() {
         type: 'select',
         value: scienceGroupFilter,
         onChange: setScienceGroupFilter,
-        options: scienceGroups?.data?.map((sg: any) => ({ value: sg.id, label: sg.name })) || [],
+        options: [{ value: '', label: 'Semua' }, ...(scienceGroups?.data?.map((sg: any) => ({ value: sg.id, label: sg.name })) || [])],
         placeholder: 'Semua Kelompok Keilmuan'
       }
     },

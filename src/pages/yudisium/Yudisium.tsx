@@ -32,17 +32,8 @@ export default function Yudisium() {
     return t;
   }, [canViewEvent, canManageGlobal]);
 
-  const breadcrumbs = useMemo(() => {
-    const b = [{ label: 'Yudisium' }];
-    
-    if (canManageGlobal) {
-      if (activeTab === 'acara') b.push({ label: 'Kelola Acara' });
-      else if (activeTab === 'persyaratan') b.push({ label: 'Kelola Persyaratan' });
-      else if (activeTab === 'exit-survey') b.push({ label: 'Kelola Exit Survey' });
-    }
-    
-    return b;
-  }, [activeTab, canManageGlobal]);
+  // Yudisium is a top-level menu; tabs do not add a breadcrumb level.
+  const breadcrumbs = useMemo(() => [{ label: 'Yudisium' }], []);
 
   useEffect(() => {
     setBreadcrumbs(breadcrumbs);

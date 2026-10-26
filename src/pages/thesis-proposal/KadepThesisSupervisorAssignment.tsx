@@ -25,14 +25,7 @@ function Loading() {
   return <div className="flex justify-center py-10"><Spinner className="h-6 w-6" /></div>;
 }
 
-/**
- * Tugas Akhir > Penetapan, three panels. Penetapan and Riwayat Versi share one semester
- * (`?semester=`, default the running one; a past semester is read only), picked in the toolbar
- * of each table, so switching panels keeps the choice. Beban Dosen has no semester picker: it
- * shows the loads now and the limits of the running semester. Ketua Departemen decides, issues
- * and sets the running semester's limits; Sekretaris Departemen reads every panel (the general
- * limit stays in Kelola → Batas Bimbingan for both).
- */
+/** All three panels share the selected semester. Only the active semester can be edited. */
 export default function KadepThesisSupervisorAssignment() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const { isKadep, isAdmin } = useRole();
@@ -42,7 +35,7 @@ export default function KadepThesisSupervisorAssignment() {
   const tab: TabValue = TABS.some((t) => t.value === requestedTab) ? (requestedTab as TabValue) : DEFAULT_TAB;
   const semesterId = searchParams.get('semester') || undefined;
   const board = useAssignmentBoard(semesterId);
-  const loads = useSupervisionLoadOverview(undefined);
+  const loads = useSupervisionLoadOverview(semesterId);
 
   useEffect(() => {
     setBreadcrumbs([{ label: 'Tugas Akhir' }, { label: 'Penetapan Pembimbing' }]);
@@ -96,9 +89,10 @@ export default function KadepThesisSupervisorAssignment() {
       ) : (
         <SupervisionLoadTable
           overview={loads.data}
+          semesterView
           isFetching={loads.isFetching}
           onRefresh={() => void loads.refetch()}
-          toolbar={<SupervisionLimitToolbar overview={loads.data} scope="period" canEdit={kadep} disabledReason={null} />}
+          toolbar={<>{semesterSelect}<SupervisionLimitToolbar overview={loads.data} scope="period" canEdit={kadep} disabledReason={loads.data.academicYear?.isActive ? null : 'Kuota semester lampau tidak dapat diubah.'} /></>}
         />
       ))}
     </div>

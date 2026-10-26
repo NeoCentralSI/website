@@ -10,6 +10,8 @@ import type { StudentDetail } from "@/services/lecturerGuidance.service";
 interface StudentDetailHeaderProps {
     student: StudentDetail["student"];
     status: StudentDetail["status"];
+    /** The student is on leave: "Cuti" beside the status. */
+    onLeave?: boolean;
     onRefresh: () => void;
     isRefreshing: boolean;
 }
@@ -18,7 +20,7 @@ interface StudentDetailHeaderProps {
  * Top of the student detail: the student's name with the NIM below, back, reload
  * and the thesis status. The supervisors are in the "Informasi Tugas Akhir" card.
  */
-export function StudentDetailHeader({ student, status, onRefresh, isRefreshing }: StudentDetailHeaderProps) {
+export function StudentDetailHeader({ student, status, onLeave = false, onRefresh, isRefreshing }: StudentDetailHeaderProps) {
     return (
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-center gap-4">
@@ -35,7 +37,7 @@ export function StudentDetailHeader({ student, status, onRefresh, isRefreshing }
 
             <div className="flex shrink-0 items-center gap-2">
                 <RefreshButton onClick={onRefresh} isRefreshing={isRefreshing} />
-                <ThesisStatusBadge status={status} className="text-sm px-3 py-1 h-9" />
+                <ThesisStatusBadge status={status} onLeave={onLeave} className="text-sm px-3 py-1 h-9" />
             </div>
         </div>
     );

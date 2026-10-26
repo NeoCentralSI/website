@@ -73,7 +73,6 @@ export default function GuidanceSessionPage() {
       toast.success("Catatan bimbingan berhasil dikirim, menunggu approval dosen");
       queryClient.invalidateQueries({ queryKey: ["needs-summary"] });
       queryClient.invalidateQueries({ queryKey: ["student-guidances"] });
-      queryClient.invalidateQueries({ queryKey: ["completed-history"] });
       queryClient.invalidateQueries({ queryKey: ["guidance-session", guidanceId] });
       navigate("/tugas-akhir/bimbingan/student");
     },
@@ -566,9 +565,8 @@ export default function GuidanceSessionPage() {
             />
           ) : (
             <Card>
-              <CardContent className="p-6 text-center text-muted-foreground">
-                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Belum ada dokumen</p>
+              <CardContent>
+                <EmptyState title="Belum Ada Dokumen" description="Dokumen sesi bimbingan ini belum diunggah" />
               </CardContent>
             </Card>
           )}

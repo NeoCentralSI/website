@@ -5,4 +5,3 @@ export { AcademicYearTable } from './AcademicYearTable';
 export { SiaSyncStatusCard } from './SiaSyncStatusCard';
 export { RoomFormDialog } from './RoomFormDialog';
 export { RoomTable } from './RoomTable';
-export { AdminAuditLogCard } from './AdminAuditLogCard';

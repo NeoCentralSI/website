@@ -4,14 +4,16 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Menu, X } from 'lucide-react';
 import logo from '@/assets/images/logo.png';
 
+// Absolute anchors, so the links also work from other public pages (Cek Dokumen).
 const navLinks = [
-  { label: 'Tentang', href: '#about' },
-  { label: 'Topik', href: '#topics' },
-  { label: 'SOP', href: '#sop' },
-  { label: 'Kontak', href: '#contact' },
+  { label: 'Tentang', href: '/#about' },
+  { label: 'Topik', href: '/#topics' },
+  { label: 'SOP', href: '/#sop' },
+  { label: 'Kontak', href: '/#contact' },
 ];
 
-export function LandingNavbar() {
+/** `solid`: always the light bar (pages without the dark hero behind it). */
+export function LandingNavbar({ solid = false }: { solid?: boolean } = {}) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -25,7 +27,7 @@ export function LandingNavbar() {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
-  const scrolledState = isScrolled || isOpen;
+  const scrolledState = solid || isScrolled || isOpen;
   const navTextClass = scrolledState ? 'text-gray-900' : 'text-white';
   const navBarClass = scrolledState
     ? 'bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200/60'
@@ -51,7 +53,17 @@ export function LandingNavbar() {
           ))}
         </nav>
 
-        <div className="hidden items-center lg:flex">
+        <div className="hidden items-center gap-2 lg:flex">
+          <Link
+            to="/cek-dokumen"
+            className={`rounded-lg border px-5 py-2.5 font-body text-sm font-medium transition-colors ${
+              scrolledState
+                ? 'border-gray-300 text-gray-900 hover:border-[#F5A623] hover:text-[#F5A623]'
+                : 'border-white/60 text-white hover:bg-white/10'
+            }`}
+          >
+            Cek Dokumen
+          </Link>
           <Link
             to="/login"
             className="rounded-lg bg-[#F5A623] px-5 py-2.5 font-body text-sm font-medium text-white transition-colors hover:bg-[#e0951a]"
@@ -91,9 +103,16 @@ export function LandingNavbar() {
                 </a>
               ))}
               <Link
+                to="/cek-dokumen"
+                onClick={() => setIsOpen(false)}
+                className="mt-2 rounded-lg border border-gray-300 px-4 py-2.5 text-center font-body text-sm font-medium text-gray-900 transition-colors hover:border-[#F5A623] hover:text-[#F5A623]"
+              >
+                Cek Dokumen
+              </Link>
+              <Link
                 to="/login"
                 onClick={() => setIsOpen(false)}
-                className="mt-2 rounded-lg bg-[#F5A623] px-4 py-2.5 text-center font-body text-sm font-medium text-white transition-colors hover:bg-[#e0951a]"
+                className="rounded-lg bg-[#F5A623] px-4 py-2.5 text-center font-body text-sm font-medium text-white transition-colors hover:bg-[#e0951a]"
               >
                 MASUK
               </Link>

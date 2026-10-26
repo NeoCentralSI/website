@@ -215,7 +215,7 @@ export function LecturerThesisDefenceExaminerRequestsTable() {
           setSearch(val);
           setPage(1);
         }}
-        emptyText="Belum ada penugasan menguji."
+        emptyText="Belum ada penugasan menguji"
         rowKey={(row) => row.id}
         actions={
           <RefreshButton

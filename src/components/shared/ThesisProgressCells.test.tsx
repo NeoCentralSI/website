@@ -69,7 +69,7 @@ describe('SupervisionClockCell', () => {
   it('says the clock is stopped while on leave', () => {
     render(<SupervisionClockCell clock={clock({ isPaused: true, elapsedLabel: '6 bulan' })} />);
     expect(screen.getByText('6 bulan')).toBeInTheDocument();
-    expect(screen.getByText(/berhenti selama BSS/)).toBeInTheDocument();
+    expect(screen.getByText(/berhenti selama cuti/)).toBeInTheDocument();
   });
 
   it('shows a dash without a start date', () => {

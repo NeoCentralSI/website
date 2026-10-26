@@ -177,7 +177,7 @@ export function AdminThesisSeminarArchivePanel() {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Arsip Seminar</AlertDialogTitle>
             <AlertDialogDescription>
-              Data arsip seminar yang dihapus tidak dapat dikembalikan.
+              Data arsip seminar yang dihapus tidak dapat dikembalikan
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

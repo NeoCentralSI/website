@@ -1,3 +1,4 @@
+import EmptyState from '@/components/ui/empty-state';
 import { useState, useMemo, useEffect } from 'react';
 import { toast } from 'sonner';
 import FullCalendar from '@fullcalendar/react';
@@ -7,6 +8,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import idLocale from '@fullcalendar/core/locales/id';
 import type { DateSelectArg, EventInput } from '@fullcalendar/core';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
@@ -28,7 +30,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Spinner, Loading } from '@/components/ui/spinner';
-import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, AlertCircle, Sparkles, Lock, Ban, Video, Copy, FileText } from 'lucide-react';
+import { Calendar, CheckCircle2, MapPin, Clock, CalendarDays, AlertCircle, Sparkles, Lock, Video, Copy, FileText } from 'lucide-react';
 import { DatePicker } from '@/components/ui/date-picker';
 import { useDefenceSchedulingData, useSetDefenceSchedule, useFinalizeDefenceSchedule, useAdminDefenceDetail, useDownloadInvitationLetter } from '@/hooks/thesis-defence';
 import { toTitleCaseName, formatRoleName } from '@/lib/text';
@@ -752,19 +754,19 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
             <CardContent className="flex-1 flex flex-col min-h-0 justify-between space-y-4">
               {/* Legend Items mapped on top */}
               {legendItems.length > 0 && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pb-2 border-b">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground pb-2 border-b border-gray-200">
                   <span className="font-medium">Ketersediaan dosen:</span>
                   {legendItems.map((item) => (
                     <div key={item.id} className="flex items-center gap-1.5">
                       <span
-                        className="inline-block h-2.5 w-2.5 rounded-sm border"
+                        className="inline-block h-2.5 w-2.5 rounded-sm border border-gray-200"
                         style={{ backgroundColor: item.color + '33', borderColor: item.color }}
                       />
                       <span className="text-foreground font-medium">{toTitleCaseName(item.name)}</span>
                     </div>
                   ))}
                   {current && (
-                    <div className="flex items-center gap-3 ml-2 pl-3 border-l">
+                    <div className="flex items-center gap-3 ml-2 pl-3 border-l border-gray-200">
                       <div className="flex items-center gap-1.5">
                         <span className="inline-block h-2.5 w-2.5 rounded-sm bg-[#16a34a]" />
                         <span className="text-foreground font-medium">Draft Jadwal</span>
@@ -778,7 +780,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                 </div>
               )}
 
-              <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden flex-1 flex flex-col min-h-[520px]">
+              <div className="seminar-calendar-wrapper rounded-xl border overflow-hidden flex-1 flex flex-col min-h-[520px] border-gray-200">
                 <FullCalendar
                   plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                   initialView="timeGridWeek"
@@ -812,7 +814,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
               </div>
               {canEditSchedule && (
                 <p className="text-xs text-muted-foreground text-center shrink-0">
-                  Klik dan seret pada kalender untuk memilih slot waktu sidang.
+                  Klik dan seret pada kalender untuk memilih slot waktu sidang
                 </p>
               )}
             </CardContent>
@@ -822,14 +824,16 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
         {/* Right Column: Recommendations & Blocked Slots */}
         <div className="lg:col-span-1 flex flex-col gap-4 min-h-full">
           {/* 1. Rekomendasi Jadwal */}
-          <Card className="flex flex-col flex-1 shadow-sm min-h-0">
-            <CardHeader className="pb-3 border-b shrink-0">
-              <CardTitle className="text-sm flex items-center gap-2">
+          <Card className="flex h-[320px] flex-col gap-4 py-6">
+            <CardHeader className="shrink-0">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
                 Rekomendasi Jadwal
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 flex-1 flex flex-col justify-start min-h-0 overflow-y-auto space-y-2 text-xs">
+            <CardContent className="min-h-0 flex-1 px-6 text-xs">
+              <ScrollArea className="h-full pr-3">
+                <div className="flex min-h-full flex-col space-y-2">
               {recommendations.length > 0 ? (
                 <div className="flex flex-col gap-2 w-full">
                   {recommendations.map((rec, idx) => (
@@ -847,10 +851,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                           meetingLink: '',
                         });
                       }}
-                      className={`p-2.5 rounded-lg border-2 bg-card transition-all flex flex-col gap-1 text-left ${canEditSchedule
-                        ? 'hover:bg-accent/50 cursor-pointer border-primary/20 hover:border-primary/40'
-                        : 'opacity-60 border-border/50 cursor-not-allowed'
-                        }`}
+                      className={`p-2.5 rounded-lg bg-muted/50 transition-colors flex flex-col gap-1 text-left ${canEditSchedule ? 'hover:bg-muted cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
                     >
                       <div className="flex items-center gap-1.5 font-semibold text-primary text-[13px]">
                         <Sparkles className="h-3.5 w-3.5 shrink-0 text-primary/80" />
@@ -870,43 +871,41 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center text-center text-muted-foreground space-y-2 my-auto w-full">
-                  <AlertCircle className="h-6 w-6 text-muted-foreground/40" />
-                  <p className="text-xs font-semibold text-foreground">Tidak Ada Rekomendasi</p>
-                  <p className="text-[11px] max-w-[200px] mx-auto">
-                    Tidak ditemukan slot waktu 2 jam yang sesuai untuk seluruh peserta sidang.
-                  </p>
-                </div>
+                <EmptyState size="sm" className="py-2 my-auto" title="Tidak Ada Rekomendasi" description="Tidak ditemukan slot waktu 2 jam yang sesuai untuk seluruh peserta sidang" />
               )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
 
           {/* 2. Slot Terblokir */}
-          <Card className="flex flex-col flex-1 shadow-sm min-h-0">
-            <CardHeader className="pb-3 border-b shrink-0">
-              <CardTitle className="text-sm flex items-center gap-2">
+          <Card className="flex h-[320px] flex-col gap-4 py-6">
+            <CardHeader className="shrink-0">
+              <CardTitle className="text-base font-semibold flex items-center gap-2">
                 <Lock className="h-4 w-4 text-muted-foreground" />
                 Slot Terblokir
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 flex-1 flex flex-col justify-start min-h-0 overflow-y-auto space-y-2 text-xs">
+            <CardContent className="min-h-0 flex-1 px-6 text-xs">
+              <ScrollArea className="h-full pr-3">
+                <div className="flex min-h-full flex-col space-y-2">
               {roomConflicts.length > 0 ? (
                 <div className="flex flex-col gap-2 w-full">
                   {roomConflicts.map((c: any) => {
                     const isCurrent = c.id === `defence-${defenceId}`;
                     const isDraft = !['scheduled', 'ongoing', 'passed', 'passed_with_revision', 'failed', 'cancelled'].includes(defenceDetail?.status as string);
                     
-                    let bgClass = 'bg-destructive/5 border-destructive/20 text-destructive';
+                    let bgClass = 'bg-destructive/5 text-destructive';
                     let textClass = 'text-destructive';
                     let iconClass = 'text-destructive';
                     
                     if (isCurrent) {
                       if (isDraft) {
-                        bgClass = 'bg-green-500/10 border-green-500/30 dark:text-green-100 backdrop-blur-sm';
+                        bgClass = 'bg-green-500/10 dark:text-green-100';
                         textClass = 'text-green-600 dark:text-green-400';
                         iconClass = 'text-green-600 dark:text-green-400';
                       } else {
-                        bgClass = 'bg-sky-500/10 border-sky-500/30 dark:text-sky-100 backdrop-blur-sm';
+                        bgClass = 'bg-sky-500/10 dark:text-sky-100';
                         textClass = 'text-sky-600 dark:text-sky-400';
                         iconClass = 'text-sky-600 dark:text-sky-400';
                       }
@@ -915,7 +914,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                     return (
                       <div
                         key={c.id}
-                        className={`p-2.5 rounded-lg border flex flex-col gap-1 text-left ${bgClass}`}
+                        className={`p-2.5 rounded-lg flex flex-col gap-1 text-left ${bgClass}`}
                       >
                         <div className={`flex items-center gap-1.5 font-semibold text-[13px] ${textClass}`}>
                           {isCurrent ? <CheckCircle2 className={`h-3.5 w-3.5 shrink-0 ${iconClass}`} /> : <AlertCircle className="h-3.5 w-3.5 shrink-0" />}
@@ -936,14 +935,10 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                   })}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center text-center text-muted-foreground space-y-2 my-auto w-full">
-                  <Ban className="h-6 w-6 text-muted-foreground/40" />
-                  <p className="text-xs font-semibold text-foreground">Tidak Ada Slot Terblokir</p>
-                  <p className="text-[11px] max-w-[200px] mx-auto">
-                    Seluruh waktu ketersediaan terpilih saat ini berstatus aman dari konflik.
-                  </p>
-                </div>
+                <EmptyState size="sm" className="py-2 my-auto" title="Tidak Ada Slot Terblokir" description="Seluruh waktu ketersediaan terpilih saat ini berstatus aman dari konflik" />
               )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </div>
@@ -953,14 +948,14 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
       <Dialog open={showFinalizeConfirm} onOpenChange={setShowFinalizeConfirm}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+            <DialogTitle>
               Jadwalkan Sidang Tugas Akhir Secara Resmi
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2 text-xs sm:text-sm text-muted-foreground">
             <p>Anda akan menjadwalkan Sidang TA berikut:</p>
 
-            <div className="space-y-3 bg-muted/40 rounded-lg border p-4 font-medium text-foreground">
+            <div className="space-y-3 bg-muted/40 rounded-lg border p-4 font-medium text-foreground border-gray-200">
               <div>
                 <span className="text-xs text-muted-foreground block font-normal">Mahasiswa</span>
                 <span className="block mt-0.5 text-xs sm:text-sm font-semibold">
@@ -1000,7 +995,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
               )}
 
               {current && (
-                <div className="border-t pt-3 mt-2 space-y-1.5">
+                <div className="border-t pt-3 mt-2 space-y-1.5 border-gray-200">
                   <span className="text-xs text-muted-foreground block font-normal">Informasi Jadwal</span>
                   <div className="flex items-center gap-2 text-xs font-medium">
                     <CalendarDays className="h-3.5 w-3.5 text-primary shrink-0" />
@@ -1028,8 +1023,8 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
             </div>
           </div>
 
-          <div className="flex items-center justify-end gap-3 pt-2 border-t">
-            <Button variant="outline" onClick={() => setShowFinalizeConfirm(false)} disabled={isFinalizing} className="px-4">
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowFinalizeConfirm(false)} disabled={isFinalizing}>
               Batal
             </Button>
             <Button
@@ -1043,12 +1038,11 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
                   onError: () => toast.error('Gagal menetapkan jadwal sidang.'),
                 });
               }}
-              className="px-4 font-semibold"
             >
               {isFinalizing ? <Spinner className="h-4 w-4 animate-spin mr-2" /> : null}
               Jadwalkan
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1219,12 +1213,12 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
               Unduh Surat Undangan
             </DialogTitle>
             <DialogDescription>
-              Masukkan nomor surat untuk disertakan dalam dokumen PDF undangan.
+              Masukkan nomor surat untuk disertakan dalam dokumen PDF undangan
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="nomorSurat">Nomor Surat (Opsional)</Label>
+          <div className="space-y-2">
+            <div className="space-y-2">
+              <Label htmlFor="nomorSurat">Nomor surat (opsional)</Label>
               <Input
                 id="nomorSurat"
                 placeholder="Contoh: 123/UN16.15.3.2/PP/2026"
@@ -1249,12 +1243,12 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
 
       <style>{`
         .seminar-calendar-wrapper {
-          --fc-border-color: var(--border);
+          --fc-border-color: #e5e7eb;
           --fc-button-text-color: var(--foreground);
           --fc-button-bg-color: transparent;
-          --fc-button-border-color: var(--border);
+          --fc-button-border-color: #e5e7eb;
           --fc-button-hover-bg-color: var(--accent);
-          --fc-button-hover-border-color: var(--border);
+          --fc-button-hover-border-color: #e5e7eb;
           --fc-button-active-bg-color: var(--primary);
           --fc-button-active-border-color: var(--primary);
           --fc-button-active-text-color: var(--primary-foreground);
@@ -1294,7 +1288,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
         .seminar-calendar-wrapper .fc-button:hover {
           background-color: var(--accent) !important;
           color: var(--accent-foreground) !important;
-          border-color: var(--border) !important;
+          border-color: #e5e7eb !important;
         }
 
         .seminar-calendar-wrapper .fc-button-active,
@@ -1378,7 +1372,7 @@ Mohon konfirmasinya untuk mensegerakan kelangsungan Sidang Tugas Akhir mahasiswa
         .seminar-calendar-wrapper .fc-scroller::-webkit-scrollbar { width: 5px; }
         .seminar-calendar-wrapper .fc-scroller::-webkit-scrollbar-track { background: transparent; }
         .seminar-calendar-wrapper .fc-scroller::-webkit-scrollbar-thumb {
-          background-color: var(--border);
+          background-color: #e5e7eb;
           border-radius: 3px;
         }
       `}</style>

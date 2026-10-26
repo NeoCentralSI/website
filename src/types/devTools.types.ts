@@ -167,3 +167,60 @@ export interface UpdateGuidanceScheduleDto {
   summarySubmittedAt?: string | null;
   completedAt?: string | null;
 }
+
+// --- Seminar Hasil, Sidang, Yudisium (status and dates as plain tables) ---
+
+export type DevToolsEventKind = 'seminars' | 'defences';
+export type DevToolsEventStatus =
+  | 'registered'
+  | 'verified'
+  | 'examiner_assigned'
+  | 'scheduled'
+  | 'passed'
+  | 'passed_with_revision'
+  | 'failed'
+  | 'cancelled';
+
+export interface DevToolsEventRow {
+  id: string;
+  status: DevToolsEventStatus;
+  date: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  studentName: string | null;
+  studentNim: string | null;
+}
+
+export interface DevToolsEventPatch {
+  status?: DevToolsEventStatus;
+  date?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+  preset?: 'now' | 'past';
+}
+
+export interface DevToolsYudisiumPeriodRow {
+  id: string;
+  name: string;
+  registrationOpenDate: string | null;
+  registrationCloseDate: string | null;
+  eventDate: string | null;
+}
+
+export type DevToolsPeriodPatch = Partial<Record<'registrationOpenDate' | 'registrationCloseDate' | 'eventDate', string | null>>;
+
+export type DevToolsParticipantStatus = 'registered' | 'eligible' | 'appointed' | 'rejected' | 'finalized';
+
+export interface DevToolsParticipantRow {
+  id: string;
+  status: DevToolsParticipantStatus;
+  periodId: string | null;
+  periodName: string | null;
+  studentName: string | null;
+  studentNim: string | null;
+}
+
+export interface DevToolsPage<T> {
+  data: T[];
+  meta: { page: number; pageSize: number; total: number; totalPages: number };
+}

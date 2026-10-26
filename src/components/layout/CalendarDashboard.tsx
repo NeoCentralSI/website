@@ -1,5 +1,9 @@
+import { toWibWallClock } from '@/lib/eventTime';
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, Cloud, CloudOff, Loader2, RefreshCw, Link2 } from 'lucide-react';
+import { Cloud, CloudOff, Loader2, RefreshCw, Link2 } from 'lucide-react';
+// The "Buat Event" button is hidden for now (see below); its icon stays for when it returns.
+// @ts-expect-error TS6133 unused while the button is hidden
+import { Plus } from 'lucide-react'; // eslint-disable-line @typescript-eslint/no-unused-vars
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -177,7 +181,8 @@ export function CalendarDashboard({
       startDate: event.start,
       endDate: event.end,
       location: event.location || undefined,
-      meetingLink: event.onlineMeetingUrl || event.webLink || undefined,
+      // Only a real meeting link; the Outlook page of the event is the webLink below.
+      meetingLink: event.onlineMeetingUrl || undefined,
       status: 'accepted' as const,
       // Required fields with default values for display purposes
       userId: '',
@@ -269,6 +274,8 @@ export function CalendarDashboard({
       holiday: '#dc2626',                 // red-600
       announcement: '#059669',            // emerald-600
 
+      yudisium_event: '#059669',          // emerald-600
+
       // Outlook events
       outlook_event: '#0078d4',           // Microsoft blue
     };
@@ -281,8 +288,11 @@ export function CalendarDashboard({
     return events.map((event) => ({
       id: event.id,
       title: event.title,
-      start: event.startDate,
-      end: event.endDate,
+      // FullCalendar uses the device's zone: give it WIB wall-clock times so every event sits on
+      // its WIB date and hour on any device (an all-day date stays a date).
+      start: toWibWallClock(event.startDate),
+      end: event.allDay ? undefined : toWibWallClock(event.endDate),
+      allDay: event.allDay ?? false,
       backgroundColor: getEventColor(event.type),
       borderColor: getEventColor(event.type),
       extendedProps: {
@@ -337,7 +347,7 @@ export function CalendarDashboard({
                       {outlookStatus?.hasCalendarAccess ? (
                         <Badge variant="outline" className="flex items-center gap-1 text-green-600 border-green-200 bg-green-50">
                           <Cloud className="h-3 w-3" />
-                          <span className="text-xs">Calendar Sync</span>
+                          <span className="text-xs">Outlook terhubung</span>
                         </Badge>
                       ) : outlookStatus?.needsReconnect ? (
                         <Badge
@@ -346,12 +356,12 @@ export function CalendarDashboard({
                           onClick={handleReconnect}
                         >
                           <Link2 className="h-3 w-3" />
-                          <span className="text-xs">Reconnect</span>
+                          <span className="text-xs">Hubungkan ulang Outlook</span>
                         </Badge>
                       ) : (
                         <Badge variant="outline" className="flex items-center gap-1 text-gray-500 border-gray-200 bg-gray-50">
                           <CloudOff className="h-3 w-3" />
-                          <span className="text-xs">Offline</span>
+                          <span className="text-xs">Outlook belum terhubung</span>
                         </Badge>
                       )}
                     </div>
@@ -389,13 +399,13 @@ export function CalendarDashboard({
               </Tooltip>
             </TooltipProvider>
 
-            {/* Create Event Button */}
-            {onCreateEvent && (
+            {/* keknya ni button bakal guna nanti... */}
+            {/* {onCreateEvent && (
               <Button onClick={onCreateEvent} size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Buat Event
               </Button>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -424,11 +434,11 @@ export function CalendarDashboard({
               right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
             }}
             buttonText={{
-              today: 'today',
-              month: 'month',
-              week: 'week',
-              day: 'day',
-              list: 'list'
+              today: 'Hari Ini',
+              month: 'Bulan',
+              week: 'Minggu',
+              day: 'Hari',
+              list: 'Daftar'
             }}
             events={fullCalendarEvents}
             eventContent={renderEventContent}
@@ -443,6 +453,8 @@ export function CalendarDashboard({
             slotMaxTime="20:00:00"
             allDaySlot={true}
             nowIndicator={true}
+            // "Today" and the now line follow WIB too.
+            now={() => toWibWallClock(new Date()) ?? new Date()}
             weekends={true}
             eventTimeFormat={{
               hour: '2-digit',

@@ -251,7 +251,7 @@ export default function MahasiswaDetail() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Predikat</span>
-                  <Badge variant="outline">{data.student.graduationPredicate || '-'}</Badge>
+                  <Badge variant="outline">{data.student.graduationPredicate || '—'}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">MK Wajib</span>
@@ -355,7 +355,7 @@ export default function MahasiswaDetail() {
                       {currentThesis.title || <span className="italic text-muted-foreground">Judul belum ditentukan</span>}
                     </h3>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      <ThesisStatusBadge status={currentThesis.status} />
+                      <ThesisStatusBadge status={currentThesis.status} onLeave={currentThesis.isOnLeave} />
                       {currentThesis.topic && <Badge variant="outline">{currentThesis.topic}</Badge>}
                     </div>
                   </div>

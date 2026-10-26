@@ -116,7 +116,7 @@ export default function StudentProgressDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <ThesisStatusBadge status={data.status} />
+          <ThesisStatusBadge status={data.status} onLeave={data.isOnLeave} />
           {data.seminarApproval.isFullyApproved && (
             <Badge className="bg-amber-100 text-amber-800">
               <CheckCircle2 className="h-3 w-3 mr-1" />
@@ -418,7 +418,7 @@ export default function StudentProgressDetail() {
                   ))}
                 </div>
               ) : (
-                <EmptyState size="sm" title="Belum Ada Milestone" description="Belum ada milestone yang tercatat." className="py-6" />
+                <EmptyState size="sm" title="Belum Ada Milestone" description="Belum ada milestone yang tercatat" className="py-6" />
               )}
             </CardContent>
           </Card>

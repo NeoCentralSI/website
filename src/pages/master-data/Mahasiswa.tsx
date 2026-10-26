@@ -29,6 +29,16 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { getStudentStatusLabel } from '@/lib/thesisLabels';
+import { SoftWarning } from '@/components/shared/SoftWarning';
+import { compareSemestersDesc, formatSemesterLabel } from '@/lib/academicYear';
+
+/** What a status change does to the running thesis (the server applies it in the same save). */
+const STUDENT_STATUS_THESIS_EFFECTS: Record<string, string> = {
+  bss: 'Tugas akhir yang berjalan dijeda selama cuti: bimbingan dan milestone diblokir, masa bimbingan berhenti.',
+  active: 'Tugas akhir dilanjutkan; masa cuti tidak dihitung dalam masa bimbingan.',
+  mengundurkan_diri: 'Tugas akhir yang berjalan dihentikan (Gagal) dan pembimbing dilepas.',
+  dropout: 'Tugas akhir yang berjalan dihentikan (Gagal) dan pembimbing dilepas.',
+};
 
 export default function Mahasiswa() {
   const navigate = useNavigate();
@@ -56,7 +66,6 @@ export default function Mahasiswa() {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [editSks, setEditSks] = useState<number>(0);
   const [editGpa, setEditGpa] = useState<string>('');
-  const [editGraduationPredicate, setEditGraduationPredicate] = useState<string>('none');
   const [editSemester, setEditSemester] = useState<number>(1);
   const [editStatus, setEditStatus] = useState<string>('');
   const [editMandatory, setEditMandatory] = useState<boolean>(false);
@@ -116,7 +125,6 @@ export default function Mahasiswa() {
       status: string;
       sksCompleted: number;
       gpa?: number | null;
-      graduationPredicate?: string | null;
       enrollmentYear?: number;
       currentSemester?: number;
       mandatoryCoursesCompleted?: boolean;
@@ -340,7 +348,6 @@ export default function Mahasiswa() {
                 setSelectedStudent(row);
                 setEditSks(row.student?.sksCompleted || 0);
                 setEditGpa(row.student?.gpa != null ? row.student.gpa.toFixed(2) : '');
-                setEditGraduationPredicate(row.student?.graduationPredicate || 'none');
                 setEditSemester(row.student?.currentSemester || 1);
                 setEditStatus(row.student?.status || 'active');
                 setEditMandatory(row.student?.mandatoryCoursesCompleted || false);
@@ -367,15 +374,8 @@ export default function Mahasiswa() {
     () =>
       academicYears
         .slice()
-        .sort((a, b) => {
-          const yearCmp = Number(b.year || 0) - Number(a.year || 0);
-          if (yearCmp !== 0) return yearCmp;
-          return (b.semester === 'genap' ? 1 : 0) - (a.semester === 'genap' ? 1 : 0);
-        })
-        .map((ay) => ({
-          value: ay.id,
-          label: `${ay.year} ${ay.semester === 'ganjil' ? 'Ganjil' : 'Genap'}`,
-        })),
+        .sort(compareSemestersDesc)
+        .map((ay) => ({ value: ay.id, label: formatSemesterLabel(ay) })),
     [academicYears]
   );
 
@@ -542,34 +542,25 @@ export default function Mahasiswa() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Predikat</Label>
-                <Select value={editGraduationPredicate} onValueChange={setEditGraduationPredicate}>
+                <Label>Status</Label>
+                <Select value={editStatus} onValueChange={setEditStatus}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Pilih predikat" />
+                    <SelectValue placeholder="Pilih status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Belum ditentukan</SelectItem>
-                    <SelectItem value="Sangat Memuaskan">Sangat Memuaskan</SelectItem>
-                    <SelectItem value="Dengan Pujian">Dengan Pujian</SelectItem>
+                    <SelectItem value="active">Aktif</SelectItem>
+                    <SelectItem value="lulus">Lulus</SelectItem>
+                    <SelectItem value="bss">Cuti</SelectItem>
+                    <SelectItem value="dropout">Drop Out</SelectItem>
+                    <SelectItem value="mengundurkan_diri">Mengundurkan Diri</SelectItem>
                   </SelectContent>
                 </Select>
+                {(() => {
+                  const before = selectedStudent?.student?.status || 'active';
+                  const effect = editStatus !== before && (editStatus !== 'active' || before === 'bss') ? STUDENT_STATUS_THESIS_EFFECTS[editStatus] : null;
+                  return effect ? <SoftWarning>{effect}</SoftWarning> : null;
+                })()}
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={editStatus} onValueChange={setEditStatus}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Pilih status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Aktif</SelectItem>
-                  <SelectItem value="lulus">Lulus</SelectItem>
-                  <SelectItem value="bss">Cuti</SelectItem>
-                  <SelectItem value="dropout">Drop Out</SelectItem>
-                  <SelectItem value="mengundurkan_diri">Mengundurkan Diri</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
 
             <div className="space-y-4 pt-2">
@@ -641,7 +632,6 @@ export default function Mahasiswa() {
                 updateMutation.mutate({
                   sksCompleted: editSks,
                   gpa: editGpa === '' ? null : Math.round(Number(editGpa) * 100) / 100,
-                  graduationPredicate: editGraduationPredicate === 'none' ? null : editGraduationPredicate,
                   status: editStatus,
                   currentSemester: editSemester,
                   mandatoryCoursesCompleted: editMandatory,

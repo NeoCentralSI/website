@@ -160,7 +160,7 @@ export function AdminThesisDefenceArchivePanel() {
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus Arsip Sidang</AlertDialogTitle>
             <AlertDialogDescription>
-              Data arsip sidang yang dihapus tidak dapat dikembalikan.
+              Data arsip sidang yang dihapus tidak dapat dikembalikan
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

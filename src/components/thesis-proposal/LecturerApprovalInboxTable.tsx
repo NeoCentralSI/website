@@ -106,7 +106,7 @@ export function LecturerSupervisionLoadControls() {
   return (
     <div className="flex flex-wrap items-center gap-3 text-sm">
       <span className="text-muted-foreground">Beban bimbingan</span>
-      <SupervisionLoadBadge activeCount={data.load.activeCount} hardLimit={data.load.hardLimit} level={data.load.level} />
+      <SupervisionLoadBadge activeCount={data.load.activeCount} acceptedCount={data.load.acceptedCount} semesterQuota={data.load.semesterQuota} totalLimit={data.load.totalLimit} level={data.load.level} />
       <label className="flex items-center gap-2">
         <Switch
           checked={data.load.acceptingRequests}

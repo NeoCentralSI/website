@@ -4,9 +4,9 @@ import * as xlsx from "xlsx";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { compareSemestersDesc, formatSemesterLabel } from "@/lib/academicYear";
 import type { MasterDataThesis } from "@/services/masterDataTa.service";
 import { getThesisActivityLabel, getThesisActivityOptions, getThesisStatusLabel, getThesisTerminationReasonLabel, THESIS_STATUS_LABELS } from "@/lib/thesisLabels";
 
@@ -24,6 +24,8 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
     const [academicYearId, setAcademicYearId] = useState<string>("all");
     const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
     const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+
+    const sortedYears = useMemo(() => [...(academicYears ?? [])].sort(compareSemestersDesc), [academicYears]);
 
     const uniqueStatuses = useMemo(() => {
         const statuses = new Set(theses.map(t => t.status).filter(Boolean));
@@ -51,7 +53,8 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
             "Nama Mahasiswa": t.student?.name || "-",
             "Judul Tugas Akhir": t.title || "-",
             "Topik": t.topic?.name || "-",
-            "Tahun Ajaran": t.academicYear ? `${t.academicYear.year} - ${t.academicYear.semester}` : "-",
+            // Same label as the app; the import reads it back.
+            "Tahun Ajaran": t.academicYear ? formatSemesterLabel(t.academicYear) : "-",
             // Derived, read-only: ignored when the file is imported back.
             "Aktivitas": getThesisActivityLabel(t.activityLevel),
             "Masa Bimbingan": t.supervisionClock?.elapsedLabel ?? "-",
@@ -103,38 +106,29 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col">
-                <DialogHeader>
+            <DialogContent className="sm:max-w-[500px] max-h-[90vh] flex flex-col gap-0 overflow-hidden">
+                <DialogHeader className="shrink-0">
                     <DialogTitle>Export Data Tugas Akhir</DialogTitle>
                     <DialogDescription>Pilih filter data yang ingin diexport ke Excel.</DialogDescription>
                 </DialogHeader>
 
-                <ScrollArea className="flex-1 pr-4 -mr-4">
+                {/* Only the body scrolls; the title and the footer stay visible. */}
+                <div className="min-h-0 flex-1 overflow-y-auto pr-1">
                     <div className="space-y-6 py-4">
                         {/* Academic Year */}
                         <div className="space-y-3">
-                            <Label className="text-base font-semibold">Tahun Ajaran / Semester</Label>
-                            <RadioGroup
-                                value={academicYearId}
-                                onValueChange={setAcademicYearId}
-                                className="grid grid-cols-1 gap-2"
-                            >
-                                <div className="flex items-center space-x-2 border p-3 rounded-md hover:bg-accent cursor-pointer transition-colors">
-                                    <RadioGroupItem value="all" id="ay-all" />
-                                    <Label htmlFor="ay-all" className="flex-1 cursor-pointer font-medium">Semua Semester</Label>
-                                </div>
-                                {academicYears?.map((ay) => (
-                                    <div
-                                        key={ay.id}
-                                        className="flex items-center space-x-2 border p-3 rounded-md hover:bg-accent cursor-pointer transition-colors"
-                                    >
-                                        <RadioGroupItem value={ay.id} id={`ay-${ay.id}`} />
-                                        <Label htmlFor={`ay-${ay.id}`} className="flex-1 cursor-pointer font-medium">
-                                            {ay.year} - {ay.semester}
-                                        </Label>
-                                    </div>
-                                ))}
-                            </RadioGroup>
+                            <Label htmlFor="export-academic-year" className="text-base font-semibold">Tahun Ajaran / Semester</Label>
+                            <Select value={academicYearId} onValueChange={setAcademicYearId}>
+                                <SelectTrigger id="export-academic-year" className="w-full">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Semua Semester</SelectItem>
+                                    {sortedYears.map((ay) => (
+                                        <SelectItem key={ay.id} value={ay.id}>{formatSemesterLabel(ay)}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {/* Statuses */}
@@ -211,9 +205,9 @@ export function ExportExcelDialog({ open, onOpenChange, theses, academicYears }:
                             )}
                         </div>
                     </div>
-                </ScrollArea>
+                </div>
 
-                <DialogFooter className="mt-4 border-t pt-4">
+                <DialogFooter className="shrink-0 border-t pt-4">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Batal</Button>
                     <Button onClick={handleExport}>Download Excel</Button>
                 </DialogFooter>

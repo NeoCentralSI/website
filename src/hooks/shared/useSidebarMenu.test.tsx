@@ -69,7 +69,7 @@ describe("useSidebarMenu", () => {
     const { result } = renderHook(() => useSidebarMenu());
 
     const taMenu = result.current.navMain.find((item) => item.title === "Tugas Akhir");
-    expect(taMenu?.items?.map((item) => item.title)).toEqual(["Overview", "Bimbingan", "Proposal", "Seminar Hasil", "Sidang TA"]);
+    expect(taMenu?.items?.map((item) => item.title)).toEqual(["Overview", "Bimbingan", "Proposal", "Seminar Hasil", "Sidang"]);
     expect(taMenu?.items?.[2].url).toBe("/tugas-akhir/proposal");
     expect(result.current.navMain.find((item) => item.title.startsWith("Metode Penelitian"))).toBeUndefined();
   });
@@ -84,9 +84,9 @@ describe("useSidebarMenu", () => {
   ];
 
   // Supervisors score in Tugas Akhir > Proposal (no Metode Penelitian menu).
-  // Permohonan, Bimbingan, Proposal, Seminar Hasil, Sidang TA; supervisors have
+  // Permohonan, Bimbingan, Proposal, Seminar Hasil, Sidang; supervisors have
   // no Perubahan or Evaluasi page.
-  const SUPERVISOR_TA = ["Permohonan", "Bimbingan", "Proposal", "Seminar Hasil", "Sidang TA"];
+  const SUPERVISOR_TA = ["Permohonan", "Bimbingan", "Proposal", "Seminar Hasil", "Sidang"];
   const KADEP_DECISIONS = ["Perubahan", "Evaluasi"];
 
   it("gives supervisors their Tugas Akhir order and no Metode Penelitian menu", () => {
@@ -114,7 +114,7 @@ describe("useSidebarMenu", () => {
     mockRole({ isDosen: true });
 
     expect(menuOf("Metode Penelitian")).toBeUndefined();
-    expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Bimbingan", "Seminar Hasil", "Sidang TA"]);
+    expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Bimbingan", "Seminar Hasil", "Sidang"]);
   });
 
   it("gives the Research Method coordinator Monitoring Kelas and Penilaian Proposal (no Presensi) and no Kelola", () => {
@@ -130,7 +130,7 @@ describe("useSidebarMenu", () => {
     mockRole({ isDosen: true, isKadep: true });
 
     expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual([
-      "Monitoring", "Penetapan", "Bimbingan", "Seminar Hasil", "Sidang TA", "Perubahan", "Evaluasi",
+      "Monitoring", "Penetapan", "Bimbingan", "Seminar Hasil", "Sidang", "Perubahan", "Evaluasi",
     ]);
     // The submenu is "Penetapan"; its page keeps the title "Penetapan Pembimbing".
     expect(menuOf("Tugas Akhir")?.items?.[1]).toEqual({ title: "Penetapan", url: "/kelola/tugas-akhir/kadep/penetapan-pembimbing" });
@@ -146,7 +146,7 @@ describe("useSidebarMenu", () => {
     mockAuthUser({ id: "kadep-1", fullName: "Kadep Uji" });
     mockRole({ isDosen: true, isKadep: true, isPembimbing: true });
 
-    // Monitoring, Penetapan, Permohonan, Bimbingan, Proposal, Seminar Hasil, Sidang TA, Perubahan, Evaluasi.
+    // Monitoring, Penetapan, Permohonan, Bimbingan, Proposal, Seminar Hasil, Sidang, Perubahan, Evaluasi.
     expect(menuOf("Tugas Akhir")?.items?.map((item) => item.title)).toEqual(["Monitoring", "Penetapan", ...SUPERVISOR_TA, ...KADEP_DECISIONS]);
   });
 
@@ -240,6 +240,21 @@ describe("useSidebarMenu", () => {
     }
   });
 
+  it("puts Log Aktivitas right under Master Data for the Admin, and last for the Ketua and Sekretaris Departemen", () => {
+    mockRole({ isAdmin: true });
+    const admin = renderHook(() => useSidebarMenu()).result.current.navMain.map((item) => item.title);
+    expect(admin[admin.indexOf("Master Data") + 1]).toBe("Log Aktivitas");
+    const masterItems = renderHook(() => useSidebarMenu()).result.current.navMain.find((item) => item.title === "Master Data");
+    expect(masterItems?.items?.map((item) => item.title)).not.toContain("Log Aktivitas");
+
+    for (const role of [{ isKadep: true, isDosen: true }, { isSekdep: true, isDosen: true }]) {
+      mockRole(role);
+      const titles = renderHook(() => useSidebarMenu()).result.current.navMain.map((item) => item.title);
+      expect(titles.at(-1)).toBe("Log Aktivitas");
+      expect(titles.at(-2)).toBe("Kelola");
+    }
+  });
+
   it("keeps GKM CPL and Admin master-data additions from fathur-sidang", () => {
     mockRole({ isDosen: true, isGkm: true });
     const gkm = renderHook(() => useSidebarMenu());
@@ -293,4 +308,15 @@ describe("useSidebarMenu", () => {
       expect(urls).not.toEqual(expect.arrayContaining(invalidUrls));
     }
   });
+});
+
+it("Admin has read-only Monitoring Kelas without assessment navigation", () => {
+  mockRole({ isAdmin: true });
+  const { result } = renderHook(() => useSidebarMenu());
+  const menus = result.current.navMain;
+  const researchMethodIndex = menus.findIndex((menu) => menu.title === "Metode Penelitian");
+  expect(menus[researchMethodIndex]?.items).toEqual([
+    { title: "Monitoring Kelas", url: "/metode-penelitian/monitoring" },
+  ]);
+  expect(menus[researchMethodIndex + 1]?.title).toBe("Tugas Akhir");
 });

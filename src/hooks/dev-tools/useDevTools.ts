@@ -6,7 +6,16 @@ import { useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { devToolsService } from '@/services/devTools.service';
-import type { UpdateStudentDto, UpdateUserDto, CreateUserDto, UpdateGuidanceScheduleDto, SetPeriodFlagsDto } from '@/types/devTools.types';
+import type {
+  UpdateStudentDto,
+  UpdateUserDto,
+  CreateUserDto,
+  UpdateGuidanceScheduleDto,
+  SetPeriodFlagsDto,
+  DevToolsEventPatch,
+  DevToolsParticipantStatus,
+  DevToolsPeriodPatch,
+} from '@/types/devTools.types';
 
 const QK = {
   students: 'devtools-students',
@@ -18,6 +27,7 @@ const QK = {
   guidances: 'devtools-guidances',
   semesterFlags: 'devtools-semester-flags',
   supervisorRequests: 'devtools-supervisor-requests',
+  tables: 'devtools-tables',
 } as const;
 
 export function useDevToolsStudents(search: string, statusFilter: string) {
@@ -104,6 +114,16 @@ export function useDevToolsSupervisorRequests(params: { search: string; page: nu
   });
 }
 
+/** A DevTools table (seminars, defences, yudisium-periods, yudisium-participants). */
+export function useDevToolsTable<T>(path: string, params: { search: string; status?: string; page: number; pageSize: number }) {
+  return useQuery({
+    queryKey: [QK.tables, path, params.search, params.status ?? '', params.page, params.pageSize],
+    queryFn: () => devToolsService.listTable<T>(path, params),
+    staleTime: 15_000,
+    placeholderData: (prev) => prev,
+  });
+}
+
 export function useDevToolsMutations() {
   const qc = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -117,6 +137,7 @@ export function useDevToolsMutations() {
     qc.invalidateQueries({ queryKey: [QK.guidances] });
     qc.invalidateQueries({ queryKey: [QK.semesterFlags] });
     qc.invalidateQueries({ queryKey: [QK.supervisorRequests] });
+    qc.invalidateQueries({ queryKey: [QK.tables] });
     qc.invalidateQueries({ queryKey: ['thesis-proposal'] });
     qc.invalidateQueries({ queryKey: ['research-method'] });
   }, [qc]);
@@ -160,5 +181,7 @@ export function useDevToolsMutations() {
       wrap(() => devToolsService.updateGuidanceSchedule(id, data)),
     setSupervisorRequestTime: (id: string, createdAt: string) =>
       wrap(() => devToolsService.setSupervisorRequestTime(id, createdAt), 'Waktu pengajuan pembimbing diubah'),
+    patchTable: (path: string, id: string, body: DevToolsEventPatch | DevToolsPeriodPatch | { status: DevToolsParticipantStatus }) =>
+      wrap(() => devToolsService.patchTable(path, id, body)),
   };
 }

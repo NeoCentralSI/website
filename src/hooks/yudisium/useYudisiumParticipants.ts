@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getYudisiumParticipants,
+  getYudisiumParticipantSummary,
   getYudisiumParticipantDetail,
   verifyYudisiumDocument,
   getParticipantCplScores,
@@ -19,6 +20,8 @@ import type { VerifyDocumentPayload } from '@/types/admin-yudisium.types';
 export const participantKeys = {
   all: ['yudisium-participants'] as const,
   list: (yudisiumId: string) => [...participantKeys.all, 'list', yudisiumId] as const,
+  // Under the list key, so every invalidation of the list refreshes the charts too.
+  summary: (yudisiumId: string) => [...participantKeys.list(yudisiumId), 'summary'] as const,
   archiveOptions: (yudisiumId: string) => [...participantKeys.all, 'archive-options', yudisiumId] as const,
   detail: (participantId: string) => [...participantKeys.all, 'detail', participantId] as const,
   cplScores: (participantId: string) => [...participantKeys.all, 'cpl-scores', participantId] as const,
@@ -28,6 +31,15 @@ export function useYudisiumParticipants(yudisiumId: string) {
   return useQuery({
     queryKey: participantKeys.list(yudisiumId),
     queryFn: () => getYudisiumParticipants(yudisiumId),
+    enabled: !!yudisiumId,
+  });
+}
+
+/** The charts of the period detail. */
+export function useYudisiumParticipantSummary(yudisiumId: string) {
+  return useQuery({
+    queryKey: participantKeys.summary(yudisiumId),
+    queryFn: () => getYudisiumParticipantSummary(yudisiumId),
     enabled: !!yudisiumId,
   });
 }

@@ -35,7 +35,6 @@ const thesis = (overrides: Partial<MasterDataThesis> = {}): MasterDataThesis => 
   activityLevel: "active",
   startDate: "2026-03-02T00:00:00.000Z",
   status: "research",
-  statusBeforeLeave: null,
   student: { id: "s1", nim: "2211522028", name: "Ilham Nofaldi" },
   topic: null,
   academicYear: null,
@@ -155,14 +154,15 @@ describe("DataMasterTaPanel form", () => {
 
   it("always shows a hint under Status: the allowed targets for an open status", async () => {
     const dialog = await openEdit();
-    expect(within(dialog).getByText("Dapat diubah menjadi BSS, Selesai, atau Gagal.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Dapat diubah menjadi Selesai atau Gagal.")).toBeInTheDocument();
     expect(within(dialog).getByText(/Masa bimbingan dihitung dari tanggal ini/)).toBeInTheDocument();
   });
 
-  it("keeps the BSS hint for a thesis on leave", async () => {
-    vi.mocked(getMasterDataTheses).mockResolvedValue([thesis({ status: "on_leave", statusBeforeLeave: "research", activityLevel: null })]);
+  it("offers no leave status: the leave follows the student status", async () => {
+    vi.mocked(getMasterDataTheses).mockResolvedValue([thesis({ isOnLeave: true, activityLevel: null })]);
     const dialog = await openEdit();
-    expect(within(dialog).getByText("Dari BSS, tugas akhir hanya dapat kembali ke status sebelumnya atau dihentikan.")).toBeInTheDocument();
+    expect(within(dialog).getByText("Dapat diubah menjadi Selesai atau Gagal.")).toBeInTheDocument();
+    expect(within(dialog).queryByText(/BSS/)).not.toBeInTheDocument();
   });
 
   it("says a closed thesis cannot change any more", async () => {

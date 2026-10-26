@@ -1,3 +1,4 @@
+import { formatSemesterLabel } from "@/lib/academicYear";
 import { useCallback, useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Download, AlertCircle, RotateCw } from "lucide-react";
@@ -42,7 +43,6 @@ interface FormState {
     status: ThesisLifecycleStatus;
     /** Status when the dialog opened (null = new thesis); the allowed transitions start from here. */
     originalStatus: ThesisLifecycleStatus | null;
-    statusBeforeLeave: ThesisLifecycleStatus | null;
     terminationReason: ThesisTerminationReason | "none";
     terminationNote: string;
     supervisors: SupervisorData[];
@@ -58,7 +58,6 @@ const emptyForm: FormState = {
     startDate: "",
     status: "research",
     originalStatus: null,
-    statusBeforeLeave: null,
     terminationReason: "none",
     terminationNote: "",
     supervisors: [],
@@ -72,8 +71,6 @@ const isClosedStatus = (s: ThesisLifecycleStatus | null) => s === "completed" ||
 // Two lines high, so a short hint and a long one keep the two columns level.
 const FIELD_HINT_CLASS = "min-h-8 text-xs text-muted-foreground";
 const NO_LECTURER_OPTION: ComboboxOption = { value: "none", label: "-- Silahkan Pilih --" };
-// The full BSS label is too long for a one-line hint.
-const SHORT_STATUS_LABELS: Partial<Record<ThesisLifecycleStatus, string>> = { on_leave: "BSS" };
 
 /** "A", "A atau B", "A, B, atau C". */
 function joinWithOr(items: string[]): string {
@@ -82,13 +79,12 @@ function joinWithOr(items: string[]): string {
 }
 
 /** Always-present hint under the status field, so the row keeps its height. */
-function getStatusHint(original: ThesisLifecycleStatus | null, statusBeforeLeave: ThesisLifecycleStatus | null): string {
+function getStatusHint(original: ThesisLifecycleStatus | null): string {
     if (!original) return "Status awal tugas akhir yang didata.";
     if (isClosedStatus(original)) return `Tugas akhir berstatus "${THESIS_STATUS_LABELS[original]}" tidak dapat diubah lagi.`;
-    if (original === "on_leave") return "Dari BSS, tugas akhir hanya dapat kembali ke status sebelumnya atau dihentikan.";
-    const targets = getAllowedThesisStatusOptions(original, statusBeforeLeave)
+    const targets = getAllowedThesisStatusOptions(original)
         .filter((option) => option.value !== original)
-        .map((option) => SHORT_STATUS_LABELS[option.value] ?? option.label);
+        .map((option) => option.label);
     return `Dapat diubah menjadi ${joinWithOr(targets)}.`;
 }
 
@@ -192,7 +188,6 @@ export function DataMasterTaPanel() {
             startDate: thesis.startDate ? new Date(thesis.startDate).toISOString().split('T')[0] : "",
             status: thesis.status,
             originalStatus: thesis.status,
-            statusBeforeLeave: thesis.statusBeforeLeave ?? null,
             terminationReason: thesis.terminationReason ?? "none",
             terminationNote: thesis.terminationNote ?? "",
             supervisors: [],
@@ -290,7 +285,7 @@ export function DataMasterTaPanel() {
             className: "whitespace-nowrap",
             render: (t) => (
                 <span className="text-sm">
-                    {t.academicYear ? `${t.academicYear.year} - ${t.academicYear.semester}` : "-"}
+                    {t.academicYear ? formatSemesterLabel(t.academicYear) : "-"}
                 </span>
             )
         },
@@ -307,7 +302,7 @@ export function DataMasterTaPanel() {
             header: "Status",
             width: 90,
             className: "text-center",
-            render: (t) => <ThesisStatusBadge status={t.status} className="text-xs" />
+            render: (t) => <ThesisStatusBadge status={t.status} onLeave={t.isOnLeave} className="text-xs" />
         },
         {
             key: "supervisors",
@@ -393,13 +388,13 @@ export function DataMasterTaPanel() {
             />
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-x-hidden">
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
                     <DialogHeader>
                         <DialogTitle>{formState.id ? "Edit Data Tugas Akhir" : "Tambah Data Tugas Akhir"}</DialogTitle>
                         <DialogDescription>Isi form di bawah ini untuk mengelola master data tugas akhir.</DialogDescription>
                     </DialogHeader>
 
-                    <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-1">
+                    <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-1">
                         <div className="space-y-4 py-4 pr-3">
                             <div className="grid min-w-0 gap-2">
                                 <Label>Mahasiswa *</Label>
@@ -452,7 +447,7 @@ export function DataMasterTaPanel() {
                                             <SelectContent>
                                                 <SelectItem value="none">-- Silahkan Pilih --</SelectItem>
                                                 {academicYears.map(ay => (
-                                                    <SelectItem key={ay.id} value={ay.id}>{ay.year} - {ay.semester}</SelectItem>
+                                                    <SelectItem key={ay.id} value={ay.id}>{formatSemesterLabel(ay)}</SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -468,7 +463,7 @@ export function DataMasterTaPanel() {
                                             showPastDates={true}
                                         />
                                         <p className={FIELD_HINT_CLASS}>
-                                            Masa bimbingan dihitung dari tanggal ini (masa BSS tidak dihitung).
+                                            Masa bimbingan dihitung dari tanggal ini (masa cuti tidak dihitung).
                                         </p>
                                     </div>
                                 )}
@@ -482,13 +477,13 @@ export function DataMasterTaPanel() {
                                     >
                                         <SelectTrigger className="w-full min-w-0"><SelectValue placeholder="Pilih status..." /></SelectTrigger>
                                         <SelectContent>
-                                            {getAllowedThesisStatusOptions(formState.originalStatus, formState.statusBeforeLeave).map(s => (
+                                            {getAllowedThesisStatusOptions(formState.originalStatus).map(s => (
                                                 <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                     <p className={FIELD_HINT_CLASS}>
-                                        {getStatusHint(formState.originalStatus, formState.statusBeforeLeave)}
+                                        {getStatusHint(formState.originalStatus)}
                                     </p>
                                 </div>
 

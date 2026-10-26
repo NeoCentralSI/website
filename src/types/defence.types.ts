@@ -46,6 +46,8 @@ export interface DefenceChecklist {
   sks: DefenceChecklistSks;
   revisiSeminar: DefenceChecklistRevisi;
   pembimbing: DefenceChecklistPembimbing;
+  /** Taking the Tugas Akhir course this semester; `reason` says why not. */
+  mataKuliahTa?: { met: boolean; label: string; reason?: string | null };
 }
 
 export interface DefenceExaminer {

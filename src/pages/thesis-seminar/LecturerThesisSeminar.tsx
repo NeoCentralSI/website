@@ -17,20 +17,13 @@ export default function LecturerThesisSeminar() {
 		setSearchParams({ tab }, { replace: true })
 	}
 
-	const activeLabel = useMemo(() => {
-		if (activeTab === 'mahasiswa-bimbingan') return 'Mahasiswa Bimbingan'
-		if (activeTab === 'tetapkan-penguji') return 'Tetapkan Penguji'
-		if (activeTab === 'menguji-mahasiswa') return 'Menguji Mahasiswa'
-		return 'Seminar Hasil'
-	}, [activeTab])
-
 	const breadcrumbs = useMemo(
 		() => [
 			{ label: 'Tugas Akhir', href: '/tugas-akhir' },
-			{ label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
-			{ label: activeLabel },
+			// Tabs do not add a breadcrumb level.
+			{ label: 'Seminar Hasil' },
 		],
-		[activeLabel]
+		[]
 	)
 
 	useEffect(() => {

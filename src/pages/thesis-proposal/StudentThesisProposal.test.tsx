@@ -131,7 +131,7 @@ describe('Proposal mahasiswa', () => {
       ...proposal().proposalRevision, applicable: true, canSubmit: true,
       current: { id: 'r1', status: 'revision_requested', file: { fileName: 'revisi.pdf', url: '/uploads/revisi.pdf', fileSize: 10, submittedAt: '2026-10-14' }, reviewNotes: 'Catatan pembimbing panjang. '.repeat(30), reviewedAt: '2026-10-15', reviewerName: 'Dosen Satu' },
     } }) },
-  ])('keeps both columns stretched and actions in card footers: $name', async ({ data, overview }) => {
+  ])('keeps both columns stretched and file actions inside the document item: $name', async ({ data, overview }) => {
     vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(data);
     vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(overview);
     wrap(<StudentThesisProposal />);
@@ -145,7 +145,7 @@ describe('Proposal mahasiswa', () => {
     for (const card of [requestCard, fileCard]) {
       expect(card).toHaveClass('flex', 'flex-col', 'flex-1');
       const actions = within(card).queryAllByRole('button');
-      if (actions.length) {
+      if (actions.length && card === requestCard) {
         const footer = card.querySelector(':scope > .mt-auto')!;
         expect(footer).toHaveClass('justify-end');
         actions.forEach((action) => expect(footer).toContainElement(action));
@@ -175,8 +175,8 @@ describe('Proposal mahasiswa', () => {
     ]);
     expect(screen.queryByRole('button', { name: 'Ajukan Pembimbing' })).not.toBeInTheDocument();
     // Before the supervisor assignment the Proposal Final card is one line.
-    expect(screen.getByText('Terbuka setelah penetapan pembimbing')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Pilih Berkas/ })).not.toBeInTheDocument();
+    expect(within(screen.getByRole('region', { name: 'Kartu Proposal Final' })).getByText('Anda belum memiliki tugas akhir. Ajukan pembimbing terlebih dahulu.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Pilih Berkas/ })).toBeDisabled();
   });
 
   it('allowed, no draft: Semester and Metode Penelitian rows; a draft: when it was saved, its title and its lecturer', async () => {
@@ -289,7 +289,8 @@ describe('Proposal mahasiswa', () => {
     expect(screen.getByText('Proposal Budi.pdf')).toHaveAttribute('title', 'Proposal Budi.pdf');
     expect(screen.getByText('1 KB')).toBeInTheDocument();
     const fileCard = screen.getByRole('region', { name: 'Kartu Proposal Final' });
-    expect(fileCard.querySelector(':scope > .mt-auto')).toContainElement(screen.getByRole('button', { name: 'Ajukan' }));
+    expect(fileCard).toContainElement(screen.getByRole('button', { name: 'Ajukan' }));
+    expect(fileCard.querySelector(':scope > .mt-auto')).toBeNull();
     expect(assignments.submitFinalProposal).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole('button', { name: 'Ajukan' }));
@@ -387,7 +388,7 @@ describe('Proposal mahasiswa', () => {
 describe('Pengajuan Pembimbing page', () => {
   const lecturer = (id: string, fullName: string, group: string, supervisedTopics: string[], acceptingRequests = true): CatalogLecturer => ({
     lecturerId: id, fullName, identityNumber: id, avatarUrl: null, scienceGroup: { id: group, name: group }, acceptingRequests,
-    activeCount: 3, softLimit: 8, hardLimit: 10, level: 'available', supervisedTopics,
+    acceptedCount: 1, activeCount: 3, semesterQuota: 8, totalLimit: 10, level: 'available', supervisedTopics,
   });
 
   it('the lecturer dropdown shows kelompok keilmuan, "Topik bimbingan" and load; it searches topics; a closed lecturer is disabled', async () => {
@@ -405,7 +406,7 @@ describe('Pengajuan Pembimbing page', () => {
     fireEvent.click(trigger);
     const aina = await screen.findByRole('option', { name: /^Aina Hubby/ });
     expect(within(aina).getByText('Sistem Enterprise · Topik bimbingan: ERP, Data Warehouse +1')).toHaveAttribute('title', 'Sistem Enterprise · Topik bimbingan: ERP, Data Warehouse, Business Intelligence');
-    expect(within(aina).getByText('3/10 · Tersedia')).toBeInTheDocument();
+    expect(within(aina).getByText('Semester ini 1/8 · Total 3/10')).toBeInTheDocument();
     const closed = screen.getByRole('option', { name: /^Dosen Tutup/ });
     expect(closed).toHaveAttribute('aria-disabled', 'true');
     expect(within(closed).getByText('Dosen sedang menutup penerimaan pengajuan.')).toBeInTheDocument();
@@ -421,6 +422,21 @@ describe('Pengajuan Pembimbing page', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Simpan Draf' }));
     await waitFor(() => expect(requests.saveDraft).toHaveBeenCalledWith(expect.objectContaining({ lecturerId: 'l1' })));
     expect(screen.getByRole('button', { name: 'Batal' })).toBeInTheDocument();
+  });
+
+  it('a lecturer at the semester quota stays selectable with a warning', async () => {
+    vi.mocked(requests.getMySupervisorRequests).mockResolvedValue(mine({ draft: null }));
+    vi.mocked(requests.getCatalog).mockResolvedValue([{ ...lecturer('l1', 'DOSEN KUOTA', 'Sistem Enterprise', ['ERP']), acceptedCount: 5, semesterQuota: 5, activeCount: 3, level: 'full' }]);
+    wrap(<div />, '/tugas-akhir/proposal/pengajuan');
+    const trigger = await screen.findByRole('combobox', { name: 'Dosen pembimbing' });
+    await waitFor(() => expect(trigger).toBeEnabled());
+    fireEvent.click(trigger);
+    const option = await screen.findByRole('option', { name: /^Dosen Kuota/ });
+    expect(option).toHaveAttribute('aria-disabled', 'false');
+    fireEvent.click(option);
+    expect(trigger).toHaveTextContent('Dosen Kuota');
+    expect(screen.getByRole('note')).toHaveTextContent('Dosen ini sudah mencapai batas bimbingan');
+    expect(screen.getByRole('button', { name: 'Ajukan' })).toBeEnabled();
   });
 
   it('required fields: red asterisks; Ajukan is not disabled; a click marks what is missing and sends nothing', async () => {
@@ -448,5 +464,17 @@ describe('Pengajuan Pembimbing page', () => {
     vi.mocked(assignments.getMyProposalOverview).mockResolvedValue(noThesis());
     wrap(<div data-testid="proposal-page" />, '/tugas-akhir/proposal/pengajuan');
     expect(await screen.findByTestId('proposal-page')).toBeInTheDocument();
+  });
+});
+
+describe('proposal upload size', () => {
+  it('accepts a PDF of 10 MB and rejects larger final and revision proposals', async () => {
+    const { getProposalFileProblem } = await import('@/components/thesis-proposal/StudentProposalFileCard');
+    const file = new File(['%PDF-1.4'], 'proposal.pdf', { type: 'application/pdf' });
+    Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024, configurable: true });
+    expect(getProposalFileProblem(file)).toBeNull();
+    Object.defineProperty(file, 'size', { value: 10 * 1024 * 1024 + 1 });
+    expect(getProposalFileProblem(file)).toBe('Ukuran berkas maksimal 10 MB.');
+    expect(getProposalFileProblem(file, 'revision')).toBe('Ukuran berkas maksimal 10 MB.');
   });
 });

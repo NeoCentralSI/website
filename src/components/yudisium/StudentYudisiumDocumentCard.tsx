@@ -7,7 +7,7 @@ import {
   useUploadYudisiumDocument,
 } from '@/hooks/yudisium/useYudisiumStudent';
 import type { YudisiumRequirementUploadStatus } from '@/types/student-yudisium.types';
-import { openProtectedFile } from '@/lib/protected-file';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -42,15 +42,8 @@ function DocumentRow({ requirement, isLocked, isUploading, onUpload }: DocumentR
     onUpload(file);
   };
 
-  const handleViewClick = async () => {
-    if (requirement.document?.filePath) {
-      try {
-        await openProtectedFile(requirement.document.filePath, requirement.document.fileName || undefined);
-      } catch (error) {
-        toast.error((error as Error).message || 'Gagal membuka dokumen');
-      }
-    }
-  };
+  const { openDocument, viewer } = useDocumentViewer();
+  const handleViewClick = () => openDocument(requirement.document?.filePath, requirement.document?.fileName);
 
   const statusText = isApproved
     ? 'Terverifikasi'
@@ -69,7 +62,7 @@ function DocumentRow({ requirement, isLocked, isUploading, onUpload }: DocumentR
     >
       <div
         className={cn(
-          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border',
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-gray-200',
           isApproved
             ? 'border-emerald-200 bg-emerald-50 text-emerald-600'
             : isDeclined
@@ -113,13 +106,14 @@ function DocumentRow({ requirement, isLocked, isUploading, onUpload }: DocumentR
           ) : null}
         </div>
         {isDeclined && requirement.validationNotes ? (
-          <div className="mt-1 line-clamp-1 text-[11px] text-red-600" title={requirement.validationNotes}>
-            Catatan: {requirement.validationNotes}
+          <div className="mt-1 line-clamp-2 text-xs text-red-600" title={requirement.validationNotes}>
+            Alasan penolakan: {requirement.validationNotes}
           </div>
         ) : null}
       </div>
 
       <div className="flex shrink-0 items-center justify-end gap-2">
+        {viewer}
         <input
           ref={fileInputRef}
           type="file"
@@ -141,7 +135,7 @@ function DocumentRow({ requirement, isLocked, isUploading, onUpload }: DocumentR
           </Button>
         ) : null}
 
-        {isUploading ? (
+        {isApproved ? null : isUploading ? (
           <Button type="button" variant="outline" size="sm" disabled>
             <Spinner className="mr-2 h-4 w-4" />
             Mengunggah
@@ -156,7 +150,8 @@ function DocumentRow({ requirement, isLocked, isUploading, onUpload }: DocumentR
             className="border-primary/40 text-primary hover:border-primary hover:bg-primary/5 hover:text-primary"
           >
             <Upload className="mr-2 h-4 w-4" />
-            {isUploaded ? 'Ganti File' : 'Upload'}
+            {/* Approved files are locked (no button); a rejected one is uploaded again. */}
+            {isDeclined ? 'Unggah Ulang' : isUploaded ? 'Ganti File' : 'Unggah'}
           </Button>
         )}
       </div>

@@ -65,19 +65,39 @@ describe("ThesesTable", () => {
     expect(vi.mocked(getThesesList).mock.calls[0][0]).toMatchObject({ academicYear: "ay-now" });
   });
 
-  it("titles the start semester column 'Mulai', so it is not read as the semester filter", async () => {
+  it("shows the start semester under the name as 'Mulai', so it is not read as the semester filter", async () => {
+    renderTable();
+    await screen.findByText("Uji Ta Lambat");
+
+    const rows = screen.getAllByRole("row").slice(1);
+    expect(within(rows[0]).getByText("Mulai: Genap 2025/2026")).toBeInTheDocument();
+    // A thesis that started outside every semester shows a dash, not an empty value.
+    expect(within(rows[1]).getByText("Mulai: -")).toBeInTheDocument();
+  });
+
+  it("keeps only search, semester, actions and Muat Ulang in the toolbar; the filters sit in the column headers", async () => {
     renderTable();
     await screen.findByText("Uji Ta Lambat");
 
     const headers = screen.getAllByRole("columnheader").map((header) => header.textContent?.trim());
-    expect(headers).toContain("Mulai");
-    expect(headers).not.toContain("Mulai TA");
+    expect(headers).toEqual(["Mahasiswa", "Topik", "Status", "Progress", "Pembimbing", "Masa Bimbingan", "Aktivitas", "Aksi"]);
+    // No dropdown filters in the toolbar any more.
+    expect(screen.queryByText("Semua Status")).not.toBeInTheDocument();
+    expect(screen.queryByText("Semua Pembimbing")).not.toBeInTheDocument();
+    expect(screen.getByRole("table").className).toContain("table-fixed");
+    // Only the semester is asked from the server; the rest is filtered in the browser.
+    expect(vi.mocked(getThesesList).mock.calls[0][0]).toEqual({ academicYear: "ay-now", page: 1, pageSize: 1000 });
+  });
 
-    const rows = screen.getAllByRole("row").slice(1);
-    expect(within(rows[0]).getByText("Genap 2025/2026")).toBeInTheDocument();
-    // A thesis that started outside every semester shows a dash, not an empty cell.
-    const mulaiIndex = headers.indexOf("Mulai");
-    expect(within(rows[1]).getAllByRole("cell")[mulaiIndex]).toHaveTextContent(/^-$/);
+  it("shows Cuti beside the status of a student on leave", async () => {
+    vi.mocked(getThesesList).mockResolvedValue({
+      data: [thesis({ isOnLeave: true, activityLevel: null })],
+      pagination: { page: 1, pageSize: 1000, total: 1, totalPages: 1 },
+    });
+    renderTable();
+    await screen.findByText("Uji Ta Lambat");
+    expect(screen.getByText("Penelitian")).toBeInTheDocument();
+    expect(screen.getByText("Cuti")).toBeInTheDocument();
   });
 
   it("fetches the monitoring data again after a single warning is sent", async () => {

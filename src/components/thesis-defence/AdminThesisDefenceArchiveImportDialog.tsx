@@ -1,11 +1,11 @@
-import { useState, useRef } from "react";
+import { ImportFilePicker } from '@/components/shared/ImportFilePicker';
+import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Spinner } from "@/components/ui/spinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Download, FileSpreadsheet, RefreshCw, Upload, X, FileUp } from "lucide-react";
+import { Download, FileSpreadsheet, RefreshCw, Upload } from "lucide-react";
 import type { AdminDefenceArchiveImportResult } from "@/types/defence.types";
 import * as xlsx from "xlsx";
 
@@ -24,7 +24,6 @@ export function AdminThesisDefenceArchiveImportDialog({
 }: AdminThesisDefenceArchiveImportDialogProps) {
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<AdminDefenceArchiveImportResult | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDownloadTemplate = () => {
     const headers = [
@@ -70,7 +69,6 @@ export function AdminThesisDefenceArchiveImportDialog({
   const reset = () => {
     setFile(null);
     setResult(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleSubmit = async () => {
@@ -101,7 +99,7 @@ export function AdminThesisDefenceArchiveImportDialog({
 
         {!result ? (
           <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3">
+            <div className="flex items-center justify-between rounded-lg border bg-muted/30 p-3 border-gray-200">
               <div className="flex items-center gap-3">
                 <FileSpreadsheet className="h-8 w-8 text-green-600" />
                 <div>
@@ -116,44 +114,7 @@ export function AdminThesisDefenceArchiveImportDialog({
               </Button>
             </div>
 
-            <div className="relative">
-              <Input
-                type="file"
-                accept=".xlsx,.xls"
-                className="hidden"
-                ref={fileInputRef}
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                disabled={isPending}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full justify-start gap-2 overflow-hidden pr-12 text-muted-foreground font-normal"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isPending}
-              >
-                <FileUp className="h-4 w-4 shrink-0" />
-                <span className="truncate">
-                  {file ? file.name : 'Pilih file Excel (xlsx, xls)'}
-                </span>
-              </Button>
-              {file && !isPending && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-1 top-1/2 z-10 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:bg-muted hover:text-foreground"
-                  aria-label="Hapus file terpilih"
-                  title="Hapus file terpilih"
-                  onClick={() => {
-                    setFile(null);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+            <ImportFilePicker file={file} onChange={setFile} disabled={isPending} label="File arsip Sidang" accept=".xlsx,.xls" placeholder="Pilih file Excel (xlsx, xls)" />
 
             {isPending && (
               <Alert>
@@ -166,21 +127,21 @@ export function AdminThesisDefenceArchiveImportDialog({
         ) : (
           <div className="space-y-3">
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded border p-2">
+              <div className="rounded border p-2 border-gray-200">
                 <p className="text-lg font-semibold">{result.total}</p>
                 <p className="text-xs text-muted-foreground">Total</p>
               </div>
-              <div className="rounded border p-2">
+              <div className="rounded border p-2 border-gray-200">
                 <p className="text-lg font-semibold text-green-600">{result.successCount}</p>
                 <p className="text-xs text-muted-foreground">Sukses</p>
               </div>
-              <div className="rounded border p-2">
+              <div className="rounded border p-2 border-gray-200">
                 <p className="text-lg font-semibold text-red-600">{result.failed}</p>
                 <p className="text-xs text-muted-foreground">Gagal</p>
               </div>
             </div>
             {result.failedRows.length > 0 && (
-              <ScrollArea className="h-44 rounded border p-3">
+              <ScrollArea className="h-44 rounded border p-3 border-gray-200">
                 <div className="space-y-1">
                   {result.failedRows.map((row, idx) => (
                     <p key={idx} className="text-xs text-red-600">

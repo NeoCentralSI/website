@@ -1,15 +1,25 @@
 import { useEffect, useMemo } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
 import { StudentYudisiumOverviewPanel } from '@/components/yudisium/StudentYudisiumOverviewPanel';
+import { StudentYudisiumCplTable } from '@/components/yudisium/StudentYudisiumCplTable';
+import { LocalTabsNav } from '@/components/ui/tabs-nav';
 import { useStudentYudisiumOverview } from '@/hooks/yudisium/useYudisiumStudent';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 
+const TABS = [
+  { label: 'Ringkasan', value: 'ringkasan' },
+  { label: 'Nilai CPL', value: 'nilai-cpl' },
+];
+
 export default function StudentYudisium() {
   const { setBreadcrumbs, setTitle } = useOutletContext<LayoutContext>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'nilai-cpl' ? 'nilai-cpl' : 'ringkasan';
+  const setActiveTab = (tab: string) => setSearchParams({ tab }, { replace: true });
   const {
     data: overview,
     isLoading: isOverviewLoading,
@@ -21,9 +31,8 @@ export default function StudentYudisium() {
 
   const breadcrumbs = useMemo(
     () => [
-      { label: 'Tugas Akhir', href: '/tugas-akhir' },
-      { label: 'Yudisium', href: '/yudisium' },
-      { label: 'Status & Pendaftaran' },
+      // Yudisium is a top-level menu; tabs do not add a level.
+      { label: 'Yudisium' },
     ],
     []
   );
@@ -58,8 +67,10 @@ export default function StudentYudisium() {
         </div>
       </div>
 
+      <LocalTabsNav tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+
       {isOverviewError ? (
-        <div className="space-y-3 rounded-lg border border-dashed p-8 text-center">
+        <div className="space-y-3 rounded-lg border border-dashed p-8 text-center border-gray-200">
           <AlertCircle className="mx-auto h-8 w-8 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">
             {overviewError instanceof Error
@@ -70,10 +81,11 @@ export default function StudentYudisium() {
             Coba lagi
           </Button>
         </div>
+      ) : overview && activeTab === 'nilai-cpl' ? (
+        <StudentYudisiumCplTable cplScores={overview.cplScores ?? []} onRefetch={() => refetchOverview()} isFetching={isOverviewFetching} />
       ) : overview ? (
         <StudentYudisiumOverviewPanel
           overview={overview}
-          isFetching={isOverviewFetching}
           history={overview.history || []}
           onDetailClick={(id, yudisiumId) =>
             navigate(`/yudisium/${yudisiumId}/peserta/${id}?from=student`, {

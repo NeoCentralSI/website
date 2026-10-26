@@ -49,7 +49,7 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
     {
       key: 'no',
       header: 'No',
-      width: 60,
+      width: 52,
       className: 'text-center',
       render: (_row, index) => (
         <span className="text-sm text-muted-foreground">
@@ -60,15 +60,17 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
     {
       key: 'code',
       header: 'Kode CPL',
-      width: 110,
+      width: 104,
       render: (row) => <span className="font-medium">{row.code ?? '-'}</span>,
     },
     {
       key: 'description',
       header: 'Deskripsi',
-      className: 'whitespace-normal',
+      // Takes the rest of the width and wraps on as many lines as it needs.
+      // Only this column gives up width: two lines, the full text in the tooltip.
+      className: 'whitespace-normal break-words',
       render: (row) => (
-        <p title={row.description} className="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+        <p title={row.description} className="line-clamp-2 text-sm text-muted-foreground leading-relaxed">
           {row.description}
         </p>
       ),
@@ -76,14 +78,14 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
     {
       key: 'score',
       header: 'Nilai',
-      width: 80,
+      width: 72,
       className: 'text-center',
       render: (row) => <span className="font-semibold">{row.score ?? '-'}</span>,
     },
     {
       key: 'minimalScore',
       header: 'Minimal',
-      width: 90,
+      width: 92,
       className: 'text-center',
       render: (row) => <span>{row.minimalScore}</span>,
     },
@@ -94,7 +96,7 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
         onChange: (value) => { setStatusFilter(value); setCplPage(1); },
         options: [{ label: 'Semua', value: 'all' }, { label: 'Lulus', value: 'passed' }, { label: 'Belum Tercapai', value: 'pending' }],
       },
-      width: 130,
+      width: 150,
       className: 'text-center',
       render: (row) => (
         <Badge
@@ -108,35 +110,36 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
       ),
     },
     {
-      key: 'verified',
-      header: 'Diverifikasi',
-      width: 200,
+      key: 'validated',
+      header: 'Validasi',
+      width: 230,
+      className: 'whitespace-normal',
       render: (row) => {
         const validatorName = row.validatedBy ?? row.verifiedBy ?? null;
         const validatorNip = row.validatedByNip ?? row.verifiedByNip ?? null;
         const validatedAt = row.validatedAt ?? row.verifiedAt ?? null;
-
         const isValidated = row.status === 'validated' || !!row.validatedBy || !!row.verifiedBy || !!row.validatedAt || !!row.verifiedAt;
 
         if (!isValidated) {
           return (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <X className="h-3.5 w-3.5" />
-              <span>Belum diverifikasi</span>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <X className="h-3.5 w-3.5 shrink-0" />
+              <span>Belum divalidasi</span>
             </div>
           );
         }
 
+        const tooltip = validatorNip ? `NIP ${validatorNip}` : undefined;
+        // The full name, on two lines when needed; the date below.
         return (
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
-              <Check className="h-3.5 w-3.5" strokeWidth={3} />
-              <span className="line-clamp-2" title={validatorName || 'Terverifikasi'}>{validatorName || 'Terverifikasi'}</span>
+          <div className="min-w-0 space-y-0.5" title={tooltip}>
+            <div className="flex items-start gap-1.5 text-xs font-medium text-emerald-700">
+              <Check className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={3} />
+              <span className="break-words">
+                Divalidasi{validatorName && <span className="font-normal text-foreground"> {validatorName}</span>}
+              </span>
             </div>
-            <div className="text-[10px] text-muted-foreground">
-              {validatedAt ? formatDateTime(validatedAt) : '-'}
-              {validatorNip ? ` • NIP ${validatorNip}` : ''}
-            </div>
+            <div className="pl-5 text-[11px] text-muted-foreground">{validatedAt ? formatDateTime(validatedAt) : '-'}</div>
           </div>
         );
       },
@@ -144,9 +147,7 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
   ], [cplPage, cplPageSize, statusFilter]);
 
   return (
-    <section className="space-y-[14px]">
-      <h2 className="text-base font-semibold">Capaian Pembelajaran Lulusan</h2>
-      <CustomTable
+    <CustomTable
         enableColumnFilters
         tableClassName="table-fixed"
         isRefreshing={isFetching}
@@ -173,6 +174,5 @@ export function StudentYudisiumCplTable({ cplScores, onRefetch, isFetching = fal
         rowKey={(row, index) => `${row.code ?? 'cpl'}-${index}`}
         className="rounded-[10px] border-gray-200 shadow-none"
       />
-    </section>
   );
 }

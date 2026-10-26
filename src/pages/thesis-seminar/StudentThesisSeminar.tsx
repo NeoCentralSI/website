@@ -1,3 +1,4 @@
+import EmptyState from '@/components/ui/empty-state';
 import { useEffect, useMemo } from 'react';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import type { LayoutContext } from '@/components/layout/ProtectedLayout';
@@ -33,10 +34,10 @@ export default function StudentThesisSeminar() {
   const breadcrumbs = useMemo(
     () => [
       { label: 'Tugas Akhir', href: studentTaParentHref },
-      { label: 'Seminar Hasil', href: '/tugas-akhir/seminar-hasil' },
-      { label: activeTab === 'riwayat-kehadiran' ? 'Riwayat Kehadiran' : 'Status & Pendaftaran' },
+      // Tabs do not add a breadcrumb level.
+      { label: 'Seminar Hasil' },
     ],
-    [activeTab, studentTaParentHref]
+    [studentTaParentHref]
   );
 
   useEffect(() => {
@@ -89,9 +90,7 @@ export default function StudentThesisSeminar() {
           onDetailClick={(id) => navigate(`/tugas-akhir/seminar-hasil/${id}`)}
         />
       ) : (
-        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          Data seminar hasil belum tersedia.
-        </div>
+        <EmptyState title="Belum Ada Data" description="Data seminar hasil belum tersedia" />
       )}
     </div>
   );

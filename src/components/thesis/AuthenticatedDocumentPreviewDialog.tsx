@@ -25,10 +25,15 @@ function toUploadPath(filePath?: string | null): string | null {
  * never appears in a URL (iframe, "Buka tab", "Unduh"). The blob URL is revoked when the
  * dialog closes.
  */
-export default function AuthenticatedDocumentPreviewDialog({ open, onOpenChange, fileName, filePath, mode = "fullscreen" }: DocumentPreviewDialogProps) {
+export type AuthenticatedDocumentPreviewDialogProps = DocumentPreviewDialogProps & {
+  /** A protected API endpoint that returns the file (used as it is, instead of `filePath`). */
+  fileUrl?: string | null;
+};
+
+export default function AuthenticatedDocumentPreviewDialog({ open, onOpenChange, fileName, filePath, fileUrl, mode = "fullscreen" }: AuthenticatedDocumentPreviewDialogProps) {
   const isDocx = fileName?.toLowerCase().endsWith(".docx") || filePath?.toLowerCase().endsWith(".docx");
-  const localUrl = filePath?.startsWith("blob:") ? filePath : null;
-  const url = toUploadPath(filePath);
+  const localUrl = !fileUrl && filePath?.startsWith("blob:") ? filePath : null;
+  const url = fileUrl || toUploadPath(filePath);
   const remote = useAuthenticatedBlobUrl(url, open);
   const blobUrl = localUrl ?? remote.blobUrl;
   const error = localUrl ? null : remote.error;

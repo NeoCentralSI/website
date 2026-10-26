@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { History, Plus, Target } from "lucide-react";
+import { Plus, Target } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -130,12 +130,6 @@ export function StudentThesisProgressCard({ thesis, requiredGuidances, guidanceB
                 <Link to="/tugas-akhir/bimbingan/student/milestone">
                   <Target className="mr-2 h-4 w-4" />
                   Kelola Milestone
-                </Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link to="/tugas-akhir/bimbingan/student/history">
-                  <History className="mr-2 h-4 w-4" />
-                  Riwayat Bimbingan
                 </Link>
               </Button>
             </div>

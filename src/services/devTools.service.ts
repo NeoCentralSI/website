@@ -20,6 +20,10 @@ import type {
   DevToolsSemesterFlags,
   DevToolsSupervisorRequest,
   DevToolsSupervisorRequestList,
+  DevToolsEventPatch,
+  DevToolsPage,
+  DevToolsParticipantStatus,
+  DevToolsPeriodPatch,
 } from '@/types/devTools.types';
 
 const BASE = '/devtools';
@@ -200,5 +204,21 @@ export const devToolsService = {
     const url = getApiUrl(`${BASE}/guidances/${id}`);
     const response = await apiRequest(url, { method: 'PATCH', body: JSON.stringify(data) });
     return parseMsg(response, 'Gagal mengubah jadwal sesi bimbingan');
+  },
+
+  // --- Seminar Hasil, Sidang, Yudisium (status and dates) ---
+  listTable: async <T>(path: string, params: { search?: string; status?: string; page: number; pageSize: number }): Promise<DevToolsPage<T>> => {
+    const query = new URLSearchParams({ page: String(params.page), pageSize: String(params.pageSize) });
+    if (params.search) query.set('search', params.search);
+    if (params.status) query.set('status', params.status);
+    const response = await apiRequest(getApiUrl(`${BASE}/${path}?${query.toString()}`));
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error((result as { message?: string }).message || 'Gagal memuat data');
+    return { data: result.data ?? [], meta: result.meta } as DevToolsPage<T>;
+  },
+
+  patchTable: async (path: string, id: string, body: DevToolsEventPatch | DevToolsPeriodPatch | { status: DevToolsParticipantStatus }): Promise<string> => {
+    const response = await apiRequest(getApiUrl(`${BASE}/${path}/${id}`), { method: 'PATCH', body: JSON.stringify(body) });
+    return parseMsg(response, 'Gagal menyimpan perubahan');
   },
 };

@@ -1,3 +1,4 @@
+import EmptyState from '@/components/ui/empty-state';
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 import { Loading } from "@/components/ui/spinner";
@@ -24,14 +25,8 @@ export function MilestoneProgressCard({ progress, loading }: MilestoneProgressCa
   if (!progress) {
     return (
       <Card className="border-dashed">
-        <CardContent className="py-8 text-center">
-          <Circle className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-sm font-medium text-muted-foreground">
-            Belum ada milestone
-          </p>
-          <p className="text-xs text-muted-foreground/70 mt-1">
-            Buat milestone pertama untuk melacak progress tugas akhir
-          </p>
+        <CardContent>
+          <EmptyState size="sm" title="Belum Ada Milestone" description="Buat milestone pertama untuk melacak progress tugas akhir" />
         </CardContent>
       </Card>
     );
