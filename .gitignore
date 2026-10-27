@@ -35,3 +35,7 @@ playwright/.cache/
 
 # Test coverage reports
 coverage/
+
+# Archives and local AI tool settings
+*.zip
+.qwen/
