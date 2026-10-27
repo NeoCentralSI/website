@@ -1,10 +1,32 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
+import fs from "fs"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 
+// Fills __SITE_URL__ (from VITE_SITE_URL) in index.html, and builds robots.txt and
+// sitemap.xml from seo/ so no domain is written in the source.
+function siteUrl(): Plugin {
+  let url = 'http://localhost:5173'
+  return {
+    name: 'neocentral-site-url',
+    configResolved(config) {
+      if (config.env.VITE_SITE_URL) url = String(config.env.VITE_SITE_URL).replace(/\/+$/, '')
+    },
+    transformIndexHtml(html) {
+      return html.replaceAll('__SITE_URL__', url)
+    },
+    generateBundle() {
+      for (const fileName of ['robots.txt', 'sitemap.xml']) {
+        const template = fs.readFileSync(path.resolve(__dirname, 'seo', fileName), 'utf8')
+        this.emitFile({ type: 'asset', fileName, source: template.replaceAll('__SITE_URL__', url) })
+      }
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), siteUrl()],
   server: {
     port: 5173,
     // Fail loudly when 5173 is taken — OAuth callback FRONTEND_URL defaults to this port.

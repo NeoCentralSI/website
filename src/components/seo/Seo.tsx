@@ -11,7 +11,7 @@ export type SeoProps = {
   noindex?: boolean;
 };
 
-const SITE_URL = 'https://neocentral.dev';
+export const SITE_URL = String(import.meta.env.VITE_SITE_URL || window.location.origin).replace(/\/+$/, '');
 /** Tab title of index.html, used when a public page is left. */
 const BASE_TITLE = 'NeoCentral';
 const DEFAULT_TITLE = 'NeoCentral — Platform Digital Kerja Praktek & Tugas Akhir';

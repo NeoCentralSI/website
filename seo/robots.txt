@@ -1,5 +1,5 @@
 # NeoCentral - robots.txt
-# https://neocentral.dev
+# __SITE_URL__
 
 User-agent: *
 Allow: /
@@ -36,4 +36,4 @@ Disallow: /pengaturan
 Disallow: /auth/microsoft/callback
 
 # Sitemap
-Sitemap: https://neocentral.dev/sitemap.xml
+Sitemap: __SITE_URL__/sitemap.xml

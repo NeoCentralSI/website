@@ -7,7 +7,7 @@ export const SIA_NOT_AVAILABLE = 'Sinkronisasi SIA belum tersedia.';
 
 /**
  * Whether SIA can be read (before the real SIA API exists, SIA_BASE_URL on
- * neocentral.dev is empty). Reads `configured` from GET /sia/sync/status (Admin). Until the answer
+ * a deployed server is empty). Reads `configured` from GET /sia/sync/status (Admin). Until the answer
  * comes, the buttons stay usable; the backend refuses anyway.
  */
 export function useSiaAvailability(enabled = true) {
