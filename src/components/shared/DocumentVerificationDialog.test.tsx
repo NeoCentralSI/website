@@ -8,8 +8,8 @@ vi.mock('@/lib/authenticatedFile', () => ({
 import { DocumentVerificationDialog, type VerificationItem } from './DocumentVerificationDialog';
 
 const items: VerificationItem[] = [
-  { id: 'r1', name: 'Transkrip Nilai', status: 'submitted', fileName: 'transkrip.pdf', fileUrl: '/uploads/transkrip.pdf', submittedAt: '2026-10-20T03:00:00Z' },
-  { id: 'r2', name: 'Bukti Bebas Pustaka', status: 'submitted', fileName: 'pustaka.pdf', fileUrl: '/uploads/pustaka.pdf', submittedAt: '2026-10-21T03:00:00Z' },
+  { id: 'r1', name: 'Sertifikat TOEFL', status: 'submitted', fileName: 'toefl.pdf', fileUrl: '/uploads/toefl.pdf', submittedAt: '2026-10-20T03:00:00Z' },
+  { id: 'r2', name: 'Bukti Bebas Pustaka FTI UNAND', status: 'submitted', fileName: 'pustaka.pdf', fileUrl: '/uploads/pustaka.pdf', submittedAt: '2026-10-21T03:00:00Z' },
 ];
 
 function renderDialog(onDecide = vi.fn(async () => ({}))) {
@@ -28,10 +28,10 @@ describe('DocumentVerificationDialog', () => {
 
   it('shows the requirement, its status, the file and the n/m navigation', async () => {
     renderDialog();
-    expect(screen.getByText('Transkrip Nilai')).toBeInTheDocument();
+    expect(screen.getByText('Sertifikat TOEFL')).toBeInTheDocument();
     expect(screen.getByText('Menunggu')).toBeInTheDocument();
     expect(screen.getByText('1/2')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByText(/transkrip\.pdf · 8 B · Diunggah/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/toefl\.pdf · 8 B · Diunggah/)).toBeInTheDocument());
     expect(screen.getByRole('button', { name: 'Batal' })).toBeInTheDocument();
   });
 

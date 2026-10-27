@@ -96,7 +96,7 @@ export function SeminarRequirementFormDialog({
                                     <FormLabel>Nama Persyaratan</FormLabel>
                                     <FormControl>
                                         <Input
-                                            placeholder="Contoh: Draf Laporan Tugas Akhir"
+                                            placeholder="Contoh: Laporan Tugas Akhir"
                                             disabled={Boolean(initialData?.hasRelatedData)}
                                             {...field}
                                         />

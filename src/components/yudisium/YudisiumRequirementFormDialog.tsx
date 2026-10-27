@@ -105,7 +105,7 @@ export function YudisiumRequirementFormDialog({
                             id="reqName"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="Contoh: Bukti Bebas Pustaka"
+                            placeholder="Contoh: Bukti Bebas Pustaka FTI UNAND"
                             required
                         />
                     </div>
