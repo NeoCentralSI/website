@@ -1,4 +1,5 @@
 import { RequirementDocumentRow } from '@/components/shared/RequirementDocumentRow';
+import EmptyState from '@/components/ui/empty-state';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   toTitleCaseName,
@@ -62,6 +63,9 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
           }),
         ).values(),
       );
+
+  // False for a student who is neither the presenter nor a registered audience.
+  const canViewDocuments = detail.canViewDocuments !== false;
 
   const { openDocument, viewer } = useDocumentViewer();
   const handleDownload = (filePath: string, fileName?: string | null) => openDocument(filePath, fileName);
@@ -165,7 +169,7 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
           </Card>
 
           {/* Dokumen Seminar */}
-          {requirements.length > 0 && (
+          {(!canViewDocuments || requirements.length > 0) && (
             <Card className="gap-4 py-6">
               <CardHeader>
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -174,7 +178,14 @@ export function ThesisSeminarDetailIdentityPanel({ detail }: Props) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {requirements.map((dt) => {
+                {!canViewDocuments ? (
+                  <EmptyState
+                    size="sm"
+                    className="py-6"
+                    title="Dokumen Hanya untuk Peserta Seminar"
+                    description="Dokumen seminar dapat diakses setelah Anda terdaftar sebagai peserta seminar ini"
+                  />
+                ) : requirements.map((dt) => {
                   const doc = documents.find((d) => (d.requirementId || d.documentTypeId) === dt.id);
                   return (
                     <RequirementDocumentRow
