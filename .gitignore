@@ -32,3 +32,6 @@ playwright/.cache/
 
 # Commit currently deployed on the server (written by CI)
 .deployed-sha
+
+# Test coverage reports
+coverage/
