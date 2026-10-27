@@ -4,105 +4,102 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Commit, tag, or branch to deploy (empty = the selected branch)
+        type: string
+        default: ""
 
 permissions:
   contents: read
 
 concurrency:
-  group: neocentral-dev-frontend
+  group: staging-frontend
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    environment:
-      name: neocentral-dev
-      url: https://neocentral.dev
-    env:
-      VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-      VITE_NODE_ENV: production
-      VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
-      VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
-      VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
-      VITE_FIREBASE_STORAGE_BUCKET: ${{ vars.VITE_FIREBASE_STORAGE_BUCKET }}
-      VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ vars.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-      VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
-      VITE_FIREBASE_VAPID_KEY: ${{ vars.VITE_FIREBASE_VAPID_KEY }}
+    timeout-minutes: 20
+    outputs:
+      sha: ${{ steps.sha.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - uses: pnpm/action-setup@v4
         with:
           version: 10.23.0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-
-      - name: Validate build configuration
-        run: |
-          test -n "$VITE_API_BASE_URL"
-          test -n "$VITE_FIREBASE_API_KEY"
-          test -n "$VITE_FIREBASE_AUTH_DOMAIN"
-          test -n "$VITE_FIREBASE_PROJECT_ID"
-          test -n "$VITE_FIREBASE_STORAGE_BUCKET"
-          test -n "$VITE_FIREBASE_MESSAGING_SENDER_ID"
-          test -n "$VITE_FIREBASE_APP_ID"
-          test -n "$VITE_FIREBASE_VAPID_KEY"
-
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm test
       - run: pnpm build
 
-      - name: Add deployment metadata
-        env:
-          DEPLOY_SHA: ${{ github.sha }}
-        run: |
-          printf '{"commit":"%s","deployedAt":"%s"}\n' \
-            "$DEPLOY_SHA" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-            > dist/deployment.json
-
+  # The production image is built on the server; VITE_* values come from the server's .env.
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: staging
+      url: ${{ vars.PUBLIC_URL }}
+    steps:
       - name: Configure SSH
         env:
           SSH_PRIVATE_KEY: ${{ secrets.DEPLOY_SSH_PRIVATE_KEY }}
           SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
+          for name in SSH_PRIVATE_KEY SSH_KNOWN_HOSTS DEPLOY_HOST DEPLOY_PORT DEPLOY_USER; do
+            test -n "${!name}" || { echo "::error::$name is empty"; exit 1; }
+          done
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 600 ~/.ssh/known_hosts
+          printf 'Host vps\n  HostName %s\n  Port %s\n  User %s\n  IdentityFile ~/.ssh/deploy_key\n  ServerAliveInterval 30\n' \
+            "$DEPLOY_HOST" "$DEPLOY_PORT" "$DEPLOY_USER" > ~/.ssh/config
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts ~/.ssh/config
 
-      - name: Publish static files
+      - name: Pull, build, and start on the server
         env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
+          DEPLOY_SHA: ${{ needs.verify.outputs.sha }}
         run: |
-          test -n "$DEPLOY_HOST" && test -n "$DEPLOY_PORT"
-          test -n "$DEPLOY_USER" && test -n "$DEPLOY_DIR"
-          rsync -az --delete \
-            -e "ssh -p $DEPLOY_PORT" \
-            dist/ "$DEPLOY_USER@$DEPLOY_HOST:$DEPLOY_DIR/"
-
-      - name: Verify deployment
-        env:
-          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
-          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-          DEPLOY_DIR: ${{ vars.DEPLOY_DIR }}
-          DEPLOY_SHA: ${{ github.sha }}
-        run: |
-          ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" \
-            "DEPLOY_DIR='$DEPLOY_DIR' DEPLOY_SHA='$DEPLOY_SHA' bash -s" <<'REMOTE'
+          test -n "$DEPLOY_DIR" || { echo "::error::variable DEPLOY_DIR is empty"; exit 1; }
+          ssh vps "DEPLOY_DIR='$DEPLOY_DIR' DEPLOY_SHA='$DEPLOY_SHA' bash -s" <<'REMOTE'
           set -euo pipefail
-          test -s "$DEPLOY_DIR/index.html"
-          grep -F "$DEPLOY_SHA" "$DEPLOY_DIR/deployment.json"
-          curl --fail --silent --show-error \
-            -H "Host: neocentral.dev" \
-            http://127.0.0.1/ >/dev/null
+          cd "$DEPLOY_DIR"
+          git fetch --quiet origin "$DEPLOY_SHA"
+          git checkout --quiet -f -B main "$DEPLOY_SHA"
+          docker compose up -d --build frontend
+          for attempt in $(seq 1 30); do
+            if docker compose exec -T frontend wget -qO- http://127.0.0.1/ >/dev/null 2>&1; then
+              printf '%s\n' "$DEPLOY_SHA" > .deployed-sha
+              docker image prune -f >/dev/null
+              docker compose ps
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs --tail=150 frontend
+          exit 1
           REMOTE
+
+      - name: Public URL answers
+        env:
+          PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+        run: |
+          test -n "$PUBLIC_URL" || { echo "::error::variable PUBLIC_URL is empty"; exit 1; }
+          for attempt in $(seq 1 10); do
+            curl --fail --silent --show-error --output /dev/null "$PUBLIC_URL" && exit 0
+            sleep 3
+          done
+          exit 1

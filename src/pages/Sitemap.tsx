@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ExternalLink, FileText, Home, Lock, Mail, MapPin, Shield } from 'lucide-react';
 import { LandingNavbar } from '@/components/landing';
-import { Seo } from '@/components/seo';
+import { Seo, SITE_URL } from '@/components/seo';
 
 type SitemapGroup = {
   icon: React.ElementType;
@@ -92,7 +92,7 @@ export default function SitemapPage() {
       <Seo
         title="Peta Situs"
         description="Peta situs lengkap NeoCentral — Platform Digital untuk Kerja Praktek & Tugas Akhir Departemen Sistem Informasi Universitas Andalas."
-        canonicalUrl="https://neocentral.dev/sitemap"
+        canonicalUrl={`${SITE_URL}/sitemap`}
         noindex
       />
       <LandingNavbar />
