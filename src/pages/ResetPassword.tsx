@@ -1,7 +1,9 @@
 import { Eye, EyeOff, Lock } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
+import logo from '@/assets/images/neocentral-logo.png';
+import resetPasswordImage from '@/assets/images/reset-password.jpg';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -87,12 +89,25 @@ const ResetPassword = () => {
       <Card className="w-full max-w-md lg:max-w-6xl shadow-2xl border-0 overflow-hidden rounded-4xl">
         <CardContent className="p-0">
           <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[500px] lg:min-h-[600px]">
-            <div className='hidden lg:block pl-10'>
-              <img 
-                src="https://placehold.co/400x400"
-                alt="placeholder"
-                className="w-full h-full object-cover rounded-2xl"
-              />
+            <div className="hidden lg:block pl-10">
+              {/* The photo fills the column without setting its height (the form side does). */}
+              <div className="relative h-full overflow-hidden rounded-2xl">
+                <img
+                  src={resetPasswordImage}
+                  alt="Gembok kombinasi di atas papan ketik"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-[#F7931E]/80 via-[#F7931E]/30 to-transparent" />
+                <Link to="/" className="absolute top-6 left-6 z-10 hover:opacity-80 transition-opacity">
+                  <img src={logo} alt="NeoCentral Logo" className="h-12 w-auto" />
+                </Link>
+                <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-10 space-y-2">
+                  <p className="text-xl font-medium leading-relaxed">
+                    Buat password baru untuk kembali mengakses akun NeoCentral Anda.
+                  </p>
+                  <p className="text-sm font-semibold text-white/90">Neo Central - Departemen Sistem Informasi</p>
+                </div>
+              </div>
             </div>
             <div className="p-6 lg:p-12 flex flex-col justify-center bg-white">
               <div className="max-w-md mx-auto w-full">
