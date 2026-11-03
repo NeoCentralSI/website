@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { GraduationCap } from 'lucide-react';
 import type { User } from '@/services/auth.service';
+import { getStudentStatusLabel } from '@/lib/thesisLabels';
 
 interface StudentInfoCardProps {
   student: User['student'];
@@ -39,8 +40,8 @@ export function StudentInfoCard({ student }: StudentInfoCardProps) {
           </span>
           <div className="mt-0.5">
             {student.status ? (
-              <Badge variant={student.status === 'Aktif' ? 'default' : 'secondary'}>
-                {student.status}
+              <Badge variant={student.status === 'active' ? 'default' : 'secondary'}>
+                {getStudentStatusLabel(student.status)}
               </Badge>
             ) : (
               <span className="text-gray-400 italic">-</span>
