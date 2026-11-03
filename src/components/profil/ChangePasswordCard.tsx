@@ -71,7 +71,7 @@ export function ChangePasswordCard() {
                 type={showNewPassword ? 'text' : 'password'}
                 value={formData.newPassword}
                 onChange={(e) => updateField('newPassword', e.target.value)}
-                placeholder="Min. 8 karakter"
+                placeholder="Min. 6 karakter"
                 disabled={isChanging}
                 className="h-9 text-sm pr-9 border-gray-300 focus:border-primary focus:ring-primary"
               />
