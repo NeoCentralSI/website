@@ -18,10 +18,11 @@ export interface ThesisEventHistoryRow {
   examiners: { order: number; lecturerName: string }[];
 }
 
+// startTime/endTime come from TIME columns (1970-01-01T10:00Z = 10.00 WIB), so read them as UTC.
 function formatTimeRange(startTime: string | null, endTime: string | null): string {
   if (!startTime || !endTime) return '';
   const time = (iso: string) =>
-    new Date(iso).toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit', hour12: false });
+    new Date(iso).toLocaleTimeString('id-ID', { timeZone: 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
   return `${time(startTime)} – ${time(endTime)} WIB`;
 }
 
