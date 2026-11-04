@@ -22,12 +22,13 @@ const CARD_VISIBLE_STATUSES: ThesisDefenceStatus[] = [
   'passed_with_revision',
 ];
 
+// startTime/endTime come from TIME columns (1970-01-01T10:00Z = 10.00 WIB), so read them as UTC.
 function formatTimeRange(startTime: string | null, endTime: string | null): string {
   if (!startTime || !endTime) return '';
   const fmtTime = (iso: string) => {
     const d = new Date(iso);
     return d.toLocaleTimeString('id-ID', {
-      timeZone: 'Asia/Jakarta',
+      timeZone: 'UTC',
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
