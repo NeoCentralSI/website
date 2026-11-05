@@ -2,7 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { BookOpen, Calendar, MapPin, Download, Info } from 'lucide-react';
 import { formatDateOnlyId } from '@/lib/text';
-import { openProtectedFile } from '@/lib/protected-file';
+import { useDocumentViewer } from '@/components/thesis/useDocumentViewer';
 import { downloadStudentCertificate } from '@/services/yudisium/student.service';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,7 @@ interface StudentYudisiumIdentityCardProps {
 }
 
 export function StudentYudisiumIdentityCard({ overview }: StudentYudisiumIdentityCardProps) {
+  const { openDocument, viewer } = useDocumentViewer();
   const yudisium = overview.yudisium;
   if (!yudisium) return null;
 
@@ -155,15 +156,7 @@ export function StudentYudisiumIdentityCard({ overview }: StudentYudisiumIdentit
               variant="outline"
               size="sm"
               className="h-8 gap-1.5 border-gray-200 bg-card text-primary hover:bg-primary/5 text-xs font-medium shrink-0 shadow-none transition-colors"
-              onClick={async () => {
-                const filePath = decreeDocument.filePath;
-                if (!filePath) return;
-                try {
-                  await openProtectedFile(filePath, decreeDocument.fileName || 'SK-Yudisium.pdf');
-                } catch (err) {
-                  toast.error(err instanceof Error ? err.message : 'Gagal mengunduh SK');
-                }
-              }}
+              onClick={() => openDocument(decreeDocument.filePath, decreeDocument.fileName || 'SK-Yudisium.pdf')}
             >
               <Download className="h-3.5 w-3.5 text-primary" />
               Unduh SK Yudisium
@@ -197,6 +190,7 @@ export function StudentYudisiumIdentityCard({ overview }: StudentYudisiumIdentit
           <span>Pendaftaran sudah ditutup. Jika Anda belum terdaftar, silakan hubungi Koordinator Yudisium.</span>
         </div>
       )}
+      {viewer}
     </div>
   );
 }
