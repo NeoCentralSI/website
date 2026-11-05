@@ -121,6 +121,7 @@ export default function UserManagementPage() {
         identityNumber: user.identityNumber,
         identityType: user.identityType,
         isVerified: user.isVerified,
+        gender: user.gender ?? null,
       });
     } else {
       setEditingUser(null);
@@ -130,6 +131,7 @@ export default function UserManagementPage() {
         roles: [ROLES.MAHASISWA], // Default role for NIM
         identityNumber: '',
         identityType: 'NIM',
+        gender: null,
       });
     }
     setDialogOpen(true);
